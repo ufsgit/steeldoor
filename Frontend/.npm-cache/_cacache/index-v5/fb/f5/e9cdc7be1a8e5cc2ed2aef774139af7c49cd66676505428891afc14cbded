@@ -1,0 +1,2 @@
+
+b4de5ef06efe545321f522f6f88bc493a04e3e8b	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/baseline-browser-mapping","integrity":null,"time":1791867344587,"size":"0","metadata":{"time":1791867344587,"url":"http://registry.npmjs.org/baseline-browser-mapping","reqHeaders":{"accept":"application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:43 GMT","location":"https://registry.npmjs.org/baseline-browser-mapping"},"options":{"compress":true},"status":301}}

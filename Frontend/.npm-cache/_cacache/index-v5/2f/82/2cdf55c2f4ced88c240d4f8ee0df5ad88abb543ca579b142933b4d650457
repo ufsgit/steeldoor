@@ -1,0 +1,2 @@
+
+80b447bfe48a1487aa6146e6b8a32fdff252a53d	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/@angular/cli/-/cli-21.2.26.tgz","integrity":null,"time":1791867346397,"size":"0","metadata":{"time":1791867346397,"url":"http://registry.npmjs.org/@angular/cli/-/cli-21.2.26.tgz","reqHeaders":{},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:45 GMT","location":"https://registry.npmjs.org/@angular/cli/-/cli-21.2.26.tgz"},"options":{"compress":true},"status":301}}

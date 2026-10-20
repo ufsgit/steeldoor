@@ -1,0 +1,2 @@
+
+5e9654367e17e1311a7514ccd29e3db60fec24cf	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/@bramus%2fspecificity","integrity":null,"time":1791867344505,"size":"0","metadata":{"time":1791867344505,"url":"http://registry.npmjs.org/@bramus%2fspecificity","reqHeaders":{"accept":"application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:43 GMT","location":"https://registry.npmjs.org/@bramus%2Fspecificity"},"options":{"compress":true},"status":301}}

@@ -1,0 +1,2 @@
+
+2119cf1116beb1c24d33e79f66e16d1774df5203	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/http-cache-semantics","integrity":null,"time":1791867338262,"size":"0","metadata":{"time":1791867338262,"url":"http://registry.npmjs.org/http-cache-semantics","reqHeaders":{"accept":"application/json"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:37 GMT","location":"https://registry.npmjs.org/http-cache-semantics"},"options":{"compress":true},"status":301}}

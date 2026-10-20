@@ -1,0 +1,2 @@
+
+29a9747cb658ad8406839ec0f3611f85f5669427	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/pacote/-/pacote-21.5.1.tgz","integrity":null,"time":1791867345144,"size":"0","metadata":{"time":1791867345144,"url":"http://registry.npmjs.org/pacote/-/pacote-21.5.1.tgz","reqHeaders":{},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:43 GMT","location":"https://registry.npmjs.org/pacote/-/pacote-21.5.1.tgz"},"options":{"compress":true},"status":301}}

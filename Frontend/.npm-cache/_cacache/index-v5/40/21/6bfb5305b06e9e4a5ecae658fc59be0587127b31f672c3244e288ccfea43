@@ -1,0 +1,2 @@
+
+ab89c1c0d301aab74b79b1745677dcde312e65b2	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/esbuild/-/esbuild-0.28.1.tgz","integrity":null,"time":1791867346144,"size":"0","metadata":{"time":1791867346144,"url":"http://registry.npmjs.org/esbuild/-/esbuild-0.28.1.tgz","reqHeaders":{},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:44 GMT","location":"https://registry.npmjs.org/esbuild/-/esbuild-0.28.1.tgz"},"options":{"compress":true},"status":301}}

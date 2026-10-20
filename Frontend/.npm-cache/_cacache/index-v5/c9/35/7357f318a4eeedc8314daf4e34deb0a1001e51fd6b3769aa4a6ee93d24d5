@@ -1,0 +1,2 @@
+
+4c6382d1d7b9518ad5100f31a041c40669f97720	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/@parcel%2fwatcher-win32-arm64","integrity":null,"time":1791867332696,"size":"0","metadata":{"time":1791867332696,"url":"http://registry.npmjs.org/@parcel%2fwatcher-win32-arm64","reqHeaders":{"accept":"application/json"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:31 GMT","location":"https://registry.npmjs.org/@parcel%2Fwatcher-win32-arm64"},"options":{"compress":true},"status":301}}

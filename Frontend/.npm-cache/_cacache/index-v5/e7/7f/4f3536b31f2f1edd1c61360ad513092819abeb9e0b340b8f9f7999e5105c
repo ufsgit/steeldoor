@@ -1,0 +1,2 @@
+
+7fbb306de244232f47caea77f04910752fab0365	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/@angular/common/-/common-21.2.25.tgz","integrity":null,"time":1791867344582,"size":"0","metadata":{"time":1791867344582,"url":"http://registry.npmjs.org/@angular/common/-/common-21.2.25.tgz","reqHeaders":{},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:43 GMT","location":"https://registry.npmjs.org/@angular/common/-/common-21.2.25.tgz"},"options":{"compress":true},"status":301}}

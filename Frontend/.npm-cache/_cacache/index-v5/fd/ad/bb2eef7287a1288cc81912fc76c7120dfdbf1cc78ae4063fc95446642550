@@ -1,0 +1,2 @@
+
+a5c109e7e2217904ac0215213cdbb4d49d12e315	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/@esbuild%2ffreebsd-arm64","integrity":null,"time":1791867334828,"size":"0","metadata":{"time":1791867334828,"url":"http://registry.npmjs.org/@esbuild%2ffreebsd-arm64","reqHeaders":{"accept":"application/json"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:33 GMT","location":"https://registry.npmjs.org/@esbuild%2Ffreebsd-arm64"},"options":{"compress":true},"status":301}}

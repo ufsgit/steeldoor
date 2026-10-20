@@ -1,0 +1,2 @@
+
+1eb85c62fd18441c273f214298b325914fd103de	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/nanoid","integrity":null,"time":1791867344566,"size":"0","metadata":{"time":1791867344566,"url":"http://registry.npmjs.org/nanoid","reqHeaders":{"accept":"application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:43 GMT","location":"https://registry.npmjs.org/nanoid"},"options":{"compress":true},"status":301}}

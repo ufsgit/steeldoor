@@ -1,0 +1,2 @@
+
+9a051e3b073c24f18de93e387fedf1d08d5866cc	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/@parcel%2fwatcher-darwin-x64","integrity":null,"time":1791867332070,"size":"0","metadata":{"time":1791867332070,"url":"http://registry.npmjs.org/@parcel%2fwatcher-darwin-x64","reqHeaders":{"accept":"application/json"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:30 GMT","location":"https://registry.npmjs.org/@parcel%2Fwatcher-darwin-x64"},"options":{"compress":true},"status":301}}

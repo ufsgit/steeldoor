@@ -1,0 +1,2 @@
+
+68465dfc42862cbbb6c1e960f53248efc69abbf6	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/vitest","integrity":null,"time":1791867344508,"size":"0","metadata":{"time":1791867344508,"url":"http://registry.npmjs.org/vitest","reqHeaders":{"accept":"application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:43 GMT","location":"https://registry.npmjs.org/vitest"},"options":{"compress":true},"status":301}}

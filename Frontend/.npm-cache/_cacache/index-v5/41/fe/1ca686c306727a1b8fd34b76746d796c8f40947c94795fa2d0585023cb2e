@@ -1,0 +1,2 @@
+
+c7fd044770db7a49056b8fc34f030458dcf4b1ca	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/@esbuild%2fopenbsd-x64","integrity":null,"time":1791867336447,"size":"0","metadata":{"time":1791867336447,"url":"http://registry.npmjs.org/@esbuild%2fopenbsd-x64","reqHeaders":{"accept":"application/json"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:35 GMT","location":"https://registry.npmjs.org/@esbuild%2Fopenbsd-x64"},"options":{"compress":true},"status":301}}

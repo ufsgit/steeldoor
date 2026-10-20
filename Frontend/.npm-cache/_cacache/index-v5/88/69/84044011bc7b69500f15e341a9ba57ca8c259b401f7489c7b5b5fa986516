@@ -1,0 +1,2 @@
+
+02c17e85fd8988401a4838c9cdaa40d165fdc581	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/@esbuild%2fnetbsd-x64","integrity":null,"time":1791867336241,"size":"0","metadata":{"time":1791867336241,"url":"http://registry.npmjs.org/@esbuild%2fnetbsd-x64","reqHeaders":{"accept":"application/json"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:35 GMT","location":"https://registry.npmjs.org/@esbuild%2Fnetbsd-x64"},"options":{"compress":true},"status":301}}

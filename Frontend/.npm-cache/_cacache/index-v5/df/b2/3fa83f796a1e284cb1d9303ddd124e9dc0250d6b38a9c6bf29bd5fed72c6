@@ -1,0 +1,2 @@
+
+33a207e036f414516ae14190a3212b05dde2f7b3	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/@lmdb%2flmdb-darwin-x64","integrity":null,"time":1791867337164,"size":"0","metadata":{"time":1791867337163,"url":"http://registry.npmjs.org/@lmdb%2flmdb-darwin-x64","reqHeaders":{"accept":"application/json"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:35 GMT","location":"https://registry.npmjs.org/@lmdb%2Flmdb-darwin-x64"},"options":{"compress":true},"status":301}}

@@ -1,0 +1,2 @@
+
+e5b8740f9e6db9d72efd5a7cf96e15968ebc735b	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/node-gyp","integrity":null,"time":1791867344561,"size":"0","metadata":{"time":1791867344560,"url":"http://registry.npmjs.org/node-gyp","reqHeaders":{"accept":"application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:43 GMT","location":"https://registry.npmjs.org/node-gyp"},"options":{"compress":true},"status":301}}

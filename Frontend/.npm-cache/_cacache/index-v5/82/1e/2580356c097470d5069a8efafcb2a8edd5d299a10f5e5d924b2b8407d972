@@ -1,0 +1,2 @@
+
+06c23592f89070c443232b717cdf6a9edaa152b2	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/@esbuild%2flinux-s390x","integrity":null,"time":1791867335914,"size":"0","metadata":{"time":1791867335914,"url":"http://registry.npmjs.org/@esbuild%2flinux-s390x","reqHeaders":{"accept":"application/json"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:34 GMT","location":"https://registry.npmjs.org/@esbuild%2Flinux-s390x"},"options":{"compress":true},"status":301}}

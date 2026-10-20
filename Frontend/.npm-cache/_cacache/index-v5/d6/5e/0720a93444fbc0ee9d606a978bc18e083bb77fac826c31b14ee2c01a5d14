@@ -1,0 +1,2 @@
+
+a4e06821b2e4ccd90716c88e2b1f98bde1b52d3d	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/jiti","integrity":null,"time":1791867344563,"size":"0","metadata":{"time":1791867344563,"url":"http://registry.npmjs.org/jiti","reqHeaders":{"accept":"application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:43 GMT","location":"https://registry.npmjs.org/jiti"},"options":{"compress":true},"status":301}}

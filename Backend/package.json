@@ -1,0 +1,25 @@
+{
+  "name": "steel-door-backend",
+  "version": "1.0.0",
+  "description": "Node.js & MySQL backend API for SteelGuard Door Management System",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "steel-door",
+    "express",
+    "mysql",
+    "nodejs"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mysql2": "^3.12.0"
+  }
+}

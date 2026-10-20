@@ -1,0 +1,2 @@
+
+f4c2314dd55193a55bef5e2add8a31251e469ee6	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/rollup","integrity":null,"time":1791867354586,"size":"0","metadata":{"time":1791867354586,"url":"http://registry.npmjs.org/rollup","reqHeaders":{"accept":"application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:53 GMT","location":"https://registry.npmjs.org/rollup"},"options":{"compress":true},"status":301}}

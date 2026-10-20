@@ -1,0 +1,2 @@
+
+672e988f9641b4830d5d3870f7ec042a9b3e0401	{"key":"make-fetch-happen:request-cache:http://registry.npmjs.org/@esbuild%2fwin32-ia32","integrity":null,"time":1791867336880,"size":"0","metadata":{"time":1791867336880,"url":"http://registry.npmjs.org/@esbuild%2fwin32-ia32","reqHeaders":{"accept":"application/json"},"resHeaders":{"content-type":"text/plain;charset=UTF-8","date":"Tue, 13 Oct 2026 04:55:35 GMT","location":"https://registry.npmjs.org/@esbuild%2Fwin32-ia32"},"options":{"compress":true},"status":301}}
