@@ -87,6 +87,7 @@ import { BannerSlide, ServiceItem, SiteContent, TestimonialItem } from '../../..
                       [alt]="slide.title"
                       class="w-full h-full object-cover object-center"
                       loading="eager"
+                      (error)="onBannerImageError(idx)"
                     />
 
                     <!-- Rich Dual Gradient Overlay for Maximum Text Contrast -->
@@ -101,7 +102,7 @@ import { BannerSlide, ServiceItem, SiteContent, TestimonialItem } from '../../..
                           <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                           </svg>
-                          <span>{{ slide.badge }}</span>
+                          <span>{{ slide.badge || 'PROTOCOL VERIFIED' }}</span>
                         </div>
 
                         <!-- Slide Counter Indicator -->
@@ -212,9 +213,10 @@ import { BannerSlide, ServiceItem, SiteContent, TestimonialItem } from '../../..
               <!-- Service Preview Image -->
               <div class="relative h-44 overflow-hidden bg-slate-900">
                 <img
-                  [src]="banners[sIdx % banners.length].image"
+                  [src]="banners[sIdx % banners.length]?.image || '/images/banners/banner-laser-calibration.jpg'"
                   [alt]="service.title"
                   class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  (error)="onServiceImageError($event, sIdx)"
                 />
                 <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent"></div>
                 <div class="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white">
@@ -319,6 +321,13 @@ export class HomeComponent implements OnInit, OnDestroy {
   private metaService = inject(Meta);
   private platformId = inject(PLATFORM_ID);
 
+  private readonly fallbackImages = [
+    '/images/banners/banner-laser-calibration.jpg',
+    '/images/banners/banner-frame-retrofit.jpg',
+    '/images/banners/banner-fire-rated-door.jpg',
+    '/images/banners/banner-luxury-pivot-door.jpg'
+  ];
+
   services: ServiceItem[] = [];
   testimonials: TestimonialItem[] = [];
   
@@ -384,14 +393,95 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
 
     const resolvedServices = this.route.snapshot.data['services'];
-    if (resolvedServices) this.services = resolvedServices;
+    if (resolvedServices && resolvedServices.length > 0) {
+      this.services = resolvedServices.map((s: any, idx: number) => ({
+        id: s.id || `srv-${idx}`,
+        title: s.title || 'Steel Door Installation',
+        tagline: s.tagline || s.subtitle || '',
+        description: s.description || '',
+        features: Array.isArray(s.features) && s.features.length > 0
+          ? s.features
+          : (Array.isArray(s.tags) && s.tags.length > 0 ? s.tags : ['Sub-Millimeter Laser Alignment', 'Zero Wall Damage Guarantee']),
+        doorType: s.doorType || s.title || 'Residential Steel Door Fitting',
+        startingPrice: s.startingPrice || '₹2,500 / door',
+        warrantyYears: s.warrantyYears || 10,
+        badge: s.badge || 'Certified Service'
+      }));
+    }
 
     const resolvedTestimonials = this.route.snapshot.data['testimonials'];
-    if (resolvedTestimonials) this.testimonials = resolvedTestimonials;
+    if (resolvedTestimonials && resolvedTestimonials.length > 0) {
+      this.testimonials = resolvedTestimonials.map((t: any, idx: number) => ({
+        id: t.id || `tst-${idx}`,
+        author: t.author || t.clientName || 'Satisfied Client',
+        role: t.role || t.companyName || 'Homeowner',
+        rating: t.rating || 5,
+        text: t.text || t.comment || 'Clean work with zero wall damage during frame installation. Highly recommend.',
+        doorModel: t.doorModel || 'Main Entrance Installation'
+      }));
+    }
 
-    const resolvedSiteContent = this.route.snapshot.data['siteContent'] as SiteContent | undefined;
+    const resolvedSiteContent = this.route.snapshot.data['siteContent'] as SiteContent | any;
     if (resolvedSiteContent?.banners && resolvedSiteContent.banners.length > 0) {
-      this.banners = resolvedSiteContent.banners;
+      const defaultBanners = [
+        {
+          id: 'banner-1',
+          badge: 'PROTOCOL VERIFIED',
+          title: 'Engineering Checklists, Not Guesswork',
+          description: 'Every job follows our strict multi-point protocol for structural integrity, millimeter laser alignment, and warranty protection.',
+          image: '/images/banners/banner-laser-calibration.jpg',
+          link: '/book-now'
+        },
+        {
+          id: 'banner-2',
+          badge: 'ZERO WALL DAMAGE',
+          title: 'Laser-Calibrated Alignment, Zero Wall Damage',
+          description: 'Sub-millimeter plumb line leveling and heavy-duty anchor bolt retrofitting without disturbing plaster or tiles.',
+          image: '/images/banners/banner-frame-retrofit.jpg',
+          link: '/book-now'
+        },
+        {
+          id: 'banner-3',
+          badge: 'FIRE & SECURITY COMPLIANT',
+          title: 'Certified Multi-Point Locking & Panic Hardware',
+          description: 'Heavy commercial fire doors and emergency exit hardware fitted to stringent safety & load-bearing standards.',
+          image: '/images/banners/banner-fire-rated-door.jpg',
+          link: '/book-now'
+        },
+        {
+          id: 'banner-4',
+          badge: 'ARCHITECTURAL FINISH',
+          title: 'Luxury Grand Pivot & Custom Steel Entryways',
+          description: 'High-capacity hidden pivot hinges calibrated for whisper-quiet glide and weatherproof airtight compression.',
+          image: '/images/banners/banner-luxury-pivot-door.jpg',
+          link: '/book-now'
+        }
+      ];
+
+      const mapped = resolvedSiteContent.banners.map((b: any, idx: number) => {
+        const fallback = defaultBanners[idx % defaultBanners.length];
+        const validImage = b.image && typeof b.image === 'string' && b.image.trim() !== ''
+          ? b.image
+          : fallback.image;
+        return {
+          id: b.id || fallback.id,
+          badge: b.badge || fallback.badge || 'PROTOCOL VERIFIED',
+          title: b.title || b.headline || fallback.title,
+          description: b.description || b.subheadline || fallback.description,
+          image: validImage,
+          link: b.link || b.ctaLink || fallback.link
+        };
+      });
+
+      // Guarantee all 4 banners are present
+      if (mapped.length < 4) {
+        this.banners = [
+          ...mapped,
+          ...defaultBanners.slice(mapped.length)
+        ];
+      } else {
+        this.banners = mapped;
+      }
     }
 
     // Start auto-advancing carousel in browser
@@ -402,6 +492,19 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopAutoplay();
+  }
+
+  onBannerImageError(idx: number): void {
+    if (this.banners[idx]) {
+      this.banners[idx].image = this.fallbackImages[idx % this.fallbackImages.length];
+    }
+  }
+
+  onServiceImageError(event: Event, sIdx: number): void {
+    const target = event.target as HTMLImageElement;
+    if (target) {
+      target.src = this.fallbackImages[sIdx % this.fallbackImages.length];
+    }
   }
 
   nextSlide(): void {

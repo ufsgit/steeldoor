@@ -6,6 +6,7 @@ import { REQUEST } from '@angular/core';
 import { Observable, tap, catchError, of, throwError } from 'rxjs';
 import { User, UserRole } from './models';
 import { MOCK_USERS } from './mock-data';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -95,7 +96,10 @@ export class AuthService {
   }
 
   login(username: string, password: string): Observable<{ user: User; sessionToken: string }> {
-    const url = `${this.getBaseUrl()}/api/auth/login`;
+    const baseApi = isPlatformBrowser(this.platformId) && environment.apiUrl
+      ? environment.apiUrl.replace(/\/$/, '')
+      : `${this.getBaseUrl()}/api`;
+    const url = `${baseApi}/auth/login`;
     return this.http.post<{ user: User; sessionToken: string }>(url, { username, password }).pipe(
       tap(res => {
         this.currentUser.set(res.user);
@@ -129,7 +133,10 @@ export class AuthService {
   }
 
   logout(): void {
-    const url = `${this.getBaseUrl()}/api/auth/logout`;
+    const baseApi = isPlatformBrowser(this.platformId) && environment.apiUrl
+      ? environment.apiUrl.replace(/\/$/, '')
+      : `${this.getBaseUrl()}/api`;
+    const url = `${baseApi}/auth/logout`;
     this.http.post(url, {}).pipe(
       catchError(() => of(null))
     ).subscribe();

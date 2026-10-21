@@ -58,10 +58,10 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
             <!-- Book Installation CTA Button -->
             <a
               routerLink="/book-now"
-              class="h-10 px-5 rounded-xl text-xs sm:text-sm font-bold bg-primary hover:bg-primary-hover text-text-inverted shadow-soft transition-all inline-flex items-center justify-center gap-2 cursor-pointer"
+              class="h-10 px-5 rounded-xl text-xs sm:text-sm font-bold bg-primary hover:bg-primary-hover text-text-inverted shadow-soft transition-all transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2 group cursor-pointer"
             >
               <span>Book Installation</span>
-              <svg class="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="w-4 h-4 text-accent group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
               </svg>
             </a>
@@ -71,11 +71,11 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
               <button
                 type="button"
                 (click)="isLoginModalOpen.set(true)"
-                class="h-10 px-4.5 rounded-xl text-xs sm:text-sm font-bold border border-border hover:border-primary text-text hover:text-primary bg-surface hover:bg-surface-muted transition-all inline-flex items-center justify-center gap-2 cursor-pointer"
+                class="h-10 px-5 rounded-xl text-xs sm:text-sm font-bold border border-primary/30 hover:border-primary text-primary hover:text-primary-hover bg-surface hover:bg-primary/5 shadow-xs hover:shadow-soft transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2 group cursor-pointer"
                 id="nav-login-button"
                 title="Sign in to Admin, Branch Head, Customer, Company, or Dealer Portal"
               >
-                <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="w-4 h-4 text-primary group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
                 <span>Login</span>

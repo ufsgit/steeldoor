@@ -17,6 +17,7 @@ async function bootstrap() {
   const server = app.listen(PORT, () => {
     console.log(`[Server] Backend API running at http://localhost:${PORT}`);
     console.log(`[Server] Health check: http://localhost:${PORT}/api/health`);
+    console.log(`[Server] Swagger Docs: http://localhost:${PORT}/api/docs`);
     console.log(`[Server] Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log('='.repeat(50));
   });

@@ -1,15 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerDocument } from './config/swagger.js';
 
-// Import module routes
+// Import auth module routes
 import authRoutes from './modules/auth/auth.routes.js';
-import districtsRoutes from './modules/districts/districts.routes.js';
-import branchHeadsRoutes from './modules/branchHeads/branchHeads.routes.js';
-import clientsRoutes from './modules/clients/clients.routes.js';
-import bookingsRoutes from './modules/bookings/bookings.routes.js';
-import historyRoutes from './modules/history/history.routes.js';
-import contentRoutes from './modules/content/content.routes.js';
 
 dotenv.config();
 
@@ -43,6 +39,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// ---------------- Swagger Documentation ----------------
+
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+  customSiteTitle: 'SteelGuard API Docs',
+  customCss: '.swagger-ui .topbar { display: none }'
+}));
+app.get('/api/docs.json', (req, res) => res.json(swaggerDocument));
+
 // ---------------- Health Check ----------------
 
 app.get('/api/health', (req, res) => {
@@ -56,12 +60,6 @@ app.get('/api/health', (req, res) => {
 // ---------------- Mount Module Routes ----------------
 
 app.use('/api/auth', authRoutes);
-app.use('/api/districts', districtsRoutes);
-app.use('/api/branch-heads', branchHeadsRoutes);
-app.use('/api/clients', clientsRoutes);
-app.use('/api/bookings', bookingsRoutes);
-app.use('/api/history', historyRoutes);
-app.use('/api', contentRoutes); // /api/services, /api/testimonials, /api/site-content
 
 // ---------------- 404 Handler ----------------
 

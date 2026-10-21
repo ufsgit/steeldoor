@@ -1,9 +1,10 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
-import { isPlatformServer } from '@angular/common';
+import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { REQUEST } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 import {
   MOCK_BOOKINGS,
@@ -65,8 +66,13 @@ export class DataService {
   }
 
   private url(endpoint: string): string {
-    const base = this.getBaseUrl();
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    if (isPlatformBrowser(this.platformId) && environment.apiUrl) {
+      const baseApi = environment.apiUrl.replace(/\/$/, '');
+      const path = cleanEndpoint.replace(/^\/api/, '');
+      return `${baseApi}${path}`;
+    }
+    const base = this.getBaseUrl();
     return `${base}${cleanEndpoint}`;
   }
 
