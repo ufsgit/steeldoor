@@ -1,4 +1,155 @@
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `create_booking`(
+    IN p_name           VARCHAR(150),
+    IN p_mobile         VARCHAR(25),
+    IN p_address        TEXT,
+    IN p_notes          TEXT,
+    IN p_status         VARCHAR(50),
+    IN p_login_role_id  INT,
+    IN p_login_id       INT,
+    IN p_login_name     VARCHAR(150),
+    IN p_state_id       INT,
+    IN p_state_name     VARCHAR(100),
+    IN p_district_id    INT,
+    IN p_district_name  VARCHAR(100),
+    IN p_area_id        INT,
+    IN p_area_name      VARCHAR(100),
+    IN p_documents      JSON
+)
+BEGIN
+    DECLARE v_status VARCHAR(50) DEFAULT 'NEW';
+    DECLARE v_new_id INT;
+    DECLARE v_state_name VARCHAR(100);
+    DECLARE v_district_name VARCHAR(100);
+
+    -- Default status to 'NEW' if null or empty
+    IF p_status IS NOT NULL AND TRIM(p_status) != '' THEN
+        SET v_status = p_status;
+    END IF;
+
+    SET v_state_name = p_state_name;
+    SET v_district_name = p_district_name;
+
+    -- If state_name is missing, fetch from states table
+    IF (v_state_name IS NULL OR TRIM(v_state_name) = '') AND p_state_id IS NOT NULL THEN
+        SELECT name INTO v_state_name FROM states WHERE id = p_state_id LIMIT 1;
+    END IF;
+
+    -- If district_name is missing, fetch from districts table
+    IF (v_district_name IS NULL OR TRIM(v_district_name) = '') AND p_district_id IS NOT NULL THEN
+        SELECT name INTO v_district_name FROM districts WHERE id = p_district_id LIMIT 1;
+    END IF;
+
+    -- Insert directly with the resolved parameters
+    INSERT INTO bookings (
+        name, mobile, address, notes, status,
+        login_role_id, login_id, login_name,
+        state_id, state_name, district_id, district_name,
+        area_id, area_name, documents
+    ) VALUES (
+        p_name, p_mobile, p_address, p_notes, v_status,
+        p_login_role_id, p_login_id, p_login_name,
+        p_state_id, v_state_name, p_district_id, v_district_name,
+        p_area_id, p_area_name, p_documents
+    );
+
+    SET v_new_id = LAST_INSERT_ID();
+
+    -- Return the newly created booking record
+    SELECT 
+        id, name, mobile, address, notes, status,
+        login_role_id, login_id, login_name,
+        state_id, state_name, district_id, district_name,
+        area_id, area_name, documents,
+        is_deleted, created_at, updated_at
+    FROM bookings
+    WHERE id = v_new_id;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `delete_booking`(
+    IN p_id INT
+)
+BEGIN
+    DECLARE v_affected_rows INT DEFAULT 0;
+
+    -- Perform soft delete
+    UPDATE bookings
+    SET 
+        is_deleted = 1,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = p_id AND is_deleted = 0;
+
+    SET v_affected_rows = ROW_COUNT();
+
+    -- Return status of deletion
+    SELECT 
+        p_id AS id,
+        v_affected_rows AS affected_rows,
+        CASE WHEN v_affected_rows > 0 THEN 1 ELSE 0 END AS success;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_bookings_paginated`(
+    IN p_page  INT,  -- Page number (e.g. 1, 2, 3...)
+    IN p_limit INT   -- Number of records per page (default is 15)
+)
+BEGIN
+    DECLARE v_limit INT DEFAULT 15;
+    DECLARE v_page INT DEFAULT 1;
+    DECLARE v_offset INT DEFAULT 0;
+
+    -- Apply default limit 15 if null or <= 0
+    IF p_limit IS NOT NULL AND p_limit > 0 THEN
+        SET v_limit = p_limit;
+    END IF;
+
+    -- Apply default page 1 if null or <= 0
+    IF p_page IS NOT NULL AND p_page > 0 THEN
+        SET v_page = p_page;
+    END IF;
+
+    SET v_offset = (v_page - 1) * v_limit;
+
+    -- Query 1: Fetch paginated bookings (newest first, excluding soft-deleted)
+    SELECT 
+        id,
+        name,
+        mobile,
+        address,
+        notes,
+        status,
+        login_role_id,
+        login_id,
+        login_name,
+        state_id,
+        state_name,
+        district_id,
+        district_name,
+        area_id,
+        area_name,
+        documents,
+        created_at,
+        updated_at
+    FROM bookings
+    WHERE is_deleted = 0
+    ORDER BY created_at DESC
+    LIMIT v_limit OFFSET v_offset;
+
+    -- Query 2: Pagination metadata (total records, page number, total pages)
+    SELECT 
+        COUNT(*) AS total_records,
+        v_page AS current_page,
+        v_limit AS page_size,
+        CEIL(COUNT(*) / v_limit) AS total_pages
+    FROM bookings
+    WHERE is_deleted = 0;
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `mobile_login`(
     IN p_username VARCHAR(100),
     IN p_password VARCHAR(255)
@@ -6,7 +157,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `mobile_login`(
 BEGIN
     DECLARE v_user_id INT DEFAULT NULL;
 
-    -- 1. Verify username, password, active status, and ensure role_id is 2 or 3
     SELECT id INTO v_user_id
     FROM users
     WHERE username = p_username 
@@ -16,7 +166,6 @@ BEGIN
       AND is_deleted = 0
     LIMIT 1;
 
-    -- 2. If valid, update last_login_at and return the user profile
     IF v_user_id IS NOT NULL THEN
         UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = v_user_id;
 
@@ -32,9 +181,10 @@ BEGIN
             u.phone,
             u.state_id      AS stateId,
             s.name          AS stateName,
-            u.district_id   AS districtId,
-            d.name          AS districtName,
-            d.code          AS districtCode,
+            -- District only for branch_head (role 3)
+            CASE WHEN u.role_id = 3 THEN u.district_id ELSE NULL END AS districtId,
+            CASE WHEN u.role_id = 3 THEN d.name ELSE NULL END        AS districtName,
+            CASE WHEN u.role_id = 3 THEN d.code ELSE NULL END        AS districtCode,
             u.address,
             u.is_active     AS isActive,
             u.last_login_at AS lastLoginAt,
@@ -44,8 +194,126 @@ BEGIN
         LEFT JOIN districts d ON u.district_id = d.id
         WHERE u.id = v_user_id;
     ELSE
-        -- Return empty resultset if credentials are invalid or role is not 2/3
         SELECT NULL AS id WHERE 1 = 0;
+    END IF;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_dropdown_data`(
+    IN p_type       VARCHAR(20),   -- 'district' OR 'area'
+    IN p_parent_id  INT,           -- state_id (for district) OR district_id (for area)
+    IN p_search     VARCHAR(100),  -- Search keyword, NULL or empty for no filter
+    IN p_role_id    INT,           -- Logged in user role_id (3 = branch_head)
+    IN p_login_id   INT,           -- Logged in user id (optional fallback lookup)
+    IN p_page       INT,           -- Page number (default: 1)
+    IN p_limit      INT            -- Items per page (default: 20)
+)
+BEGIN
+    DECLARE v_search VARCHAR(105);
+    DECLARE v_parent_id INT;
+    DECLARE v_page INT DEFAULT 1;
+    DECLARE v_limit INT DEFAULT 20;
+    DECLARE v_offset INT DEFAULT 0;
+    
+    -- 1. Normalize search input
+    IF p_search IS NOT NULL AND TRIM(p_search) != '' THEN
+        SET v_search = TRIM(p_search);
+    ELSE
+        SET v_search = NULL;
+    END IF;
+
+    SET v_parent_id = p_parent_id;
+
+    -- 2. Handle Pagination & Calculate Offset
+    IF p_page IS NOT NULL AND p_page > 0 THEN
+        SET v_page = p_page;
+    END IF;
+
+    IF p_limit IS NOT NULL AND p_limit > 0 THEN
+        SET v_limit = p_limit;
+    END IF;
+
+    -- Formula: offset = (page - 1) * limit
+    SET v_offset = (v_page - 1) * v_limit;
+
+    -- 3. Safety check: If Role 3 (Branch Head) and parent_id was not passed, resolve from users table
+    IF p_role_id = 3 AND v_parent_id IS NULL AND p_login_id IS NOT NULL THEN
+        SELECT district_id INTO v_parent_id 
+        FROM users 
+        WHERE id = p_login_id AND is_deleted = 0 
+        LIMIT 1;
+    END IF;
+
+    -- ========================================================
+    -- 1. DISTRICT DROPDOWN
+    -- ========================================================
+    IF LOWER(TRIM(p_type)) = 'district' THEN
+        -- If Role 3 (Branch Head), only return their 1 assigned district
+        IF p_role_id = 3 THEN
+            SELECT 
+                d.id, 
+                d.name
+            FROM districts d
+            WHERE d.id = v_parent_id
+            LIMIT 1;
+        ELSE
+            SELECT 
+                d.id, 
+                d.name
+            FROM districts d
+            WHERE (v_parent_id IS NULL OR d.state_id = v_parent_id)
+              AND (
+                    v_search IS NULL 
+                    OR d.name LIKE CONCAT('%', v_search, '%') 
+                    OR d.code LIKE CONCAT('%', v_search, '%')
+                  )
+            ORDER BY d.name ASC
+            LIMIT v_limit OFFSET v_offset;
+        END IF;
+
+    -- ========================================================
+    -- 2. AREA DROPDOWN
+    -- ========================================================
+    ELSEIF LOWER(TRIM(p_type)) = 'area' THEN
+        -- If Role 3 (Branch Head): STRICTLY fetch areas for their specific district_id
+        IF p_role_id = 3 THEN
+            IF v_parent_id IS NULL THEN
+                -- If branch head has no district assigned, return empty
+                SELECT NULL AS id, NULL AS name WHERE 1 = 0;
+            ELSE
+                SELECT 
+                    a.id, 
+                    a.name
+                FROM areas a
+                WHERE a.district_id = v_parent_id
+                  AND (
+                        v_search IS NULL 
+                        OR a.name LIKE CONCAT('%', v_search, '%') 
+                        OR a.pincode LIKE CONCAT('%', v_search, '%')
+                      )
+                ORDER BY a.name ASC
+                LIMIT v_limit OFFSET v_offset;
+            END IF;
+        ELSE
+            -- For other roles: filter by district if selected, with pagination
+            SELECT 
+                a.id, 
+                a.name
+            FROM areas a
+            WHERE (v_parent_id IS NULL OR a.district_id = v_parent_id)
+              AND (
+                    v_search IS NULL 
+                    OR a.name LIKE CONCAT('%', v_search, '%') 
+                    OR a.pincode LIKE CONCAT('%', v_search, '%')
+                  )
+            ORDER BY a.name ASC
+            LIMIT v_limit OFFSET v_offset;
+        END IF;
+
+    ELSE
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid p_type. Allowed values are "district" or "area".';
     END IF;
 END$$
 DELIMITER ;

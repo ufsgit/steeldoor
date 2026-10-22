@@ -54,3 +54,28 @@ export function requireAuth(req, res, next) {
   req.user = decoded;
   next();
 }
+
+/**
+ * Express middleware to extract and verify JWT if provided (non-blocking)
+ */
+export function optionalAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  const cookieToken = req.cookies?.auth_session;
+
+  let token = null;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7);
+  } else if (cookieToken) {
+    token = decodeURIComponent(cookieToken);
+  }
+
+  if (token) {
+    const decoded = verifyToken(token);
+    if (decoded) {
+      req.user = decoded;
+    }
+  }
+
+  next();
+}
+

@@ -230,12 +230,12 @@ export class LoginModalComponent implements OnInit {
   loginForm!: FormGroup;
 
   private credentialsMap = {
-    admin: { user: 'admin', pass: 'admin123' },
-    coordinator: { user: 'admin', pass: 'admin123' },
-    user: { user: 'user', pass: 'user123' },
-    customer: { user: 'user', pass: 'user123' },
-    company: { user: 'metro_builders', pass: 'company123' },
-    dealer: { user: 'apex_dealer', pass: 'dealer123' }
+    admin: { user: 'admin', pass: '123' },
+    coordinator: { user: 'admin', pass: '123' },
+    user: { user: 'user', pass: '123' },
+    customer: { user: 'user', pass: '123' },
+    company: { user: 'metro_builders', pass: '123' },
+    dealer: { user: 'apex_dealer', pass: '123' }
   };
 
   ngOnInit(): void {

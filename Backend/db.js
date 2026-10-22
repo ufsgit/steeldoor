@@ -25,20 +25,8 @@ export const pool = mysql.createPool(poolConfig);
  * Execute standard SQL queries with parameterized inputs
  */
 export async function query(sql, params = []) {
-  const [rows, fields] = await pool.query(sql, params);
+  const [rows] = await pool.query(sql, params);
   return rows;
-}
-
-/**
- * Execute a MySQL Stored Procedure
- * Example: callProcedure('sp_get_all_bookings', [status, districtId])
- */
-export async function callProcedure(procedureName, params = []) {
-  const placeholders = params.map(() => '?').join(', ');
-  const sql = `CALL ${procedureName}(${placeholders})`;
-  const [results] = await pool.query(sql, params);
-  // Stored procedure results in mysql2 return array of result sets; first item is the SELECT output
-  return results && results.length > 0 ? results[0] : [];
 }
 
 /**
@@ -61,6 +49,5 @@ export async function testConnection() {
 export default {
   pool,
   query,
-  callProcedure,
   testConnection
 };

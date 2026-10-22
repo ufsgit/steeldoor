@@ -4,8 +4,10 @@ import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerDocument } from './config/swagger.js';
 
-// Import auth module routes
+// Import module routes
 import authRoutes from './modules/auth/auth.routes.js';
+import bookingsRoutes from './modules/bookings/bookings.routes.js';
+import dropdownsRoutes from './modules/dropdowns/dropdowns.routes.js';
 
 dotenv.config();
 
@@ -60,6 +62,8 @@ app.get('/api/health', (req, res) => {
 // ---------------- Mount Module Routes ----------------
 
 app.use('/api/auth', authRoutes);
+app.use('/api/bookings', bookingsRoutes);
+app.use('/api/dropdowns', dropdownsRoutes);
 
 // ---------------- 404 Handler ----------------
 

@@ -13,7 +13,7 @@ export const MOCK_USERS: User[] = [
   {
     "id": "usr-admin",
     "username": "admin",
-    "password": "admin123",
+    "password": "123",
     "role": "admin",
     "name": "Elena Vance (Super Admin)",
     "email": "admin@steeldoor.com",
@@ -22,7 +22,7 @@ export const MOCK_USERS: User[] = [
   {
     "id": "usr-user",
     "username": "user",
-    "password": "user123",
+    "password": "123",
     "role": "user",
     "clientId": "cli-1",
     "name": "John Mathew (Customer)",
@@ -33,7 +33,7 @@ export const MOCK_USERS: User[] = [
   {
     "id": "usr-admin-2",
     "username": "coordinator",
-    "password": "admin123",
+    "password": "123",
     "role": "admin",
     "name": "Elena Vance (Super Admin)",
     "email": "admin@steeldoor.com",
@@ -42,7 +42,7 @@ export const MOCK_USERS: User[] = [
   {
     "id": "usr-bh1",
     "username": "branch_ekm",
-    "password": "branch123",
+    "password": "123",
     "role": "branch_head",
     "branchHeadId": "bh-1",
     "name": "Rajesh Menon",
@@ -53,7 +53,7 @@ export const MOCK_USERS: User[] = [
   {
     "id": "usr-bh2",
     "username": "branch_tvm",
-    "password": "branch123",
+    "password": "123",
     "role": "branch_head",
     "branchHeadId": "bh-2",
     "name": "Suresh Kumar",
@@ -64,7 +64,7 @@ export const MOCK_USERS: User[] = [
   {
     "id": "usr-cust1",
     "username": "john_customer",
-    "password": "cust123",
+    "password": "123",
     "role": "client",
     "clientId": "cli-1",
     "name": "John Mathew",
@@ -75,7 +75,7 @@ export const MOCK_USERS: User[] = [
   {
     "id": "usr-dlr1",
     "username": "apex_dealer",
-    "password": "dealer123",
+    "password": "123",
     "role": "client",
     "clientId": "cli-6",
     "name": "Apex Hardware Supplies",
@@ -86,7 +86,7 @@ export const MOCK_USERS: User[] = [
   {
     "id": "usr-cmp1",
     "username": "metro_builders",
-    "password": "company123",
+    "password": "123",
     "role": "client",
     "clientId": "cli-11",
     "name": "Metro Infra & Builders",
@@ -95,6 +95,7 @@ export const MOCK_USERS: User[] = [
     "clientType": "company"
   }
 ];
+
 
 export const MOCK_DISTRICTS: District[] = [
   {
