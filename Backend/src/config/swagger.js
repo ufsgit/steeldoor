@@ -14,7 +14,8 @@ export const swaggerDocument = {
   tags: [
     { name: 'Auth', description: 'Mobile Authentication (JWT)' },
     { name: 'Bookings', description: 'Booking Management & Pagination' },
-    { name: 'Dropdowns', description: 'Searchable Dropdown Select Options (Districts, Areas)' }
+    { name: 'Dropdowns', description: 'Searchable Dropdown Select Options (Districts, Areas)' },
+    { name: 'Uploads', description: 'File & Document Uploads for Bookings' }
   ],
   components: {
     securitySchemes: {
@@ -435,6 +436,119 @@ export const swaggerDocument = {
                 }
               }
             }
+          }
+        }
+      }
+    },
+    '/api/uploads/single': {
+      post: {
+        tags: ['Uploads'],
+        summary: 'Upload a single document or photo',
+        description: 'Upload a document or photo for bookings. Accepts form-data with key `file` or `document`.',
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: {
+                type: 'object',
+                properties: {
+                  file: {
+                    type: 'string',
+                    format: 'binary',
+                    description: 'The file to upload (.jpg, .jpeg, .png, .webp, .pdf, .doc, .docx)'
+                  }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          201: {
+            description: 'File uploaded successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    message: { type: 'string', example: 'File uploaded successfully.' },
+                    url: { type: 'string', example: '/uploads/1729600000000-photo.jpg' },
+                    filename: { type: 'string', example: '1729600000000-photo.jpg' },
+                    originalname: { type: 'string', example: 'photo.jpg' },
+                    mimetype: { type: 'string', example: 'image/jpeg' },
+                    size: { type: 'integer', example: 1048576 }
+                  }
+                }
+              }
+            }
+          },
+          400: {
+            description: 'No file uploaded or invalid file format'
+          }
+        }
+      }
+    },
+    '/api/uploads/multiple': {
+      post: {
+        tags: ['Uploads'],
+        summary: 'Upload multiple documents or photos',
+        description: 'Upload up to 10 documents or photos. Accepts form-data with key `files` or `documents`.',
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: {
+                type: 'object',
+                properties: {
+                  files: {
+                    type: 'array',
+                    items: {
+                      type: 'string',
+                      format: 'binary'
+                    },
+                    description: 'Array of files to upload (max 10)'
+                  }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          201: {
+            description: 'Files uploaded successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    message: { type: 'string', example: '2 file(s) uploaded successfully.' },
+                    count: { type: 'integer', example: 2 },
+                    files: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          url: { type: 'string', example: '/uploads/1729600000000-photo.jpg' },
+                          filename: { type: 'string', example: '1729600000000-photo.jpg' },
+                          originalname: { type: 'string', example: 'photo.jpg' },
+                          mimetype: { type: 'string', example: 'image/jpeg' },
+                          size: { type: 'integer', example: 1048576 }
+                        }
+                      }
+                    },
+                    urls: {
+                      type: 'array',
+                      items: { type: 'string' },
+                      example: ['/uploads/1729600000000-photo.jpg', '/uploads/1729600000001-doc.pdf']
+                    }
+                  }
+                }
+              }
+            }
+          },
+          400: {
+            description: 'No files uploaded or invalid file format'
           }
         }
       }

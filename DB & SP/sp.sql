@@ -246,21 +246,21 @@ BEGIN
     END IF;
 
     -- ========================================================
-    -- 1. DISTRICT DROPDOWN
+    -- 1. DISTRICT DROPDOWN (Strips ' Hub' from the name)
     -- ========================================================
     IF LOWER(TRIM(p_type)) = 'district' THEN
-        -- If Role 3 (Branch Head), only return their 1 assigned district
+        -- If Role 3 (Branch Head), only return their 1 assigned district without ' Hub'
         IF p_role_id = 3 THEN
             SELECT 
                 d.id, 
-                d.name
+                TRIM(REPLACE(d.name, ' Hub', '')) AS name
             FROM districts d
             WHERE d.id = v_parent_id
             LIMIT 1;
         ELSE
             SELECT 
                 d.id, 
-                d.name
+                TRIM(REPLACE(d.name, ' Hub', '')) AS name
             FROM districts d
             WHERE (v_parent_id IS NULL OR d.state_id = v_parent_id)
               AND (
@@ -268,7 +268,7 @@ BEGIN
                     OR d.name LIKE CONCAT('%', v_search, '%') 
                     OR d.code LIKE CONCAT('%', v_search, '%')
                   )
-            ORDER BY d.name ASC
+            ORDER BY name ASC
             LIMIT v_limit OFFSET v_offset;
         END IF;
 
@@ -279,7 +279,6 @@ BEGIN
         -- If Role 3 (Branch Head): STRICTLY fetch areas for their specific district_id
         IF p_role_id = 3 THEN
             IF v_parent_id IS NULL THEN
-                -- If branch head has no district assigned, return empty
                 SELECT NULL AS id, NULL AS name WHERE 1 = 0;
             ELSE
                 SELECT 
@@ -315,5 +314,111 @@ BEGIN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Invalid p_type. Allowed values are "district" or "area".';
     END IF;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_seed_ernakulam_areas`()
+BEGIN
+    -- Insert 17 additional authentic Ernakulam areas (skips if already added)
+    INSERT INTO areas (district_id, name, pincode)
+    SELECT * FROM (
+        SELECT 1 AS district_id, 'Kadavanthra' AS name, '682020' AS pincode UNION ALL
+        SELECT 1, 'Panampilly Nagar', '682036' UNION ALL
+        SELECT 1, 'Marine Drive', '682031' UNION ALL
+        SELECT 1, 'Ravipuram', '682016' UNION ALL
+        SELECT 1, 'Thrikkakara', '682021' UNION ALL
+        SELECT 1, 'Kalamassery', '683104' UNION ALL
+        SELECT 1, 'Angamaly', '683572' UNION ALL
+        SELECT 1, 'Perumbavoor', '683542' UNION ALL
+        SELECT 1, 'Muvattupuzha', '686661' UNION ALL
+        SELECT 1, 'Kothamangalam', '686691' UNION ALL
+        SELECT 1, 'North Paravur', '683513' UNION ALL
+        SELECT 1, 'Mattancherry', '682002' UNION ALL
+        SELECT 1, 'Thevara', '682013' UNION ALL
+        SELECT 1, 'Maradu', '682304' UNION ALL
+        SELECT 1, 'Cherai', '683514' UNION ALL
+        SELECT 1, 'Piravom', '686664' UNION ALL
+        SELECT 1, 'Kolenchery', '682311'
+    ) AS new_areas
+    WHERE NOT EXISTS (
+        SELECT 1 FROM areas WHERE district_id = 1 AND name = new_areas.name
+    );
+
+    -- Return all 25 areas for Ernakulam (district_id = 1)
+    SELECT id, district_id, name, pincode, created_at
+    FROM areas
+    WHERE district_id = 1
+    ORDER BY id ASC;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `update_booking`(
+    IN p_id             INT,
+    IN p_name           VARCHAR(150),
+    IN p_mobile         VARCHAR(25),
+    IN p_address        TEXT,
+    IN p_notes          TEXT,
+    IN p_status         VARCHAR(50),
+    IN p_state_id       INT,
+    IN p_state_name     VARCHAR(100),
+    IN p_district_id    INT,
+    IN p_district_name  VARCHAR(100),
+    IN p_area_id        INT,
+    IN p_area_name      VARCHAR(100),
+    IN p_documents      JSON
+)
+BEGIN
+    DECLARE v_state_name VARCHAR(100);
+    DECLARE v_district_name VARCHAR(100);
+    DECLARE v_area_name VARCHAR(100);
+
+    SET v_state_name = p_state_name;
+    SET v_district_name = p_district_name;
+    SET v_area_name = p_area_name;
+
+    -- Auto-resolve state_name if null but state_id is provided
+    IF (v_state_name IS NULL OR TRIM(v_state_name) = '') AND p_state_id IS NOT NULL THEN
+        SELECT name INTO v_state_name FROM states WHERE id = p_state_id LIMIT 1;
+    END IF;
+
+    -- Auto-resolve district_name if null but district_id is provided
+    IF (v_district_name IS NULL OR TRIM(v_district_name) = '') AND p_district_id IS NOT NULL THEN
+        SELECT name INTO v_district_name FROM districts WHERE id = p_district_id LIMIT 1;
+    END IF;
+
+    -- Auto-resolve area_name if null but area_id is provided
+    IF (v_area_name IS NULL OR TRIM(v_area_name) = '') AND p_area_id IS NOT NULL THEN
+        SELECT name INTO v_area_name FROM areas WHERE id = p_area_id LIMIT 1;
+    END IF;
+
+    -- Update booking (uses COALESCE to keep existing values for any unpassed fields)
+    UPDATE bookings
+    SET 
+        name          = COALESCE(p_name, name),
+        mobile        = COALESCE(p_mobile, mobile),
+        address       = COALESCE(p_address, address),
+        notes         = COALESCE(p_notes, notes),
+        status        = COALESCE(p_status, status),
+        state_id      = COALESCE(p_state_id, state_id),
+        state_name    = COALESCE(v_state_name, state_name),
+        district_id   = COALESCE(p_district_id, district_id),
+        district_name = COALESCE(v_district_name, district_name),
+        area_id       = COALESCE(p_area_id, area_id),
+        area_name     = COALESCE(v_area_name, area_name),
+        documents     = COALESCE(p_documents, documents),
+        updated_at    = CURRENT_TIMESTAMP
+    WHERE id = p_id AND is_deleted = 0;
+
+    -- Return the updated booking record back to the frontend
+    SELECT 
+        id, name, mobile, address, notes, status,
+        login_role_id, login_id, login_name,
+        state_id, state_name, district_id, district_name,
+        area_id, area_name, documents,
+        is_deleted, created_at, updated_at
+    FROM bookings
+    WHERE id = p_id AND is_deleted = 0;
 END$$
 DELIMITER ;

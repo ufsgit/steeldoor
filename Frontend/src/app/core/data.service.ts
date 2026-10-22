@@ -99,6 +99,25 @@ export class DataService {
     return this.http.delete<District>(this.url(`/api/districts/${districtId}/areas/${encodeURIComponent(areaName)}`));
   }
 
+  // ---------------- Documents & File Uploads ----------------
+
+  uploadDocument(file: File): Observable<{ url: string; filename: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ url: string; filename: string }>(this.url('/api/uploads/single'), formData);
+  }
+
+  uploadDocuments(files: File[]): Observable<{ count: number; files: Array<{ url: string; filename: string }>; urls: string[] }> {
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append('files', file);
+    }
+    return this.http.post<{ count: number; files: Array<{ url: string; filename: string }>; urls: string[] }>(
+      this.url('/api/uploads/multiple'),
+      formData
+    );
+  }
+
   // ---------------- Branch Heads ----------------
 
   getBranchHeads(): Observable<BranchHead[]> {

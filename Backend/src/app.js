@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerDocument } from './config/swagger.js';
 
@@ -8,6 +9,7 @@ import { swaggerDocument } from './config/swagger.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import bookingsRoutes from './modules/bookings/bookings.routes.js';
 import dropdownsRoutes from './modules/dropdowns/dropdowns.routes.js';
+import uploadsRoutes from './modules/uploads/uploads.routes.js';
 
 dotenv.config();
 
@@ -59,11 +61,15 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Static files serving (for uploaded documents and images)
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 // ---------------- Mount Module Routes ----------------
 
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/dropdowns', dropdownsRoutes);
+app.use('/api/uploads', uploadsRoutes);
 
 // ---------------- 404 Handler ----------------
 

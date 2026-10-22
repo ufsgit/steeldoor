@@ -60,6 +60,7 @@ export interface DoorDetails {
   isUrgent?: boolean;
   notes?: string;
   images?: string[];
+  documents?: string[];
 }
 
 export interface Booking {
@@ -88,6 +89,7 @@ export interface Booking {
   // Computed flags
   isDelayed?: boolean;
   hoursSinceSubmitted?: number;
+  documents?: string[];
 }
 
 export interface User {
@@ -164,6 +166,7 @@ export interface CreateBookingPayload {
   landmark?: string;
   pincode: string;
   doorDetails: DoorDetails;
+  documents?: string[];
   performedBy?: string;
   role?: UserRole;
 }

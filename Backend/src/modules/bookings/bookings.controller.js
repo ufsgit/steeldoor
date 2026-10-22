@@ -21,7 +21,9 @@ export class BookingsController {
    */
   async create(req, res, next) {
     try {
-      const { name, mobile, address } = req.body;
+      const name = req.body.name || req.body.clientName;
+      const mobile = req.body.mobile || req.body.contactPhone;
+      const address = req.body.address || req.body.streetAddress;
       if (!name || !mobile || !address) {
         return res.status(400).json({ error: 'name, mobile, and address are required fields.' });
       }
@@ -32,6 +34,11 @@ export class BookingsController {
 
       const bookingData = {
         ...req.body,
+        name,
+        mobile,
+        address,
+        notes: req.body.notes ?? req.body.doorDetails?.notes ?? null,
+        documents: req.body.documents ?? req.body.doorDetails?.documents ?? req.body.doorDetails?.images ?? [],
         loginRoleId: roleId || null,
         loginId: user.id ?? req.body.loginId ?? req.body.login_id ?? null,
         loginName: user.name ?? req.body.loginName ?? req.body.login_name ?? null,
@@ -57,7 +64,15 @@ export class BookingsController {
   async update(req, res, next) {
     try {
       const { id } = req.params;
-      const updatedBooking = await bookingsService.updateBooking(id, req.body);
+      const updateData = {
+        ...req.body,
+        name: req.body.name ?? req.body.clientName,
+        mobile: req.body.mobile ?? req.body.contactPhone,
+        address: req.body.address ?? req.body.streetAddress,
+        notes: req.body.notes ?? req.body.doorDetails?.notes,
+        documents: req.body.documents ?? req.body.doorDetails?.documents ?? req.body.doorDetails?.images
+      };
+      const updatedBooking = await bookingsService.updateBooking(id, updateData);
       
       if (!updatedBooking) {
         return res.status(404).json({ error: 'Booking not found or has been deleted.' });
