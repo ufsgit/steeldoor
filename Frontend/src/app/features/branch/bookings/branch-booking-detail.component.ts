@@ -9,6 +9,7 @@ import { Booking, BookingStatus } from '../../../core/models';
 import { StatusChipComponent } from '../../../shared/components/status-chip.component';
 import { TimelineComponent } from '../../../shared/components/timeline.component';
 import { BottomSheetComponent } from '../../../shared/components/bottom-sheet.component';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-branch-booking-detail',
@@ -136,8 +137,8 @@ import { BottomSheetComponent } from '../../../shared/components/bottom-sheet.co
               </div>
               <div class="flex flex-wrap gap-3 pt-1">
                 @for (img of imgs; track $index) {
-                  <a [href]="img" target="_blank" class="block w-20 h-20 rounded-2xl overflow-hidden border border-border hover:border-primary shadow-xs transition-all hover:scale-105 cursor-pointer group" title="Click to view full photo">
-                    <img [src]="img" alt="Site photo" class="w-full h-full object-cover group-hover:opacity-90"/>
+                  <a [href]="getFileUrl(img)" target="_blank" class="block w-20 h-20 rounded-2xl overflow-hidden border border-border hover:border-primary shadow-xs transition-all hover:scale-105 cursor-pointer group" title="Click to view full photo">
+                    <img [src]="getFileUrl(img)" alt="Site photo" class="w-full h-full object-cover group-hover:opacity-90"/>
                   </a>
                 }
               </div>
@@ -239,4 +240,14 @@ export class BranchBookingDetailComponent implements OnInit {
       }
     });
   }
+
+  getFileUrl(img: string): string {
+    if (!img) return '';
+    if (img.startsWith('data:') || img.startsWith('http://') || img.startsWith('https://')) {
+      return img;
+    }
+    const base = environment.fileUrl || 'http://localhost:5000';
+    return `${base}${img.startsWith('/') ? '' : '/'}${img}`;
+  }
 }
+

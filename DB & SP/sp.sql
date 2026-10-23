@@ -1,73 +1,4 @@
 DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `create_booking`(
-    IN p_name           VARCHAR(150),
-    IN p_mobile         VARCHAR(25),
-    IN p_address        TEXT,
-    IN p_notes          TEXT,
-    IN p_status         VARCHAR(50),
-    IN p_login_role_id  INT,
-    IN p_login_id       INT,
-    IN p_login_name     VARCHAR(150),
-    IN p_state_id       INT,
-    IN p_state_name     VARCHAR(100),
-    IN p_district_id    INT,
-    IN p_district_name  VARCHAR(100),
-    IN p_area_id        INT,
-    IN p_area_name      VARCHAR(100),
-    IN p_documents      JSON
-)
-BEGIN
-    DECLARE v_status VARCHAR(50) DEFAULT 'NEW';
-    DECLARE v_new_id INT;
-    DECLARE v_state_name VARCHAR(100);
-    DECLARE v_district_name VARCHAR(100);
-
-    -- Default status to 'NEW' if null or empty
-    IF p_status IS NOT NULL AND TRIM(p_status) != '' THEN
-        SET v_status = p_status;
-    END IF;
-
-    SET v_state_name = p_state_name;
-    SET v_district_name = p_district_name;
-
-    -- If state_name is missing, fetch from states table
-    IF (v_state_name IS NULL OR TRIM(v_state_name) = '') AND p_state_id IS NOT NULL THEN
-        SELECT name INTO v_state_name FROM states WHERE id = p_state_id LIMIT 1;
-    END IF;
-
-    -- If district_name is missing, fetch from districts table
-    IF (v_district_name IS NULL OR TRIM(v_district_name) = '') AND p_district_id IS NOT NULL THEN
-        SELECT name INTO v_district_name FROM districts WHERE id = p_district_id LIMIT 1;
-    END IF;
-
-    -- Insert directly with the resolved parameters
-    INSERT INTO bookings (
-        name, mobile, address, notes, status,
-        login_role_id, login_id, login_name,
-        state_id, state_name, district_id, district_name,
-        area_id, area_name, documents
-    ) VALUES (
-        p_name, p_mobile, p_address, p_notes, v_status,
-        p_login_role_id, p_login_id, p_login_name,
-        p_state_id, v_state_name, p_district_id, v_district_name,
-        p_area_id, p_area_name, p_documents
-    );
-
-    SET v_new_id = LAST_INSERT_ID();
-
-    -- Return the newly created booking record
-    SELECT 
-        id, name, mobile, address, notes, status,
-        login_role_id, login_id, login_name,
-        state_id, state_name, district_id, district_name,
-        area_id, area_name, documents,
-        is_deleted, created_at, updated_at
-    FROM bookings
-    WHERE id = v_new_id;
-END$$
-DELIMITER ;
-
-DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `delete_booking`(
     IN p_id INT
 )
@@ -93,13 +24,17 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_bookings_paginated`(
-    IN p_page  INT,  -- Page number (e.g. 1, 2, 3...)
-    IN p_limit INT   -- Number of records per page (default is 15)
+    IN p_page        INT,  -- Page number (e.g. 1, 2, 3...)
+    IN p_limit       INT,  -- Number of records per page (default: 15)
+    IN p_role_id     INT,  -- User role_id (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer)
+    IN p_login_id    INT,  -- User login ID
+    IN p_district_id INT   -- User district ID (for role 3 branch_head)
 )
 BEGIN
     DECLARE v_limit INT DEFAULT 15;
     DECLARE v_page INT DEFAULT 1;
     DECLARE v_offset INT DEFAULT 0;
+    DECLARE v_district_id INT DEFAULT NULL;
 
     -- Apply default limit 15 if null or <= 0
     IF p_limit IS NOT NULL AND p_limit > 0 THEN
@@ -112,8 +47,17 @@ BEGIN
     END IF;
 
     SET v_offset = (v_page - 1) * v_limit;
+    SET v_district_id = p_district_id;
 
-    -- Query 1: Fetch paginated bookings (newest first, excluding soft-deleted)
+    -- If Role 3 (Branch Head) and district_id was not provided, resolve from users table
+    IF p_role_id = 3 AND (v_district_id IS NULL OR v_district_id <= 0) AND p_login_id IS NOT NULL THEN
+        SELECT district_id INTO v_district_id
+        FROM users
+        WHERE id = p_login_id AND is_deleted = 0
+        LIMIT 1;
+    END IF;
+
+    -- Query 1: Fetch paginated bookings matching role rules
     SELECT 
         id,
         name,
@@ -135,17 +79,30 @@ BEGIN
         updated_at
     FROM bookings
     WHERE is_deleted = 0
+      AND (
+          -- Role 1 (company) & Role 2 (coordinator): list ALL clients
+          (p_role_id IN (1, 2) OR p_role_id IS NULL)
+          -- Role 3 (branch_head): display client details by district_id
+          OR (p_role_id = 3 AND district_id = v_district_id)
+          -- Role 4 (dealer) & Role 5 (customer): take list by login_id
+          OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
+      )
     ORDER BY created_at DESC
     LIMIT v_limit OFFSET v_offset;
 
-    -- Query 2: Pagination metadata (total records, page number, total pages)
+    -- Query 2: Pagination metadata matching the exact same role filter
     SELECT 
         COUNT(*) AS total_records,
         v_page AS current_page,
         v_limit AS page_size,
         CEIL(COUNT(*) / v_limit) AS total_pages
     FROM bookings
-    WHERE is_deleted = 0;
+    WHERE is_deleted = 0
+      AND (
+          (p_role_id IN (1, 2) OR p_role_id IS NULL)
+          OR (p_role_id = 3 AND district_id = v_district_id)
+          OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
+      );
 END$$
 DELIMITER ;
 
@@ -196,6 +153,141 @@ BEGIN
     ELSE
         SELECT NULL AS id WHERE 1 = 0;
     END IF;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `save_booking`(
+    IN p_id               INT,            -- Pass NULL or 0 for INSERT; Pass booking ID for UPDATE
+    IN p_name             VARCHAR(150),
+    IN p_mobile           VARCHAR(25),
+    IN p_address          TEXT,
+    IN p_notes            TEXT,
+    IN p_status           VARCHAR(50),
+    IN p_login_role_id    INT,
+    IN p_login_id         INT,
+    IN p_login_name       VARCHAR(150),
+    IN p_state_id         INT,
+    IN p_state_name       VARCHAR(100),
+    IN p_district_id      INT,
+    IN p_district_name    VARCHAR(100),
+    IN p_area_id          INT,
+    IN p_area_name        VARCHAR(100),
+    IN p_branch_head_id   INT,
+    IN p_branch_head_name VARCHAR(150),
+    IN p_documents        JSON
+)
+BEGIN
+    DECLARE v_booking_id INT;
+    DECLARE v_status VARCHAR(50) DEFAULT 'NEW';
+    DECLARE v_state_name VARCHAR(100);
+    DECLARE v_district_name VARCHAR(100);
+    DECLARE v_area_name VARCHAR(100);
+    DECLARE v_branch_head_id INT;
+    DECLARE v_branch_head_name VARCHAR(150);
+
+    -- 1. Trim and initialize string variables
+    SET v_state_name = TRIM(p_state_name);
+    SET v_district_name = TRIM(p_district_name);
+    SET v_area_name = TRIM(p_area_name);
+    SET v_branch_head_id = p_branch_head_id;
+    SET v_branch_head_name = TRIM(p_branch_head_name);
+
+    -- 2. Auto-resolve state_name if null/empty but state_id is provided
+    IF (v_state_name IS NULL OR v_state_name = '') AND p_state_id IS NOT NULL THEN
+        SELECT name INTO v_state_name FROM states WHERE id = p_state_id LIMIT 1;
+    END IF;
+
+    -- 3. Auto-resolve district_name if null/empty but district_id is provided
+    IF (v_district_name IS NULL OR v_district_name = '') AND p_district_id IS NOT NULL THEN
+        SELECT name INTO v_district_name FROM districts WHERE id = p_district_id LIMIT 1;
+    END IF;
+
+    -- 4. Auto-resolve area_name if null/empty but area_id is provided
+    IF (v_area_name IS NULL OR v_area_name = '') AND p_area_id IS NOT NULL THEN
+        SELECT name INTO v_area_name FROM areas WHERE id = p_area_id LIMIT 1;
+    END IF;
+
+    -- 5. Auto-resolve Branch Head:
+    -- A) If branch_head_id is provided without name, fetch name from users table
+    IF (v_branch_head_name IS NULL OR v_branch_head_name = '') AND v_branch_head_id IS NOT NULL THEN
+        SELECT name INTO v_branch_head_name 
+        FROM users 
+        WHERE id = v_branch_head_id AND role_id = 3 AND is_deleted = 0 
+        LIMIT 1;
+    -- B) If branch_head_id is not provided, auto-assign from district_id
+    ELSEIF (v_branch_head_id IS NULL OR v_branch_head_id <= 0) AND p_district_id IS NOT NULL THEN
+        SELECT id, name INTO v_branch_head_id, v_branch_head_name
+        FROM users
+        WHERE role_id = 3 AND district_id = p_district_id AND is_deleted = 0
+        LIMIT 1;
+    END IF;
+
+    -- =========================================================================
+    -- MODE 1: CREATE (When p_id is NULL or <= 0)
+    -- =========================================================================
+    IF p_id IS NULL OR p_id <= 0 THEN
+        IF p_status IS NOT NULL AND TRIM(p_status) != '' THEN
+            SET v_status = UPPER(TRIM(p_status));
+        END IF;
+
+        INSERT INTO bookings (
+            name, mobile, address, notes, status,
+            login_role_id, login_id, login_name,
+            state_id, state_name, district_id, district_name,
+            area_id, area_name, branch_head_id, branch_head_name,
+            documents
+        ) VALUES (
+            p_name, p_mobile, p_address, p_notes, v_status,
+            p_login_role_id, p_login_id, p_login_name,
+            p_state_id, v_state_name, p_district_id, v_district_name,
+            p_area_id, v_area_name, v_branch_head_id, v_branch_head_name,
+            p_documents
+        );
+
+        SET v_booking_id = LAST_INSERT_ID();
+
+    -- =========================================================================
+    -- MODE 2: UPDATE (When p_id > 0)
+    -- =========================================================================
+    ELSE
+        UPDATE bookings
+        SET 
+            name             = COALESCE(p_name, name),
+            mobile           = COALESCE(p_mobile, mobile),
+            address          = COALESCE(p_address, address),
+            notes            = COALESCE(p_notes, notes),
+            status           = COALESCE(UPPER(TRIM(p_status)), status),
+            login_role_id    = COALESCE(p_login_role_id, login_role_id),
+            login_id         = COALESCE(p_login_id, login_id),
+            login_name       = COALESCE(p_login_name, login_name),
+            state_id         = COALESCE(p_state_id, state_id),
+            state_name       = COALESCE(v_state_name, state_name),
+            district_id      = COALESCE(p_district_id, district_id),
+            district_name    = COALESCE(v_district_name, district_name),
+            area_id          = COALESCE(p_area_id, area_id),
+            area_name        = COALESCE(v_area_name, area_name),
+            branch_head_id   = COALESCE(v_branch_head_id, branch_head_id),
+            branch_head_name = COALESCE(v_branch_head_name, branch_head_name),
+            documents        = COALESCE(p_documents, documents),
+            updated_at       = CURRENT_TIMESTAMP
+        WHERE id = p_id AND is_deleted = 0;
+
+        SET v_booking_id = p_id;
+    END IF;
+
+    -- =========================================================================
+    -- RETURN THE SAVED / UPDATED RECORD
+    -- =========================================================================
+    SELECT 
+        id, name, mobile, address, notes, status,
+        login_role_id, login_id, login_name,
+        state_id, state_name, district_id, district_name,
+        area_id, area_name, branch_head_id, branch_head_name,
+        documents, is_deleted, created_at, updated_at
+    FROM bookings
+    WHERE id = v_booking_id AND is_deleted = 0;
+
 END$$
 DELIMITER ;
 
@@ -350,6 +442,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_save_client_status`(
 BEGIN
     DECLARE v_new_id INT;
     DECLARE v_clean_date DATE;
+    DECLARE v_client_name VARCHAR(150);
 
     -- 1. Validate mandatory fields
     IF p_client_id IS NULL OR p_client_id <= 0 THEN
@@ -362,14 +455,20 @@ BEGIN
         SET MESSAGE_TEXT = 'Status is required.';
     END IF;
 
-    -- 2. If status is Cancelled, force schedule_date to NULL
+    -- 2. Auto-fetch client_name from bookings if not passed
+    SET v_client_name = TRIM(p_client_name);
+    IF v_client_name IS NULL OR v_client_name = '' THEN
+        SELECT name INTO v_client_name FROM bookings WHERE id = p_client_id LIMIT 1;
+    END IF;
+
+    -- 3. If status is Cancelled, clear schedule_date to NULL
     IF LOWER(TRIM(p_status)) = 'cancelled' THEN
         SET v_clean_date = NULL;
     ELSE
         SET v_clean_date = p_schedule_date;
     END IF;
 
-    -- 3. Insert the record into client_status_logs
+    -- 4. Insert history/audit record into client_status_logs
     INSERT INTO client_status_logs (
         client_id,
         client_name,
@@ -380,7 +479,7 @@ BEGIN
         created_by_name
     ) VALUES (
         p_client_id,
-        TRIM(p_client_name),
+        v_client_name,
         TRIM(p_status),
         v_clean_date,
         TRIM(p_notes),
@@ -390,18 +489,18 @@ BEGIN
 
     SET v_new_id = LAST_INSERT_ID();
 
-    -- 4. (Optional) If you maintain a main `clients` or `leads` table, 
-    -- you can also update its current status here:
-    /*
-    UPDATE clients 
+    -- 5. ALSO UPDATE THE MAIN `bookings` TABLE STATUS & NOTES
+    UPDATE bookings
     SET 
-        current_status = TRIM(p_status),
-        next_schedule_date = v_clean_date,
+        status = UPPER(TRIM(p_status)),
+        notes = CASE 
+            WHEN p_notes IS NOT NULL AND TRIM(p_notes) != '' THEN TRIM(p_notes) 
+            ELSE notes 
+        END,
         updated_at = CURRENT_TIMESTAMP
     WHERE id = p_client_id;
-    */
 
-    -- 5. Return the saved record back to the caller
+    -- 6. Return the saved record
     SELECT 
         id,
         client_id,
@@ -455,71 +554,112 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `update_booking`(
-    IN p_id             INT,
-    IN p_name           VARCHAR(150),
-    IN p_mobile         VARCHAR(25),
-    IN p_address        TEXT,
-    IN p_notes          TEXT,
-    IN p_status         VARCHAR(50),
-    IN p_state_id       INT,
-    IN p_state_name     VARCHAR(100),
-    IN p_district_id    INT,
-    IN p_district_name  VARCHAR(100),
-    IN p_area_id        INT,
-    IN p_area_name      VARCHAR(100),
-    IN p_documents      JSON
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_set_booking_branch_head`(
+    IN p_booking_id       INT,
+    IN p_branch_head_id   INT,
+    IN p_branch_head_name VARCHAR(150)
 )
 BEGIN
-    DECLARE v_state_name VARCHAR(100);
-    DECLARE v_district_name VARCHAR(100);
-    DECLARE v_area_name VARCHAR(100);
+    DECLARE v_branch_head_name VARCHAR(150);
 
-    SET v_state_name = p_state_name;
-    SET v_district_name = p_district_name;
-    SET v_area_name = p_area_name;
-
-    -- Auto-resolve state_name if null but state_id is provided
-    IF (v_state_name IS NULL OR TRIM(v_state_name) = '') AND p_state_id IS NOT NULL THEN
-        SELECT name INTO v_state_name FROM states WHERE id = p_state_id LIMIT 1;
+    -- 1. Validate booking_id
+    IF p_booking_id IS NULL OR p_booking_id <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'booking_id is required.';
     END IF;
 
-    -- Auto-resolve district_name if null but district_id is provided
-    IF (v_district_name IS NULL OR TRIM(v_district_name) = '') AND p_district_id IS NOT NULL THEN
-        SELECT name INTO v_district_name FROM districts WHERE id = p_district_id LIMIT 1;
+    SET v_branch_head_name = TRIM(p_branch_head_name);
+
+    -- 2. If branch_head_name is omitted or blank, auto-resolve from users table (role_id = 3: branch_head)
+    IF (v_branch_head_name IS NULL OR v_branch_head_name = '') AND p_branch_head_id IS NOT NULL THEN
+        SELECT name INTO v_branch_head_name 
+        FROM users 
+        WHERE id = p_branch_head_id AND role_id = 3 AND is_deleted = 0 
+        LIMIT 1;
     END IF;
 
-    -- Auto-resolve area_name if null but area_id is provided
-    IF (v_area_name IS NULL OR TRIM(v_area_name) = '') AND p_area_id IS NOT NULL THEN
-        SELECT name INTO v_area_name FROM areas WHERE id = p_area_id LIMIT 1;
-    END IF;
-
-    -- Update booking (uses COALESCE to keep existing values for any unpassed fields)
+    -- 3. Update the booking with the branch head details
     UPDATE bookings
     SET 
-        name          = COALESCE(p_name, name),
-        mobile        = COALESCE(p_mobile, mobile),
-        address       = COALESCE(p_address, address),
-        notes         = COALESCE(p_notes, notes),
-        status        = COALESCE(p_status, status),
-        state_id      = COALESCE(p_state_id, state_id),
-        state_name    = COALESCE(v_state_name, state_name),
-        district_id   = COALESCE(p_district_id, district_id),
-        district_name = COALESCE(v_district_name, district_name),
-        area_id       = COALESCE(p_area_id, area_id),
-        area_name     = COALESCE(v_area_name, area_name),
-        documents     = COALESCE(p_documents, documents),
-        updated_at    = CURRENT_TIMESTAMP
-    WHERE id = p_id AND is_deleted = 0;
+        branch_head_id   = p_branch_head_id,
+        branch_head_name = v_branch_head_name,
+        updated_at       = CURRENT_TIMESTAMP
+    WHERE id = p_booking_id AND is_deleted = 0;
 
-    -- Return the updated booking record back to the frontend
+    -- 4. Return the updated booking record
     SELECT 
         id, name, mobile, address, notes, status,
         login_role_id, login_id, login_name,
         state_id, state_name, district_id, district_name,
-        area_id, area_name, documents,
-        is_deleted, created_at, updated_at
+        area_id, area_name, branch_head_id, branch_head_name,
+        documents, is_deleted, created_at, updated_at
     FROM bookings
-    WHERE id = p_id AND is_deleted = 0;
+    WHERE id = p_booking_id AND is_deleted = 0;
+
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `web_login`(
+    IN p_username VARCHAR(100),
+    IN p_password VARCHAR(255)
+)
+BEGIN
+    DECLARE v_user_id INT DEFAULT NULL;
+    DECLARE v_db_password VARCHAR(255) DEFAULT NULL;
+    DECLARE v_role_id INT DEFAULT NULL;
+    DECLARE v_is_active TINYINT DEFAULT NULL;
+    DECLARE v_is_deleted TINYINT DEFAULT NULL;
+
+    -- 1. Find user by username
+    SELECT id, password, role_id, is_active, is_deleted
+    INTO v_user_id, v_db_password, v_role_id, v_is_active, v_is_deleted
+    FROM users
+    WHERE username = p_username
+    LIMIT 1;
+
+    -- 2. Validate credentials
+    IF v_user_id IS NULL OR v_is_deleted = 1 OR v_db_password != p_password THEN
+        SELECT 401 AS status, 'Invalid login credentials.' AS message;
+
+    ELSEIF v_is_active = 0 THEN
+        SELECT 403 AS status, 'Your account is deactivated. Please contact administrator.' AS message;
+
+    ELSEIF v_role_id NOT IN (1, 4) THEN
+        SELECT 403 AS status, 'Access denied. You do not have permissions for web login.' AS message;
+
+    ELSE
+        -- 3. Success: Update last login timestamp
+        UPDATE users 
+        SET last_login_at = CURRENT_TIMESTAMP 
+        WHERE id = v_user_id;
+
+        -- Return 200 with full user data
+        SELECT 
+            200             AS status,
+            'Login successful.' AS message,
+            u.id,
+            u.username,
+            u.role_id       AS roleId,
+            u.role,
+            u.user_type_id  AS userTypeId,
+            u.user_type     AS userType,
+            u.name,
+            u.email,
+            u.phone,
+            u.state_id      AS stateId,
+            s.name          AS stateName,
+            u.district_id   AS districtId,
+            d.name          AS districtName,
+            d.code          AS districtCode,
+            u.address,
+            u.is_active     AS isActive,
+            u.last_login_at AS lastLoginAt,
+            u.created_at    AS createdAt
+        FROM users u
+        LEFT JOIN states s ON u.state_id = s.id
+        LEFT JOIN districts d ON u.district_id = d.id
+        WHERE u.id = v_user_id;
+    END IF;
 END$$
 DELIMITER ;

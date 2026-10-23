@@ -7,6 +7,7 @@ import { DataService } from '../../../core/data.service';
 import { ToastService } from '../../../shared/toast/toast.service';
 import { AuthService } from '../../../core/auth.service';
 import { Booking, BranchHead, District, ClientType, UserRole, CreateBookingPayload } from '../../../core/models';
+import { environment } from '../../../../environments/environment';
 
 // Custom validator for 10-digit phone number
 function phoneValidator(control: AbstractControl) {
@@ -274,7 +275,7 @@ function pincodeValidator(control: AbstractControl) {
               <div class="flex flex-wrap gap-2.5 pt-1">
                 @for (img of uploadedImages(); track $index; let i = $index) {
                   <div class="relative w-18 h-18 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-border group bg-surface shadow-xs">
-                    <img [src]="img" alt="Site preview" class="w-full h-full object-cover" />
+                    <img [src]="getFileUrl(img)" alt="Site preview" class="w-full h-full object-cover" />
                     <button
                       type="button"
                       (click)="removeImage(i); $event.stopPropagation()"
@@ -434,6 +435,15 @@ export class BookNowComponent implements OnInit {
     }
   }
 
+  getFileUrl(img: string): string {
+    if (!img) return '';
+    if (img.startsWith('data:') || img.startsWith('http://') || img.startsWith('https://')) {
+      return img;
+    }
+    const base = environment.fileUrl || 'http://localhost:5000';
+    return `${base}${img.startsWith('/') ? '' : '/'}${img}`;
+  }
+
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
@@ -448,19 +458,32 @@ export class BookNowComponent implements OnInit {
 
     const toProcess = files.slice(0, remaining);
 
-    for (const file of toProcess) {
-      if (!file.type.startsWith('image/')) continue;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target?.result as string;
-        if (dataUrl) {
-          this.compressImage(dataUrl, (compressed) => {
-            this.uploadedImages.update(prev => [...prev, compressed]);
-          });
+    // Upload physical files directly to Backend /api/uploads
+    this.dataService.uploadDocuments(toProcess).subscribe({
+      next: (res) => {
+        if (res && res.urls && res.urls.length > 0) {
+          this.uploadedImages.update(prev => [...prev, ...res.urls]);
+          this.toast.success(`${res.urls.length} photo(s) uploaded successfully!`);
         }
-      };
-      reader.readAsDataURL(file);
-    }
+      },
+      error: () => {
+        // Fallback: local compression preview (backend will persist it to uploads directory on submit)
+        for (const file of toProcess) {
+          if (!file.type.startsWith('image/')) continue;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const dataUrl = e.target?.result as string;
+            if (dataUrl) {
+              this.compressImage(dataUrl, (compressed) => {
+                this.uploadedImages.update(prev => [...prev, compressed]);
+              });
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    });
+
     input.value = '';
   }
 

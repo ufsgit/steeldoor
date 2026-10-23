@@ -1,4 +1,61 @@
 import { bookingsService } from './bookings.service.js';
+import fs from 'fs';
+import path from 'path';
+
+/**
+ * Helper to ensure any uploaded files or base64 data URLs in documents
+ * are physically written to the Backend/uploads directory.
+ */
+function processIncomingDocuments(rawDocs, reqFiles = []) {
+  const uploadsDir = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  const processed = [];
+
+  // 1. Add any files uploaded via multipart/form-data
+  if (Array.isArray(reqFiles) && reqFiles.length > 0) {
+    for (const f of reqFiles) {
+      if (f.filename) {
+        processed.push(`/uploads/${f.filename}`);
+      }
+    }
+  }
+
+  // 2. Process documents array / strings
+  if (rawDocs) {
+    const list = Array.isArray(rawDocs) ? rawDocs : [rawDocs];
+    for (let i = 0; i < list.length; i++) {
+      const item = list[i];
+      if (typeof item !== 'string' || !item.trim()) continue;
+
+      // Check if it is a base64 Data URL (e.g. data:image/png;base64,...)
+      if (item.startsWith('data:image/')) {
+        try {
+          const matches = item.match(/^data:image\/([a-zA-Z0-9.+]+);base64,(.+)$/);
+          if (matches) {
+            let ext = matches[1].toLowerCase();
+            if (ext === 'jpeg') ext = 'jpg';
+            const buffer = Buffer.from(matches[2], 'base64');
+            const filename = `${Date.now()}-${i}-${Math.round(Math.random() * 1e5)}.${ext}`;
+            const filePath = path.join(uploadsDir, filename);
+            fs.writeFileSync(filePath, buffer);
+            processed.push(`/uploads/${filename}`);
+            continue;
+          }
+        } catch (err) {
+          console.warn('[Uploads] Error saving base64 document:', err.message);
+        }
+      }
+
+      // Normal URL or relative path
+      processed.push(item);
+    }
+  }
+
+  return processed;
+}
 
 export class BookingsController {
   /**
@@ -32,13 +89,16 @@ export class BookingsController {
       const roleId = Number(user.roleId ?? user.dbRoleId ?? req.body.loginRoleId ?? req.body.login_role_id ?? null);
       const isBranchHead = roleId === 3;
 
+      const rawDocs = req.body.documents ?? req.body.doorDetails?.documents ?? req.body.doorDetails?.images ?? [];
+      const savedDocs = processIncomingDocuments(rawDocs, req.files);
+
       const bookingData = {
         ...req.body,
         name,
         mobile,
         address,
         notes: req.body.notes ?? req.body.doorDetails?.notes ?? null,
-        documents: req.body.documents ?? req.body.doorDetails?.documents ?? req.body.doorDetails?.images ?? [],
+        documents: savedDocs,
         loginRoleId: roleId || null,
         loginId: user.id ?? req.body.loginId ?? req.body.login_id ?? null,
         loginName: user.name ?? req.body.loginName ?? req.body.login_name ?? null,
@@ -64,13 +124,16 @@ export class BookingsController {
   async update(req, res, next) {
     try {
       const { id } = req.params;
+      const rawDocs = req.body.documents ?? req.body.doorDetails?.documents ?? req.body.doorDetails?.images;
+      const savedDocs = rawDocs !== undefined ? processIncomingDocuments(rawDocs, req.files) : undefined;
+
       const updateData = {
         ...req.body,
         name: req.body.name ?? req.body.clientName,
         mobile: req.body.mobile ?? req.body.contactPhone,
         address: req.body.address ?? req.body.streetAddress,
         notes: req.body.notes ?? req.body.doorDetails?.notes,
-        documents: req.body.documents ?? req.body.doorDetails?.documents ?? req.body.doorDetails?.images
+        documents: savedDocs
       };
       const updatedBooking = await bookingsService.updateBooking(id, updateData);
       
