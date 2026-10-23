@@ -1,19 +1,35 @@
 import { usersService } from './users.service.js';
 
 export class UsersController {
+  _formatError(err) {
+    if (
+      err.code === 'ER_DUP_ENTRY' ||
+      err.errno === 1062 ||
+      String(err.sqlMessage || '').includes('Duplicate entry') ||
+      String(err.message || '').includes('Duplicate entry') ||
+      String(err.message || '').includes('User already exists')
+    ) {
+      return 'User already exists';
+    }
+    return err.sqlMessage || err.message || 'An error occurred';
+  }
+
   async getAll(req, res, next) {
     try {
-      const users = await usersService.getAllUsers();
+      const page = req.query.page || 1;
+      const limit = req.query.limit || 10;
+      const search = req.query.search;
+      const role = req.query.role;
+
+      const { rows, pagination } = await usersService.getAllUsers({ page, limit, search, role });
       res.json({
         success: true,
-        count: users.length,
-        data: users
+        count: rows.length,
+        pagination,
+        data: rows
       });
     } catch (err) {
-      if (err.sqlMessage || err.message) {
-        return res.status(400).json({ error: err.sqlMessage || err.message });
-      }
-      next(err);
+      return res.status(400).json({ error: this._formatError(err) });
     }
   }
 
@@ -26,10 +42,7 @@ export class UsersController {
         data: user
       });
     } catch (err) {
-      if (err.sqlMessage || err.message) {
-        return res.status(400).json({ error: err.sqlMessage || err.message });
-      }
-      next(err);
+      return res.status(400).json({ error: this._formatError(err) });
     }
   }
 
@@ -43,10 +56,7 @@ export class UsersController {
         data: user
       });
     } catch (err) {
-      if (err.sqlMessage || err.message) {
-        return res.status(400).json({ error: err.sqlMessage || err.message });
-      }
-      next(err);
+      return res.status(400).json({ error: this._formatError(err) });
     }
   }
 

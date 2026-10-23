@@ -92,8 +92,7 @@ export const ADMIN_ROUTES: Routes = [
         path: 'users',
         component: AdminUsersComponent,
         resolve: {
-          users: usersResolver,
-          districts: districtsResolver
+          users: usersResolver
         }
       },
       {

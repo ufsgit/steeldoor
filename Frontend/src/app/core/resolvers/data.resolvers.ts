@@ -20,9 +20,9 @@ export const districtsResolver: ResolveFn<District[]> = () => {
   );
 };
 
-export const usersResolver: ResolveFn<any[]> = () => {
-  return inject(DataService).getUsers().pipe(
-    catchError(() => of([]))
+export const usersResolver: ResolveFn<any> = () => {
+  return inject(DataService).getUsers({ page: 1, limit: 10 }).pipe(
+    catchError(() => of({ data: [], pagination: { total: 0, page: 1, limit: 10, totalPages: 1 } }))
   );
 };
 

@@ -2,9 +2,49 @@ import { pool } from '../../../db.js';
 
 export class UsersService {
   /**
-   * Fetch all active users
+   * Fetch users with pagination support (default limit: 10)
    */
-  async getAllUsers() {
+  async getAllUsers({ page = 1, limit = 10, search, role } = {}) {
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 10);
+    const offset = (pageNum - 1) * limitNum;
+
+    let whereClause = 'WHERE u.is_deleted = 0';
+    const params = [];
+
+    if (role && role !== 'all') {
+      if (role === 'company' || role === 'admin') {
+        whereClause += ' AND (u.role_id = 1 OR u.role = ?)';
+        params.push('company');
+      } else if (role === 'coordinator') {
+        whereClause += ' AND (u.role_id = 2 OR u.role = ?)';
+        params.push('coordinator');
+      } else if (role === 'branch_head') {
+        whereClause += ' AND (u.role_id = 3 OR u.role = ?)';
+        params.push('branch_head');
+      } else if (role === 'dealer') {
+        whereClause += ' AND (u.role_id = 4 OR u.role = ?)';
+        params.push('dealer');
+      } else {
+        whereClause += ' AND u.role = ?';
+        params.push(role);
+      }
+    }
+
+    if (search && search.trim()) {
+      const q = `%${search.trim()}%`;
+      whereClause += ' AND (u.name LIKE ? OR u.username LIKE ? OR u.email LIKE ? OR u.phone LIKE ? OR u.district_name LIKE ?)';
+      params.push(q, q, q, q, q);
+    }
+
+    // Total active records count
+    const [countResult] = await pool.query(
+      `SELECT COUNT(*) AS total FROM users u ${whereClause}`,
+      params
+    );
+    const total = Number(countResult?.[0]?.total || 0);
+
+    // Paginated users query
     const [rows] = await pool.query(
       `SELECT 
         u.id,
@@ -22,12 +62,54 @@ export class UsersService {
         u.district_name AS districtName,
         u.address,
         u.is_active AS isActive,
+        u.is_deleted AS isDeleted,
         u.created_at AS createdAt
       FROM users u
-      WHERE u.is_deleted = 0
-      ORDER BY u.id ASC`
+      ${whereClause}
+      ORDER BY u.id ASC
+      LIMIT ? OFFSET ?`,
+      [...params, limitNum, offset]
     );
-    return rows;
+
+    // Role counts across all non-deleted users
+    const [roleCountRows] = await pool.query(
+      'SELECT role, role_id, COUNT(*) AS count FROM users WHERE is_deleted = 0 GROUP BY role, role_id'
+    );
+    const roleCounts = {
+      all: 0,
+      company: 0,
+      coordinator: 0,
+      branch_head: 0,
+      dealer: 0,
+      customer: 0
+    };
+    for (const r of roleCountRows) {
+      const cnt = Number(r.count || 0);
+      const rId = Number(r.role_id);
+      roleCounts.all += cnt;
+      if (rId === 1 || r.role === 'company' || r.role === 'admin') {
+        roleCounts.company += cnt;
+      } else if (rId === 2 || r.role === 'coordinator') {
+        roleCounts.coordinator += cnt;
+      } else if (rId === 3 || r.role === 'branch_head') {
+        roleCounts.branch_head += cnt;
+      } else if (rId === 4 || r.role === 'dealer') {
+        roleCounts.dealer += cnt;
+      } else if (rId === 5 || r.role === 'customer') {
+        roleCounts.customer += cnt;
+      }
+    }
+
+    return {
+      rows,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum) || 1,
+        roleCounts
+      }
+    };
   }
 
   /**
@@ -48,6 +130,15 @@ export class UsersService {
 
     if (!username || !password || !name) {
       throw new Error('Username, password, and name are required.');
+    }
+
+    // Check if username already exists
+    const [existing] = await pool.query(
+      'SELECT id FROM users WHERE username = ? LIMIT 1',
+      [username.trim()]
+    );
+    if (existing && existing.length > 0) {
+      throw new Error('User already exists');
     }
 
     // Role mapping
@@ -73,7 +164,7 @@ export class UsersService {
     if (resolvedDistrictId) {
       const [distRows] = await pool.query('SELECT name FROM districts WHERE id = ?', [resolvedDistrictId]);
       if (distRows && distRows.length > 0) {
-        resolvedDistrictName = distRows[0].name;
+        resolvedDistrictName = distRows[0].name ? distRows[0].name.replace(' Hub', '').trim() : null;
       }
     }
 
@@ -159,7 +250,7 @@ export class UsersService {
     if (resolvedDistrictId) {
       const [distRows] = await pool.query('SELECT name FROM districts WHERE id = ?', [resolvedDistrictId]);
       if (distRows && distRows.length > 0) {
-        resolvedDistrictName = distRows[0].name;
+        resolvedDistrictName = distRows[0].name ? distRows[0].name.replace(' Hub', '').trim() : null;
       }
     }
 

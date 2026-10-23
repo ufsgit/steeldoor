@@ -344,13 +344,31 @@ export class DataService {
 
   // ---------------- Users Management ----------------
 
-  getUsers(): Observable<any[]> {
-    if (isPlatformServer(this.platformId)) {
-      return of([]);
+  getUsers(params?: { page?: number; limit?: number; search?: string; role?: string }): Observable<{ data: any[]; pagination: { total: number; page: number; limit: number; totalPages: number; roleCounts?: Record<string, number> } }> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.page) httpParams = httpParams.set('page', params.page.toString());
+      if (params.limit) httpParams = httpParams.set('limit', params.limit.toString());
+      if (params.search) httpParams = httpParams.set('search', params.search);
+      if (params.role) httpParams = httpParams.set('role', params.role);
     }
-    return this.http.get<{ success: boolean; data: any[] }>(this.url('/api/users')).pipe(
-      map(res => res?.data || []),
-      catchError(() => of([]))
+
+    if (isPlatformServer(this.platformId)) {
+      return of({
+        data: [],
+        pagination: { total: 0, page: 1, limit: 10, totalPages: 1 }
+      });
+    }
+
+    return this.http.get<{ success: boolean; data: any[]; pagination: any }>(this.url('/api/users'), { params: httpParams }).pipe(
+      map(res => ({
+        data: res?.data || [],
+        pagination: res?.pagination || { total: res?.data?.length || 0, page: 1, limit: 10, totalPages: 1 }
+      })),
+      catchError(() => of({
+        data: [],
+        pagination: { total: 0, page: 1, limit: 10, totalPages: 1 }
+      }))
     );
   }
 

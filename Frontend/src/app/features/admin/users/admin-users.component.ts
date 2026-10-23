@@ -24,6 +24,7 @@ export interface SystemUser {
   districtName?: string | null;
   address?: string;
   isActive: boolean | number;
+  isDeleted?: boolean | number;
   createdAt?: string;
 }
 
@@ -39,24 +40,12 @@ export interface SystemUser {
           <h1 class="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
             <span>User Management</span>
             <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-emerald-50 text-[#0f9d58] border border-emerald-200">
-              {{ users().length }} Total
+              {{ totalRecords() }} Total
             </span>
           </h1>
-          <p class="text-xs text-gray-500 mt-0.5">Manage administrators, coordinators, branch heads, dealers, and customer access.</p>
         </div>
 
         <div class="flex items-center gap-2">
-          <button
-            type="button"
-            (click)="printWorksheet()"
-            class="px-3.5 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <svg class="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-            </svg>
-            <span>Print</span>
-          </button>
-
           <button
             type="button"
             (click)="openCreateModal()"
@@ -65,7 +54,7 @@ export interface SystemUser {
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
             </svg>
-            <span>+ Add User</span>
+            <span>Add User</span>
           </button>
         </div>
       </div>
@@ -76,7 +65,7 @@ export interface SystemUser {
           @for (tab of filterTabs; track tab.val) {
             <button
               type="button"
-              (click)="activeRoleFilter.set(tab.val)"
+              (click)="setRoleFilter(tab.val)"
               class="px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer"
               [ngClass]="activeRoleFilter() === tab.val
                 ? 'bg-[#0f9d58] text-white border-[#0f9d58] shadow-2xs'
@@ -92,6 +81,7 @@ export interface SystemUser {
           <input
             type="text"
             [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearchChange()"
             placeholder="Search by name, username, email..."
             class="w-full text-xs pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
           />
@@ -109,7 +99,7 @@ export interface SystemUser {
               <th class="w-10 py-3 px-2 text-center text-gray-400 font-normal">#</th>
               <th class="py-3 px-4 whitespace-nowrap">
                 <span class="text-gray-400 font-normal mr-1">A ·</span>
-                <span class="uppercase tracking-wider">USER NAME</span>
+                <span class="uppercase tracking-wider">NAME</span>
               </th>
               <th class="py-3 px-4 whitespace-nowrap">
                 <span class="text-gray-400 font-normal mr-1">B ·</span>
@@ -144,7 +134,7 @@ export interface SystemUser {
             @for (user of filteredUsers(); track user.id; let idx = $index) {
               <tr class="hover:bg-gray-50/80 transition-colors">
                 <td class="w-10 py-3.5 px-2 text-center font-mono text-gray-400 text-xs select-none">
-                  {{ idx + 1 }}
+                  {{ (currentPage() - 1) * pageSize + idx + 1 }}
                 </td>
 
                 <td class="py-3.5 px-4 font-bold text-gray-900 whitespace-nowrap">
@@ -168,9 +158,9 @@ export interface SystemUser {
                 <td class="py-3.5 px-4 whitespace-nowrap">
                   <span
                     class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold border"
-                    [ngClass]="getRoleBadgeClass(user.role)"
+                    [ngClass]="getRoleBadgeClass(user.role, user.roleId)"
                   >
-                    {{ formatRoleName(user.role, user.userType) }}
+                    {{ formatRoleName(user.role, user.roleId, user.userType) }}
                   </span>
                 </td>
 
@@ -206,13 +196,25 @@ export interface SystemUser {
                 </td>
 
                 <td class="py-3.5 px-4 text-right whitespace-nowrap">
-                  <button
-                    type="button"
-                    (click)="openEditModal(user)"
-                    class="px-2.5 py-1 rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold transition-colors cursor-pointer"
-                  >
-                    Edit
-                  </button>
+                  <div class="flex items-center justify-end gap-1.5">
+                    <button
+                      type="button"
+                      (click)="openEditModal(user)"
+                      class="px-2.5 py-1 rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      (click)="promptDeleteUser(user)"
+                      class="px-2.5 py-1 rounded border border-red-200 bg-white hover:bg-red-50 text-red-600 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <svg class="w-3 h-3 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span>Delete</span>
+                    </button>
+                  </div>
                 </td>
               </tr>
             } @empty {
@@ -226,6 +228,44 @@ export interface SystemUser {
         </table>
       </div>
 
+      <!-- Pagination Bar (Shows 10 per page, Next & Previous) -->
+      <div class="w-full px-2 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500 border-t border-gray-100 select-none">
+        <div>
+          Showing <strong class="text-gray-900 font-bold">{{ getStartIndex() }} to {{ getEndIndex() }}</strong> of
+          <strong class="text-gray-900 font-bold">{{ totalRecords() }}</strong> users
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            (click)="prevPage()"
+            [disabled]="currentPage() === 1 || isLoading()"
+            class="px-3.5 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            <span>Previous</span>
+          </button>
+
+          <span class="text-gray-900 font-bold px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs">
+            Page {{ currentPage() }} of {{ totalPages() || 1 }}
+          </span>
+
+          <button
+            type="button"
+            (click)="nextPage()"
+            [disabled]="currentPage() >= totalPages() || isLoading()"
+            class="px-3.5 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
+          >
+            <span>Next</span>
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
       <!-- CREATE / EDIT MODAL -->
       <app-modal
         [isOpen]="modalOpen"
@@ -233,9 +273,9 @@ export interface SystemUser {
         (closeModal)="modalOpen = false"
       >
         <div class="space-y-4">
-          <!-- Full Name -->
+          <!-- Name -->
           <div class="space-y-1.5">
-            <label class="block text-xs font-bold text-gray-700">Full Name <span class="text-red-500">*</span></label>
+            <label class="block text-xs font-bold text-gray-700">Name <span class="text-red-500">*</span></label>
             <input
               type="text"
               [(ngModel)]="formName"
@@ -271,33 +311,35 @@ export interface SystemUser {
           </div>
 
           <!-- Role & District -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 gap-3" [ngClass]="formRole === 'branch_head' ? 'sm:grid-cols-2' : ''">
             <div class="space-y-1.5">
               <label class="block text-xs font-bold text-gray-700">System Role <span class="text-red-500">*</span></label>
               <select
                 [(ngModel)]="formRole"
+                (ngModelChange)="onRoleChange()"
                 class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
               >
-                <option value="company">Company (Super Admin)</option>
-                <option value="coordinator">Coordinator (Operations / Field)</option>
+                <option value="company">Company</option>
+                <option value="coordinator">Coordinator</option>
                 <option value="branch_head">Branch Head</option>
-                <option value="dealer">Dealer (Authorized)</option>
-                <option value="customer">Customer (Direct User)</option>
+                <option value="dealer">Dealer</option>
               </select>
             </div>
 
-            <div class="space-y-1.5">
-              <label class="block text-xs font-bold text-gray-700">Assigned District Hub</label>
-              <select
-                [(ngModel)]="formDistrictId"
-                class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
-              >
-                <option [ngValue]="null">None / HQ (All Districts)</option>
-                @for (d of districts(); track d.id) {
-                  <option [ngValue]="d.id">{{ d.name }}</option>
-                }
-              </select>
-            </div>
+            @if (formRole === 'branch_head') {
+              <div class="space-y-1.5 animate-fadeIn">
+                <label class="block text-xs font-bold text-gray-700">Assigned District Hub <span class="text-red-500">*</span></label>
+                <select
+                  [(ngModel)]="formDistrictId"
+                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
+                >
+                  <option [ngValue]="null">Select District...</option>
+                  @for (d of districts(); track d.id) {
+                    <option [ngValue]="d.id">{{ d.name }}</option>
+                  }
+                </select>
+              </div>
+            }
           </div>
 
           <!-- Phone & Email -->
@@ -353,6 +395,76 @@ export interface SystemUser {
           </div>
         </div>
       </app-modal>
+
+      <!-- Delete Confirmation Modal -->
+      @if (deleteModalOpen && userToDelete) {
+        <div class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+          <!-- Backdrop -->
+          <div
+            class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-fadeIn"
+            (click)="cancelDelete()"
+          ></div>
+
+          <!-- Dialog Box -->
+          <div
+            role="dialog"
+            aria-modal="true"
+            class="relative w-full max-w-sm bg-white rounded-3xl border border-gray-200 shadow-2xl p-6 sm:p-7 flex flex-col items-center text-center animate-scaleUp z-10"
+            (click)="$event.stopPropagation()"
+          >
+            <!-- Close button in top-right -->
+            <button
+              type="button"
+              (click)="cancelDelete()"
+              class="absolute top-4 right-4 w-8 h-8 rounded-full border border-gray-200 text-gray-400 hover:text-gray-700 hover:bg-gray-50 flex items-center justify-center transition-colors cursor-pointer"
+              aria-label="Close dialog"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <!-- Status Icon -->
+            <div class="w-16 h-16 rounded-2xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center mb-4 shadow-2xs">
+              <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+
+            <!-- Title & Message -->
+            <h3 class="text-lg font-bold text-gray-900 mb-1">Delete User</h3>
+            <p class="text-sm text-gray-500 leading-relaxed mb-6">
+              Are you sure you want to delete user <strong class="text-gray-800">"{{ userToDelete.name || userToDelete.username }}"</strong>?
+            </p>
+
+            <!-- Action Buttons: OK and Cancel -->
+            <div class="grid grid-cols-2 gap-3 w-full">
+              <button
+                type="button"
+                (click)="confirmDelete()"
+                [disabled]="isDeleting()"
+                class="w-full py-2.5 px-4 rounded-xl font-bold text-sm bg-red-600 hover:bg-red-700 text-white shadow-soft transition-all cursor-pointer flex items-center justify-center gap-2 focus:ring-4 focus:ring-red-200 disabled:opacity-50"
+              >
+                @if (isDeleting()) {
+                  <span class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span>Deleting...</span>
+                } @else {
+                  <span>OK</span>
+                }
+              </button>
+
+              <button
+                type="button"
+                (click)="cancelDelete()"
+                [disabled]="isDeleting()"
+                class="w-full py-2.5 px-4 rounded-xl font-bold text-sm border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition-all cursor-pointer flex items-center justify-center"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `
 })
@@ -370,11 +482,25 @@ export class AdminUsersComponent implements OnInit {
 
   filterTabs = [
     { label: 'All Users', val: 'all' },
-    { label: 'Admin / Coordinator', val: 'admins' },
+    { label: 'Company', val: 'company' },
+    { label: 'Coordinator', val: 'coordinator' },
     { label: 'Branch Heads', val: 'branch_head' },
-    { label: 'Dealers', val: 'dealer' },
-    { label: 'Customers', val: 'customer' }
+    { label: 'Dealers', val: 'dealer' }
   ];
+
+  // Pagination State
+  currentPage = signal<number>(1);
+  pageSize = 10;
+  totalPages = signal<number>(1);
+  totalRecords = signal<number>(0);
+  isLoading = signal<boolean>(false);
+  roleCounts = signal<Record<string, number>>({
+    all: 0,
+    company: 0,
+    coordinator: 0,
+    branch_head: 0,
+    dealer: 0
+  });
 
   // Modal State
   modalOpen = false;
@@ -382,96 +508,139 @@ export class AdminUsersComponent implements OnInit {
   formName = '';
   formUsername = '';
   formPassword = '';
-  formRole = 'branch_head';
+  formRole = 'coordinator';
   formDistrictId: any = null;
   formPhone = '';
   formEmail = '';
   formAddress = '';
 
+  // Delete Confirmation Modal State
+  deleteModalOpen = false;
+  userToDelete: SystemUser | null = null;
+  isDeleting = signal<boolean>(false);
+
   filteredUsers = computed(() => {
-    let list = this.users();
-    const roleFilter = this.activeRoleFilter();
-
-    if (roleFilter === 'admins') {
-      list = list.filter(u => u.role === 'company' || u.role === 'admin' || u.role === 'coordinator');
-    } else if (roleFilter !== 'all') {
-      list = list.filter(u => u.role === roleFilter);
-    }
-
-    const q = this.searchQuery.trim().toLowerCase();
-    if (q) {
-      list = list.filter(u =>
-        (u.name && u.name.toLowerCase().includes(q)) ||
-        (u.username && u.username.toLowerCase().includes(q)) ||
-        (u.email && u.email.toLowerCase().includes(q)) ||
-        (u.phone && u.phone.toLowerCase().includes(q)) ||
-        (u.districtName && u.districtName.toLowerCase().includes(q)) ||
-        (u.role && u.role.toLowerCase().includes(q))
-      );
-    }
-
-    return list;
+    return this.users().filter(u => !u.isDeleted || u.isDeleted === 0);
   });
 
   ngOnInit(): void {
     this.title.setTitle('User Management | SteelGuard Admin');
 
     const resolved = this.route.snapshot.data['users'];
-    if (resolved && Array.isArray(resolved) && resolved.length > 0) {
-      this.users.set(resolved);
+    if (resolved) {
+      if (Array.isArray(resolved)) {
+        this.users.set(resolved);
+        this.totalRecords.set(resolved.length);
+        this.totalPages.set(Math.ceil(resolved.length / this.pageSize) || 1);
+      } else if (resolved.data) {
+        this.users.set(resolved.data);
+        if (resolved.pagination) {
+          this.currentPage.set(resolved.pagination.page);
+          this.totalPages.set(resolved.pagination.totalPages);
+          this.totalRecords.set(resolved.pagination.total);
+          if (resolved.pagination.roleCounts) {
+            this.roleCounts.set(resolved.pagination.roleCounts);
+          }
+        }
+      }
     } else {
-      this.loadUsers();
-    }
-
-    const dResolved = this.route.snapshot.data['districts'];
-    if (dResolved && Array.isArray(dResolved)) {
-      this.districts.set(dResolved);
+      this.loadUsers(1);
     }
   }
 
-  loadUsers(): void {
-    this.dataService.getUsers().subscribe({
-      next: (list) => {
-        if (list) this.users.set(list);
+  loadUsers(page: number = this.currentPage()): void {
+    this.isLoading.set(true);
+    const role = this.activeRoleFilter();
+    const search = this.searchQuery.trim();
+
+    this.dataService.getUsers({
+      page,
+      limit: this.pageSize,
+      role: role !== 'all' ? role : undefined,
+      search: search || undefined
+    }).subscribe({
+      next: (res) => {
+        this.users.set(res.data || []);
+        if (res.pagination) {
+          this.currentPage.set(res.pagination.page);
+          this.totalPages.set(res.pagination.totalPages);
+          this.totalRecords.set(res.pagination.total);
+          if (res.pagination.roleCounts) {
+            this.roleCounts.set(res.pagination.roleCounts);
+          }
+        }
+        this.isLoading.set(false);
       },
       error: () => {
         this.toast.error('Failed to load users.');
+        this.isLoading.set(false);
       }
     });
   }
 
-  getRoleCount(filterVal: string): number {
-    const list = this.users();
-    if (filterVal === 'all') return list.length;
-    if (filterVal === 'admins') {
-      return list.filter(u => u.role === 'company' || u.role === 'admin' || u.role === 'coordinator').length;
-    }
-    return list.filter(u => u.role === filterVal).length;
+  setRoleFilter(val: string): void {
+    this.activeRoleFilter.set(val);
+    this.loadUsers(1);
   }
 
-  formatRoleName(role: string, userType?: string): string {
+  onSearchChange(): void {
+    this.loadUsers(1);
+  }
+
+  prevPage(): void {
+    if (this.currentPage() > 1 && !this.isLoading()) {
+      this.loadUsers(this.currentPage() - 1);
+    }
+  }
+
+  nextPage(): void {
+    if (this.currentPage() < this.totalPages() && !this.isLoading()) {
+      this.loadUsers(this.currentPage() + 1);
+    }
+  }
+
+  getStartIndex(): number {
+    if (this.totalRecords() === 0) return 0;
+    return (this.currentPage() - 1) * this.pageSize + 1;
+  }
+
+  getEndIndex(): number {
+    return Math.min(this.currentPage() * this.pageSize, this.totalRecords());
+  }
+
+  getRoleCount(filterVal: string): number {
+    const counts = this.roleCounts();
+    return counts[filterVal] ?? 0;
+  }
+
+  formatRoleName(role: string, roleId?: number, userType?: string): string {
+    const rId = Number(roleId);
     const r = (role || '').toLowerCase();
-    if (r === 'company' || r === 'admin') return 'Super Admin';
-    if (r === 'coordinator') return userType === 'staff' ? 'Field Coordinator' : 'Operations Coordinator';
-    if (r === 'branch_head') return 'Branch Head';
-    if (r === 'dealer') return 'Dealer';
-    if (r === 'customer') return 'Customer';
+    if (rId === 1 || r === 'company' || r === 'admin') return 'Company';
+    if (rId === 2 || r === 'coordinator') return 'Coordinator';
+    if (rId === 3 || r === 'branch_head') return 'Branch Head';
+    if (rId === 4 || r === 'dealer') return 'Dealer';
+    if (rId === 5 || r === 'customer') return 'Customer';
     return role || 'User';
   }
 
-  getRoleBadgeClass(role: string): string {
+  getRoleBadgeClass(role: string, roleId?: number): string {
+    const rId = Number(roleId);
     const r = (role || '').toLowerCase();
-    if (r === 'company' || r === 'admin') {
+    if (rId === 1 || r === 'company' || r === 'admin') {
       return 'bg-purple-50 text-purple-700 border-purple-200';
     }
-    if (r === 'coordinator') {
+    if (rId === 2 || r === 'coordinator') {
       return 'bg-blue-50 text-blue-700 border-blue-200';
     }
-    if (r === 'branch_head') {
+    if (rId === 3 || r === 'branch_head') {
       return 'bg-emerald-50 text-emerald-800 border-emerald-200';
     }
-    if (r === 'dealer') {
+    if (rId === 4 || r === 'dealer') {
       return 'bg-amber-50 text-amber-800 border-amber-200';
+    }
+    if (rId === 5 || r === 'customer') {
+      return 'bg-gray-100 text-gray-700 border-gray-200';
     }
     return 'bg-gray-100 text-gray-700 border-gray-200';
   }
@@ -506,12 +675,32 @@ export class AdminUsersComponent implements OnInit {
     });
   }
 
+  loadDistrictsIfNeeded(): void {
+    if (this.districts().length === 0) {
+      this.dataService.getDistricts().subscribe({
+        next: (dists) => {
+          if (Array.isArray(dists)) {
+            this.districts.set(dists);
+          }
+        }
+      });
+    }
+  }
+
+  onRoleChange(): void {
+    if (this.formRole === 'branch_head') {
+      this.loadDistrictsIfNeeded();
+    } else {
+      this.formDistrictId = null;
+    }
+  }
+
   openCreateModal(): void {
     this.editingUserId = null;
     this.formName = '';
     this.formUsername = '';
     this.formPassword = '';
-    this.formRole = 'branch_head';
+    this.formRole = 'coordinator';
     this.formDistrictId = null;
     this.formPhone = '';
     this.formEmail = '';
@@ -524,8 +713,19 @@ export class AdminUsersComponent implements OnInit {
     this.formName = user.name || '';
     this.formUsername = user.username || '';
     this.formPassword = '';
-    this.formRole = user.role || 'customer';
-    this.formDistrictId = user.districtId || null;
+    if (user.role === 'admin' || user.role === 'company' || user.roleId === 1) {
+      this.formRole = 'company';
+    } else if (user.role === 'branch_head' || user.roleId === 3) {
+      this.formRole = 'branch_head';
+    } else if (user.role === 'dealer' || user.roleId === 4) {
+      this.formRole = 'dealer';
+    } else {
+      this.formRole = 'coordinator';
+    }
+    this.formDistrictId = this.formRole === 'branch_head' ? (user.districtId || null) : null;
+    if (this.formRole === 'branch_head') {
+      this.loadDistrictsIfNeeded();
+    }
     this.formPhone = user.phone || '';
     this.formEmail = user.email || '';
     this.formAddress = user.address || '';
@@ -549,11 +749,16 @@ export class AdminUsersComponent implements OnInit {
       }
     }
 
+    if (this.formRole === 'branch_head' && !this.formDistrictId) {
+      this.toast.error('Please select an assigned district hub for Branch Head.');
+      return;
+    }
+
     const payload: any = {
       name: this.formName.trim(),
       username: this.formUsername.trim(),
       role: this.formRole,
-      districtId: this.formDistrictId,
+      districtId: this.formRole === 'branch_head' ? this.formDistrictId : null,
       phone: this.formPhone.trim(),
       email: this.formEmail.trim(),
       address: this.formAddress.trim()
@@ -570,7 +775,16 @@ export class AdminUsersComponent implements OnInit {
           this.loadUsers();
         },
         error: (err) => {
-          this.toast.error(err?.error?.error || 'Failed to update user.');
+          const raw = err?.error?.error || err?.message || '';
+          if (
+            raw.toLowerCase().includes('duplicate') ||
+            raw.toLowerCase().includes('already exist') ||
+            raw.toLowerCase().includes('users.username')
+          ) {
+            this.toast.error('User already exists');
+          } else {
+            this.toast.error(raw || 'Failed to update user.');
+          }
         }
       });
     } else {
@@ -581,13 +795,52 @@ export class AdminUsersComponent implements OnInit {
           this.loadUsers();
         },
         error: (err) => {
-          this.toast.error(err?.error?.error || 'Failed to create user.');
+          const raw = err?.error?.error || err?.message || '';
+          if (
+            raw.toLowerCase().includes('duplicate') ||
+            raw.toLowerCase().includes('already exist') ||
+            raw.toLowerCase().includes('users.username')
+          ) {
+            this.toast.error('User already exists');
+          } else {
+            this.toast.error(raw || 'Failed to create user.');
+          }
         }
       });
     }
   }
 
-  printWorksheet(): void {
-    window.print();
+  promptDeleteUser(user: SystemUser): void {
+    this.userToDelete = user;
+    this.deleteModalOpen = true;
+  }
+
+  cancelDelete(): void {
+    this.deleteModalOpen = false;
+    this.userToDelete = null;
+  }
+
+  confirmDelete(): void {
+    if (!this.userToDelete) return;
+    const user = this.userToDelete;
+    this.isDeleting.set(true);
+
+    this.dataService.deleteUser(user.id).subscribe({
+      next: () => {
+        this.isDeleting.set(false);
+        this.deleteModalOpen = false;
+        this.userToDelete = null;
+        this.toast.success(`User "${user.name || user.username}" deleted successfully.`);
+        if (this.users().length === 1 && this.currentPage() > 1) {
+          this.loadUsers(this.currentPage() - 1);
+        } else {
+          this.loadUsers(this.currentPage());
+        }
+      },
+      error: (err) => {
+        this.isDeleting.set(false);
+        this.toast.error(err?.error?.error || 'Failed to delete user.');
+      }
+    });
   }
 }
