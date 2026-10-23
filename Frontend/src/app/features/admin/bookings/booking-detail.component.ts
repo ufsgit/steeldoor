@@ -89,13 +89,13 @@ import { ModalComponent } from '../../../shared/components/modal.component';
             <div class="flex items-center justify-between border-b border-border pb-2">
               <span class="text-[10px] font-bold uppercase tracking-wider text-text-muted">Client Information</span>
               <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-surface-muted text-text">
-                {{ booking()!.clientType }}
+                {{ booking()!.clientType || 'customer' }}
               </span>
             </div>
-            <div class="text-base font-bold text-text">{{ booking()!.clientName }}</div>
+            <div class="text-base font-bold text-text">{{ booking()!.clientName || booking()!.name }}</div>
             <div class="space-y-1 text-xs text-text-muted">
-              <div>Phone: <a href="tel:{{ booking()!.contactPhone }}" class="text-text font-semibold hover:text-primary">{{ booking()!.contactPhone }}</a></div>
-              <div>Email: <a href="mailto:{{ booking()!.contactEmail }}" class="text-text font-semibold hover:text-primary">{{ booking()!.contactEmail }}</a></div>
+              <div>Phone: <a href="tel:{{ booking()!.contactPhone || booking()!.mobile }}" class="text-text font-semibold hover:text-primary">{{ booking()!.contactPhone || booking()!.mobile }}</a></div>
+              <div>Email: <a href="mailto:{{ booking()!.contactEmail }}" class="text-text font-semibold hover:text-primary">{{ booking()!.contactEmail || 'N/A' }}</a></div>
             </div>
           </div>
 
@@ -104,16 +104,16 @@ import { ModalComponent } from '../../../shared/components/modal.component';
             <div class="border-b border-border pb-2">
               <span class="text-[10px] font-bold uppercase tracking-wider text-text-muted">Door Details</span>
             </div>
-            <div class="text-base font-bold text-primary">{{ booking()!.doorDetails.doorType }}</div>
+            <div class="text-base font-bold text-primary">{{ booking()!.doorDetails.doorType || 'Standard Steel Door' }}</div>
             <div class="grid grid-cols-2 gap-2 text-xs text-text-muted">
               <div>Brand: <strong class="text-text block font-bold">{{ booking()!.doorDetails.brand || 'Tata Pravesh' }}</strong></div>
-              <div>Quantity: <strong class="text-text block font-bold">{{ booking()!.doorDetails.quantity }} Unit(s)</strong></div>
+              <div>Quantity: <strong class="text-text block font-bold">{{ booking()!.doorDetails.quantity || 1 }} Unit(s)</strong></div>
               <div>Finish: <strong class="text-text block">{{ booking()!.doorDetails.finish || 'Standard' }}</strong></div>
               <div>Thickness: <strong class="text-text block">{{ booking()!.doorDetails.thickness || '1.2mm' }}</strong></div>
             </div>
-            @if (booking()!.doorDetails.notes) {
+            @if (booking()!.notes || booking()!.doorDetails.notes) {
               <div class="text-[11px] text-text-muted bg-surface-muted p-2 rounded-lg italic">
-                Site Notes: {{ booking()!.doorDetails.notes }}
+                Site Notes: {{ booking()!.notes || booking()!.doorDetails.notes }}
               </div>
             }
           </div>
@@ -125,14 +125,14 @@ import { ModalComponent } from '../../../shared/components/modal.component';
             </div>
             <div>
               <div class="text-sm font-bold text-text">{{ booking()!.districtName }} District</div>
-              <div class="text-xs text-accent font-semibold">{{ booking()!.area }} Area</div>
+              <div class="text-xs text-accent font-semibold">{{ booking()!.area || booking()!.areaName }} Area</div>
             </div>
             <div class="text-xs text-text-muted">
               <p>{{ booking()!.address }}</p>
               @if (booking()!.landmark) {
                 <p class="text-[11px] mt-0.5">Landmark: {{ booking()!.landmark }}</p>
               }
-              <p class="mt-0.5 font-mono">PIN: {{ booking()!.pincode }}</p>
+              <p class="mt-0.5 font-mono">PIN: {{ booking()!.pincode || '682024' }}</p>
             </div>
             <div class="pt-2 border-t border-border flex items-center justify-between text-xs">
               <span class="text-text-muted">Branch Head:</span>
@@ -141,19 +141,28 @@ import { ModalComponent } from '../../../shared/components/modal.component';
           </div>
         </div>
 
-        <!-- ATTACHED SITE / DOOR PHOTOS -->
-        @if (booking()!.doorDetails.images; as imgs) {
-          @if (imgs.length > 0) {
+        <!-- ATTACHED SITE / DOOR PHOTOS & DOCUMENTS (p_documents) -->
+        @if (getAttachedDocuments(); as docs) {
+          @if (docs.length > 0) {
             <div class="p-6 rounded-3xl bg-surface border border-border shadow-soft space-y-3">
               <div class="flex items-center justify-between border-b border-border pb-2">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-text-muted">Attached Site Photos</span>
-                <span class="text-xs font-bold text-primary">{{ imgs.length }} Photo(s)</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-text-muted">Attached Documents & Site Photos</span>
+                <span class="text-xs font-bold text-primary">{{ docs.length }} File(s)</span>
               </div>
               <div class="flex flex-wrap gap-3 pt-1">
-                @for (img of imgs; track $index) {
-                  <a [href]="img" target="_blank" class="block w-24 h-24 rounded-2xl overflow-hidden border border-border hover:border-primary shadow-xs transition-all hover:scale-105 cursor-pointer group" title="Click to view full photo">
-                    <img [src]="img" alt="Site photo" class="w-full h-full object-cover group-hover:opacity-90"/>
-                  </a>
+                @for (doc of docs; track $index) {
+                  @if (isImage(doc)) {
+                    <a [href]="doc" target="_blank" class="block w-24 h-24 rounded-2xl overflow-hidden border border-border hover:border-primary shadow-xs transition-all hover:scale-105 cursor-pointer group" title="Click to view full photo">
+                      <img [src]="doc" alt="Site photo" class="w-full h-full object-cover group-hover:opacity-90"/>
+                    </a>
+                  } @else {
+                    <a [href]="doc" target="_blank" class="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-border hover:border-primary bg-surface-muted hover:bg-surface-hover text-xs font-medium text-text shadow-xs transition-all">
+                      <svg class="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                      </svg>
+                      <span class="truncate max-w-[150px]">{{ getFileName(doc) }}</span>
+                    </a>
+                  }
                 }
               </div>
             </div>
@@ -301,5 +310,29 @@ export class AdminBookingDetailComponent implements OnInit {
         this.toast.error(err?.error?.error || 'Failed to reassign booking.');
       }
     });
+  }
+
+  getAttachedDocuments(): string[] {
+    const b = this.booking();
+    if (!b) return [];
+    const fromDocs = b.documents || [];
+    const fromImages = b.doorDetails?.images || [];
+    const fromDetailsDocs = b.doorDetails?.documents || [];
+    return Array.from(new Set([...fromDocs, ...fromImages, ...fromDetailsDocs])).filter(Boolean);
+  }
+
+  isImage(url: string): boolean {
+    if (!url) return false;
+    return /\.(jpg|jpeg|png|webp|gif|svg)($|\?)/i.test(url) || url.startsWith('data:image/');
+  }
+
+  getFileName(url: string): string {
+    if (!url) return '';
+    try {
+      const parts = url.split('/');
+      return parts[parts.length - 1] || url;
+    } catch {
+      return url;
+    }
   }
 }

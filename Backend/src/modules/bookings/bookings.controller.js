@@ -60,13 +60,28 @@ function processIncomingDocuments(rawDocs, reqFiles = []) {
 export class BookingsController {
   /**
    * GET /api/bookings?page=1&limit=15
+   * Role-based access rules:
+   * - Role 1 (Company) & Role 2 (Coordinator): list all clients
+   * - Role 3 (Branch Head): display client details by district_id
+   * - Role 4 (Dealer) & Role 5 (Customer): take list by login_id
    */
   async getAll(req, res, next) {
     try {
       const page = req.query.page;
       const limit = req.query.limit;
 
-      const result = await bookingsService.getBookings({ page, limit });
+      const user = req.user || {};
+      const roleId = req.query.roleId ?? req.query.role_id ?? user.roleId ?? user.dbRoleId ?? null;
+      const loginId = req.query.loginId ?? req.query.login_id ?? user.id ?? null;
+      const districtId = req.query.districtId ?? req.query.district_id ?? user.districtId ?? null;
+
+      const result = await bookingsService.getBookings({
+        page,
+        limit,
+        roleId,
+        loginId,
+        districtId
+      });
       return res.json(result);
     } catch (err) {
       next(err);

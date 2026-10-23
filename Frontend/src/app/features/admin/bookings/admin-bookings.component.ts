@@ -4,12 +4,16 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
 import { DataService } from '../../../core/data.service';
+import { AuthService } from '../../../core/auth.service';
 import { Booking, District, BookingStatus } from '../../../core/models';
+import { matchesDistrict } from '../../../core/mock-data';
+import { DistrictDropdownComponent } from '../../../shared/components';
+import { ToastService } from '../../../shared/toast/toast.service';
 
 @Component({
   selector: 'app-admin-bookings',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, DistrictDropdownComponent],
   template: `
     <div class="w-full flex-1 flex flex-col bg-white">
       
@@ -154,22 +158,19 @@ import { Booking, District, BookingStatus } from '../../../core/models';
           </div>
 
           <!-- District Hubs Dropdown -->
-          <div class="w-40 sm:w-44 h-[36px] relative shrink-0">
-            <select
+          <div class="w-44 sm:w-48 h-[36px] relative shrink-0">
+            <app-district-dropdown
+              [districts]="availableDistricts()"
               [ngModel]="selectedDistrict()"
               (ngModelChange)="selectedDistrict.set($event); currentPage.set(1)"
-              class="w-full h-full text-[13px] px-3 pr-7 rounded-md border border-gray-200 bg-white text-gray-700 focus:outline-none focus:border-[#0f9d58] font-normal appearance-none cursor-pointer"
-            >
-              <option value="">All Districts Hubs</option>
-              @for (d of districts; track d.id) {
-                <option [value]="d.id">{{ d.name }} Hub</option>
-              }
-            </select>
-            <div class="absolute right-2.5 top-2.5 pointer-events-none text-gray-400">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
+              valueField="id"
+              suffix="Hub"
+              [showAllOption]="!isBranchHead()"
+              [allOptionLabel]="isBranchHead() ? 'My District Hub' : 'All Districts Hubs'"
+              [placeholder]="isBranchHead() ? 'My District Hub' : 'All Districts Hubs'"
+              searchPlaceholder="Search district..."
+              size="sm"
+            ></app-district-dropdown>
           </div>
 
           <!-- Client Types Dropdown -->
@@ -571,67 +572,165 @@ import { Booking, District, BookingStatus } from '../../../core/models';
               </button>
             </div>
 
-            <form (submit)="submitNewEnquiry($event)" class="space-y-3 text-xs">
+            <form (submit)="submitNewEnquiry($event)" class="space-y-3.5 text-xs">
+              <!-- p_name: Client Name -->
               <div>
-                <label class="block font-medium text-gray-700 mb-1">Client Name *</label>
+                <label class="block font-medium text-gray-700 mb-1">Client Name  *</label>
                 <input
                   type="text"
                   name="clientName"
                   required
+                  maxlength="150"
                   [(ngModel)]="newClientName"
                   placeholder="e.g. Rahul Sharma"
                   class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
                 />
               </div>
 
+              <!-- p_mobile & p_status in 2-col grid -->
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="block font-medium text-gray-700 mb-1">Phone Number *</label>
+                  <label class="block font-medium text-gray-700 mb-1">Phone Number  *</label>
                   <input
                     type="tel"
                     name="phone"
                     required
+                    maxlength="25"
                     [(ngModel)]="newPhone"
                     placeholder="e.g. 9847012345"
                     class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
                   />
                 </div>
                 <div>
-                  <label class="block font-medium text-gray-700 mb-1">District / Hub</label>
+                  <label class="block font-medium text-gray-700 mb-1">Status </label>
                   <select
-                    name="district"
-                    [(ngModel)]="newDistrict"
-                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
+                    name="status"
+                    [(ngModel)]="newStatus"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
                   >
-                    @for (d of districts; track d.id) {
-                      <option [value]="d.name">{{ d.name }} Hub</option>
-                    }
+                    <option value="Pending">Pending</option>
+                    <option value="Accepted">Accepted</option>
+                    <option value="Scheduled">Scheduled</option>
+                    <option value="Finished">Finished</option>
+                    <option value="NEW">NEW</option>
                   </select>
                 </div>
               </div>
 
+              <!-- p_district_name & p_area_name in 2-col grid -->
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="block font-medium text-gray-700 mb-1">Area / Location *</label>
+                  <label class="block font-medium text-gray-700 mb-1">District  *</label>
+                  <app-district-dropdown
+                    [(ngModel)]="newDistrict"
+                    [districts]="districts"
+                    valueField="name"
+                    suffix="Hub"
+                    placeholder="Select District / Hub"
+                    searchPlaceholder="Search district or area..."
+                    (districtChange)="onNewDistrictSelected($event)"
+                  ></app-district-dropdown>
+                </div>
+                <div>
+                  <label class="block font-medium text-gray-700 mb-1">Area / Location  *</label>
                   <input
                     type="text"
                     name="area"
                     required
+                    maxlength="100"
                     [(ngModel)]="newArea"
                     placeholder="e.g. Edapally"
                     class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
                   />
                 </div>
-                <div>
-                  <label class="block font-medium text-gray-700 mb-1">Assigned Head</label>
-                  <input
-                    type="text"
-                    name="head"
-                    [(ngModel)]="newHead"
-                    placeholder="e.g. Rajesh Menon"
-                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
-                  />
+              </div>
+
+              <!-- p_address: Address -->
+              <div>
+                <label class="block font-medium text-gray-700 mb-1">Address  *</label>
+                <textarea
+                  name="address"
+                  required
+                  rows="2"
+                  [(ngModel)]="newAddress"
+                  placeholder="e.g. Door No. 12/450, Civil Station Road, Near Metro"
+                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
+                ></textarea>
+              </div>
+
+              <!-- p_notes: Notes -->
+              <div>
+                <label class="block font-medium text-gray-700 mb-1">Notes / Instructions </label>
+                <textarea
+                  name="notes"
+                  rows="2"
+                  [(ngModel)]="newNotes"
+                  placeholder="e.g. Frame measurement needed, double steel door specification..."
+                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
+                ></textarea>
+              </div>
+
+              <!-- Assigned Head -->
+              <div>
+                <label class="block font-medium text-gray-700 mb-1">Assigned Head</label>
+                <input
+                  type="text"
+                  name="head"
+                  [(ngModel)]="newHead"
+                  placeholder="e.g. Rajesh Menon"
+                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
+                />
+              </div>
+
+              <!-- p_documents: Documents (JSON) -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="font-medium text-gray-700">Documents / Attachments </label>
+                  <span class="text-[11px] text-gray-400">PDF, JPG, PNG (JSON Array)</span>
                 </div>
+                
+                <!-- Upload Dropzone / Button -->
+                <div class="border border-dashed border-gray-300 rounded-lg p-3 bg-gray-50/50 hover:bg-gray-50 text-center transition-colors">
+                  <input
+                    type="file"
+                    multiple
+                    #docFileInput
+                    (change)="onDocumentsSelected($event)"
+                    class="hidden"
+                    accept="image/*,.pdf,.doc,.docx"
+                  />
+                  <div class="flex flex-col items-center justify-center gap-1 cursor-pointer" (click)="docFileInput.click()">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <span class="text-xs text-gray-600 font-medium">Click to upload documents or site photos</span>
+                    <span class="text-[10px] text-gray-400">Files will be converted to URLs/JSON array</span>
+                  </div>
+                </div>
+
+                <!-- Uploaded Document Chips List -->
+                @if (newDocuments.length > 0) {
+                  <div class="flex flex-wrap gap-2 mt-2">
+                    @for (doc of newDocuments; track $index) {
+                      <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 border border-gray-200 text-[11px] text-gray-700">
+                        <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span class="truncate max-w-[140px]" [title]="doc">{{ getDocumentName(doc) }}</span>
+                        <button
+                          type="button"
+                          (click)="removeDocument($index)"
+                          class="p-0.5 text-gray-400 hover:text-red-500 rounded cursor-pointer"
+                          title="Remove document"
+                        >
+                          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                          </svg>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
               </div>
 
               <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
@@ -644,9 +743,18 @@ import { Booking, District, BookingStatus } from '../../../core/models';
                 </button>
                 <button
                   type="submit"
-                  class="px-4 py-2 rounded-lg bg-[#246b3f] hover:bg-[#1e5834] text-white font-semibold cursor-pointer"
+                  [disabled]="isSubmitting"
+                  class="px-4 py-2 rounded-lg bg-[#246b3f] hover:bg-[#1e5834] text-white font-semibold cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
                 >
-                  Save Enquiry
+                  @if (isSubmitting) {
+                    <svg class="animate-spin w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                    <span>Saving...</span>
+                  } @else {
+                    <span>Save Enquiry</span>
+                  }
                 </button>
               </div>
             </form>
@@ -662,9 +770,24 @@ export class AdminBookingsComponent implements OnInit {
   private router = inject(Router);
   private dataService = inject(DataService);
   private titleService = inject(Title);
+  authService = inject(AuthService);
 
   bookings = signal<Booking[]>([]);
   districts: District[] = [];
+
+  isBranchHead = computed(() => {
+    const u = this.authService.currentUser();
+    const roleId = Number(u?.roleId ?? u?.dbRoleId);
+    return roleId === 3 || u?.role === 'branch_head';
+  });
+
+  availableDistricts = computed(() => {
+    if (this.isBranchHead()) {
+      const u = this.authService.currentUser();
+      return this.districts.filter(d => matchesDistrict(d.id, d.name, u?.districtId, u?.districtName));
+    }
+    return this.districts;
+  });
 
   // Filter signals
   searchQuery = signal('');
@@ -678,16 +801,23 @@ export class AdminBookingsComponent implements OnInit {
   currentPage = signal(1);
   pageSize = 11;
 
+  private toastService = inject(ToastService);
+
   // Modals / Drawers
   selectedBooking = signal<Booking | null>(null);
   newEnquiryModalOpen = signal(false);
 
-  // New enquiry form fields
-  newClientName = '';
-  newPhone = '';
-  newDistrict = 'Ernakulam';
-  newArea = '';
+  // New enquiry form fields matching create_booking SP:
+  newClientName = '';           // p_name (VARCHAR 150)
+  newPhone = '';                // p_mobile (VARCHAR 25)
+  newAddress = '';              // p_address (TEXT)
+  newNotes = '';                // p_notes (TEXT)
+  newStatus: BookingStatus = 'Pending'; // p_status (VARCHAR 50)
+  newDistrict = 'Ernakulam';    // p_district_name (VARCHAR 100)
+  newArea = '';                 // p_area_name (VARCHAR 100)
+  newDocuments: string[] = [];  // p_documents (JSON)
   newHead = 'Rajesh Menon';
+  isSubmitting = false;
 
   setStatus(status: string): void {
     this.selectedStatus.set(status);
@@ -696,6 +826,26 @@ export class AdminBookingsComponent implements OnInit {
 
   filteredBookings = computed(() => {
     let list = [...this.bookings()];
+
+    // 0. Enforce role-based scoping:
+    // - Role 1 (Company) & Role 2 (Coordinator): list ALL clients
+    // - Role 3 (Branch Head): display clients details by district_id
+    // - Role 4 (Dealer) & Role 5 (Customer): take list by login_id
+    const user = this.authService.currentUser();
+    const roleId = Number(user?.roleId ?? user?.dbRoleId);
+    const isRole1or2 = roleId === 1 || roleId === 2 || user?.role === 'admin' || user?.role === 'coordinator';
+    const isRole3 = roleId === 3 || user?.role === 'branch_head';
+
+    if (isRole3) {
+      list = list.filter(b => matchesDistrict(b.districtId, b.districtName, user?.districtId, user?.districtName));
+    } else if (!isRole1or2 && user) {
+      const targetId = String(user.clientId || user.id);
+      list = list.filter(b => {
+        if (b.loginId != null && String(b.loginId) === String(user.id)) return true;
+        if (b.clientId && (String(b.clientId) === targetId || String(b.clientId) === String(user.clientId))) return true;
+        return false;
+      });
+    }
 
     // Search query
     const q = this.searchQuery().trim().toLowerCase();
@@ -782,6 +932,20 @@ export class AdminBookingsComponent implements OnInit {
     if (initialStatus) {
       this.selectedStatus.set(initialStatus);
     }
+
+    // If logged in as Branch Head, pre-configure their assigned district
+    const u = this.authService.currentUser();
+    const roleId = Number(u?.roleId ?? u?.dbRoleId);
+    if (roleId === 3 || u?.role === 'branch_head') {
+      if (u?.districtName) {
+        const cleanName = u.districtName.replace(/\s+hub$/i, '').trim();
+        this.newDistrict = cleanName;
+        this.selectedDistrict.set(u.districtId || cleanName);
+      }
+      if (u?.name) {
+        this.newHead = u.name;
+      }
+    }
   }
 
   getEndIndex(): number {
@@ -833,40 +997,181 @@ export class AdminBookingsComponent implements OnInit {
   }
 
   openNewEnquiryModal(): void {
+    const u = this.authService.currentUser();
+    const roleId = Number(u?.roleId ?? u?.dbRoleId);
+    if (roleId === 3 || u?.role === 'branch_head') {
+      if (u?.districtName) {
+        this.newDistrict = u.districtName.replace(/\s+hub$/i, '').trim();
+      }
+      if (u?.name) {
+        this.newHead = u.name;
+      }
+    }
     this.newEnquiryModalOpen.set(true);
+  }
+
+  onDocumentsSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const files = Array.from(input.files);
+    this.dataService.uploadDocuments(files).subscribe({
+      next: res => {
+        if (res && res.urls && res.urls.length > 0) {
+          this.newDocuments = [...this.newDocuments, ...res.urls];
+        } else {
+          const fallbackUrls = files.map(f => `/uploads/${f.name}`);
+          this.newDocuments = [...this.newDocuments, ...fallbackUrls];
+        }
+      },
+      error: () => {
+        const fallbackUrls = files.map(f => `/uploads/${f.name}`);
+        this.newDocuments = [...this.newDocuments, ...fallbackUrls];
+      }
+    });
+    input.value = '';
+  }
+
+  removeDocument(index: number): void {
+    this.newDocuments.splice(index, 1);
+  }
+
+  getDocumentName(docUrl: string): string {
+    if (!docUrl) return '';
+    try {
+      const parts = docUrl.split('/');
+      return parts[parts.length - 1] || docUrl;
+    } catch {
+      return docUrl;
+    }
   }
 
   submitNewEnquiry(event: Event): void {
     event.preventDefault();
-    if (!this.newClientName || !this.newPhone) return;
+    if (!this.newClientName || !this.newPhone || !this.newAddress) return;
 
-    const newBooking: Booking = {
-      id: `BK-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+    this.isSubmitting = true;
+    const matchedDist = this.districts.find(d => d.name === this.newDistrict);
+    const districtId = matchedDist?.id || 'dist-ekm';
+
+    const u = this.authService.currentUser();
+    const roleId = Number(u?.roleId ?? u?.dbRoleId);
+
+    const payload: any = {
+      name: this.newClientName,
       clientName: this.newClientName,
-      clientType: 'customer',
+      mobile: this.newPhone,
       contactPhone: this.newPhone,
-      contactEmail: `${this.newClientName.toLowerCase().replace(/\s+/g, '')}@example.com`,
-      districtId: 'dist-ekm',
+      address: this.newAddress,
+      notes: this.newNotes || null,
+      status: this.newStatus || 'Pending',
+      districtId,
       districtName: this.newDistrict,
       area: this.newArea || 'Edapally',
-      address: `${this.newArea}, ${this.newDistrict}`,
+      areaName: this.newArea || 'Edapally',
+      documents: this.newDocuments,
+      clientType: 'customer',
+      contactEmail: `${this.newClientName.toLowerCase().replace(/\s+/g, '')}@example.com`,
       pincode: '682024',
+      branchHeadName: this.newHead || 'Rajesh Menon',
+      loginRoleId: roleId || (u?.role === 'admin' ? 1 : u?.role === 'coordinator' ? 2 : u?.role === 'branch_head' ? 3 : 4),
+      loginId: u?.id || null,
+      loginName: u?.name || null,
       doorDetails: {
         doorType: 'Standard Steel Door Installation',
-        quantity: 1
-      },
-      status: 'Pending',
-      branchHeadName: this.newHead || 'Rajesh Menon',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      history: []
+        quantity: 1,
+        notes: this.newNotes || '',
+        images: this.newDocuments,
+        documents: this.newDocuments
+      }
     };
 
-    this.bookings.update(prev => [newBooking, ...prev]);
-    this.newEnquiryModalOpen.set(false);
+    this.dataService.createBooking(payload).subscribe({
+      next: (created) => {
+        const fullBooking: Booking = {
+          ...payload,
+          id: created?.id || `BK-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+          status: (this.newStatus as any) || 'Pending',
+          createdAt: created?.createdAt || new Date().toISOString(),
+          updatedAt: created?.updatedAt || new Date().toISOString(),
+          history: created?.history || [
+            {
+              id: `hist-${Date.now().toString().slice(-4)}`,
+              action: 'Created',
+              status: (this.newStatus as any) || 'Pending',
+              timestamp: new Date().toISOString(),
+              performedBy: 'Admin',
+              role: 'admin',
+              notes: 'Booking created via New Enquiry modal'
+            }
+          ]
+        };
+
+        this.bookings.update(prev => [fullBooking, ...prev]);
+        this.resetEnquiryForm();
+        this.isSubmitting = false;
+        this.newEnquiryModalOpen.set(false);
+        this.toastService.success('Enquiry and booking created successfully!');
+      },
+      error: () => {
+        const localBooking: Booking = {
+          id: `BK-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+          clientName: this.newClientName,
+          clientType: 'customer',
+          contactPhone: this.newPhone,
+          contactEmail: `${this.newClientName.toLowerCase().replace(/\s+/g, '')}@example.com`,
+          districtId,
+          districtName: this.newDistrict,
+          area: this.newArea || 'Edapally',
+          areaName: this.newArea || 'Edapally',
+          address: this.newAddress,
+          notes: this.newNotes,
+          pincode: '682024',
+          documents: this.newDocuments,
+          doorDetails: {
+            doorType: 'Standard Steel Door Installation',
+            quantity: 1,
+            notes: this.newNotes || '',
+            images: this.newDocuments,
+            documents: this.newDocuments
+          },
+          status: (this.newStatus as any) || 'Pending',
+          branchHeadName: this.newHead || 'Rajesh Menon',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          history: []
+        };
+        this.bookings.update(prev => [localBooking, ...prev]);
+        this.resetEnquiryForm();
+        this.isSubmitting = false;
+        this.newEnquiryModalOpen.set(false);
+        this.toastService.success('Enquiry saved successfully!');
+      }
+    });
+  }
+
+  private resetEnquiryForm(): void {
     this.newClientName = '';
     this.newPhone = '';
+    this.newAddress = '';
+    this.newNotes = '';
+    this.newStatus = 'Pending';
     this.newArea = '';
+    this.newDocuments = [];
+  }
+
+  onNewDistrictSelected(dist: District | null): void {
+    if (!dist) return;
+    const branchHeadMap: Record<string, string> = {
+      'Ernakulam': 'Rajesh Menon',
+      'Trivandrum': 'Suresh Kumar',
+      'Kozhikode': 'Deepa Chandran',
+      'Thrissur': 'Priya Nair',
+      'Kannur': 'Manoj Varma'
+    };
+    if (branchHeadMap[dist.name]) {
+      this.newHead = branchHeadMap[dist.name];
+    }
   }
 
   prevPage(): void {

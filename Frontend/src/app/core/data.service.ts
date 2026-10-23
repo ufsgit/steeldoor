@@ -7,6 +7,23 @@ import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 import {
+<<<<<<< Updated upstream
+=======
+  MOCK_BOOKINGS,
+  MOCK_BRANCH_HEADS,
+  MOCK_CLIENTS,
+  MOCK_DISTRICTS,
+  MOCK_SERVICES,
+  MOCK_SITE_CONTENT,
+  MOCK_TESTIMONIALS,
+  MOCK_USERS,
+  filterBookingsForUser,
+  matchesDistrict,
+  isAdminRole,
+  isUserRole
+} from './mock-data';
+import {
+>>>>>>> Stashed changes
   Booking,
   BookingFilters,
   BookingHistoryEntry,
@@ -134,11 +151,35 @@ export class DataService {
   // ---------------- Clients ----------------
 
   getClients(): Observable<Client[]> {
+<<<<<<< Updated upstream
     if (isPlatformServer(this.platformId)) {
       return of([]);
     }
     return this.http.get<Client[]>(this.url('/api/clients')).pipe(
       catchError(() => of([]))
+=======
+    const currentUser = this.auth.currentUser();
+    const roleId = Number(currentUser?.roleId ?? currentUser?.dbRoleId);
+    const isRole1or2 = roleId === 1 || roleId === 2 || currentUser?.role === 'admin' || currentUser?.role === 'coordinator';
+    const isRole3 = roleId === 3 || currentUser?.role === 'branch_head';
+
+    const filterClients = (clients: Client[]): Client[] => {
+      if (isRole1or2) return clients;
+      if (isRole3) {
+        return clients.filter(c => matchesDistrict(c.districtId, undefined, currentUser?.districtId, currentUser?.districtName));
+      }
+      // Role 4 & 5 or dealer/customer: take list by login id
+      const targetId = String(currentUser?.clientId || currentUser?.id);
+      return clients.filter(c => String(c.id) === targetId);
+    };
+
+    if (isPlatformServer(this.platformId)) {
+      return of(filterClients(MOCK_CLIENTS));
+    }
+    return this.http.get<Client[]>(this.url('/api/clients')).pipe(
+      map(clients => filterClients(Array.isArray(clients) ? clients : [])),
+      catchError(() => of(filterClients(MOCK_CLIENTS)))
+>>>>>>> Stashed changes
     );
   }
 
@@ -161,14 +202,61 @@ export class DataService {
     return this.http.post<{ success: boolean }>(this.url(`/api/clients/${id}/credentials`), credentials);
   }
 
+<<<<<<< Updated upstream
   // ---------------- Bookings ----------------
 
   getBookings(filter?: BookingFilters): Observable<Booking[]> {
     if (isPlatformServer(this.platformId)) {
       return of([]);
     }
+=======
+  // ---------------- Bookings (Role 1 & 2 sees all, Role 3 by district_id, Role 4 & 5 by login_id) ----------------
 
-    let params = new HttpParams();
+  getBookings(filter?: BookingFilters): Observable<Booking[]> {
+    const currentUser = this.auth.currentUser();
+    const roleId = Number(currentUser?.roleId ?? currentUser?.dbRoleId ?? (
+      currentUser?.role === 'admin' ? 1 :
+      currentUser?.role === 'coordinator' ? 2 :
+      currentUser?.role === 'branch_head' ? 3 :
+      currentUser?.role === 'user' ? 5 : 4
+    ));
+    const loginId = currentUser?.id ?? '';
+    const districtId = currentUser?.districtId ?? '';
+
+    if (isPlatformServer(this.platformId)) {
+      let list = filterBookingsForUser(MOCK_BOOKINGS, currentUser);
+      if (filter?.status) {
+        list = list.filter(b => b.status === filter.status);
+      }
+      if (filter?.districtId) {
+        list = list.filter(b => b.districtId === filter.districtId);
+      }
+      if (filter?.branchHeadId) {
+        list = list.filter(b => b.branchHeadId === filter.branchHeadId);
+      }
+      if (filter?.clientId) {
+        list = list.filter(b => b.clientId === filter.clientId);
+      }
+      if (filter?.search) {
+        const s = filter.search.toLowerCase();
+        list = list.filter(b =>
+          b.id.toLowerCase().includes(s) ||
+          b.clientName.toLowerCase().includes(s) ||
+          b.districtName.toLowerCase().includes(s)
+        );
+      }
+      return of(list);
+    }
+
+    let params = new HttpParams()
+      .set('page', '1')
+      .set('limit', '100');
+
+    if (roleId) params = params.set('roleId', String(roleId));
+    if (loginId) params = params.set('loginId', String(loginId));
+    if (districtId) params = params.set('districtId', String(districtId));
+>>>>>>> Stashed changes
+
     if (filter) {
       if (filter.status) params = params.set('status', filter.status);
       if (filter.districtId) params = params.set('districtId', filter.districtId);
@@ -178,9 +266,82 @@ export class DataService {
       if (filter.search) params = params.set('search', filter.search);
     }
 
+<<<<<<< Updated upstream
     return this.http.get<Booking[]>(this.url('/api/bookings'), { params }).pipe(
       catchError(() => of([]))
+=======
+    return this.http.get<any>(this.url('/api/bookings'), { params }).pipe(
+      map(res => {
+        const rawList: any[] = Array.isArray(res) ? res : (res?.data || []);
+        const normalized = rawList.map(b => this.normalizeBooking(b));
+        return filterBookingsForUser(normalized, currentUser);
+      }),
+      catchError(() => {
+        let list = filterBookingsForUser(MOCK_BOOKINGS, currentUser);
+        if (filter?.status) {
+          list = list.filter(b => b.status === filter.status);
+        }
+        if (filter?.search) {
+          const s = filter.search.toLowerCase();
+          list = list.filter(b =>
+            b.id.toLowerCase().includes(s) ||
+            b.clientName.toLowerCase().includes(s) ||
+            b.districtName.toLowerCase().includes(s)
+          );
+        }
+        return of(list);
+      })
+>>>>>>> Stashed changes
     );
+  }
+
+  private normalizeBooking(b: any): Booking {
+    let docs: string[] = [];
+    if (b.documents) {
+      if (Array.isArray(b.documents)) docs = b.documents;
+      else if (typeof b.documents === 'string') {
+        try { docs = JSON.parse(b.documents); } catch { docs = [b.documents]; }
+      } else { docs = [b.documents]; }
+    }
+
+    const clientName = b.clientName || b.name || 'Client';
+    const contactPhone = b.contactPhone || b.mobile || '';
+    const districtName = b.districtName || 'Ernakulam';
+    const areaName = b.areaName || b.area || '';
+
+    return {
+      id: String(b.id || `BK-${Date.now()}`),
+      clientId: b.clientId ? String(b.clientId) : (b.loginId ? String(b.loginId) : String(b.id)),
+      clientName,
+      name: b.name || clientName,
+      clientType: b.clientType || 'customer',
+      contactPhone,
+      mobile: b.mobile || contactPhone,
+      contactEmail: b.contactEmail || `${clientName.toLowerCase().replace(/\s+/g, '')}@example.com`,
+      districtId: b.districtId != null ? String(b.districtId) : '1',
+      districtName,
+      area: areaName,
+      areaName,
+      address: b.address || '',
+      notes: b.notes || '',
+      pincode: b.pincode || '',
+      documents: docs,
+      status: (b.status as any) || 'Pending',
+      branchHeadName: b.branchHeadName || (districtName === 'Trivandrum' ? 'Suresh Kumar' : 'Rajesh Menon'),
+      loginRoleId: b.loginRoleId != null ? Number(b.loginRoleId) : undefined,
+      loginId: b.loginId != null ? b.loginId : undefined,
+      loginName: b.loginName || undefined,
+      doorDetails: b.doorDetails || {
+        doorType: 'Standard Steel Door Installation',
+        quantity: 1,
+        notes: b.notes || '',
+        documents: docs,
+        images: docs
+      },
+      createdAt: b.createdAt || new Date().toISOString(),
+      updatedAt: b.updatedAt || new Date().toISOString(),
+      history: b.history || []
+    };
   }
 
   getBookingById(id: string): Observable<Booking> {

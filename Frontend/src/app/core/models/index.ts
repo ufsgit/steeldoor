@@ -90,6 +90,13 @@ export interface Booking {
   isDelayed?: boolean;
   hoursSinceSubmitted?: number;
   documents?: string[];
+  name?: string;
+  mobile?: string;
+  areaName?: string;
+  notes?: string;
+  loginRoleId?: number;
+  loginId?: number | string;
+  loginName?: string;
 }
 
 export interface User {
@@ -100,8 +107,11 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
+  roleId?: number;
+  dbRoleId?: number;
   branchHeadId?: string;
   districtId?: string;
+  districtName?: string;
   clientId?: string;
   clientType?: ClientType;
   roleId?: number;
@@ -158,19 +168,26 @@ export interface BookingFilters {
 
 export interface CreateBookingPayload {
   clientId?: string;
+  name?: string;
   clientName: string;
   clientType: ClientType;
+  mobile?: string;
   contactPhone: string;
   contactEmail: string;
   districtId: string;
+  districtName?: string;
   area: string;
+  areaName?: string;
   address: string;
   landmark?: string;
   pincode: string;
+  notes?: string;
+  status?: string;
   doorDetails: DoorDetails;
   documents?: string[];
   performedBy?: string;
   role?: UserRole;
+  branchHeadName?: string;
 }
 
 export interface StatusUpdatePayload {

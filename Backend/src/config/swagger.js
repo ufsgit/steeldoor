@@ -328,6 +328,27 @@ export const swaggerDocument = {
             required: false,
             schema: { type: 'integer', default: 15 },
             description: 'Number of records per page (default: 15)'
+          },
+          {
+            name: 'roleId',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer' },
+            description: 'User Role ID (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer). Roles 1 & 2 see all clients, role 3 filters by district_id, role 4 filters by login_id.'
+          },
+          {
+            name: 'loginId',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer' },
+            description: 'User login ID (used when roleId is 4 or 5 to list clients by login id)'
+          },
+          {
+            name: 'districtId',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer' },
+            description: 'District ID (used when roleId is 3 to list clients by district id)'
           }
         ],
         responses: {

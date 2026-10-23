@@ -115,14 +115,22 @@ export class BookingsService {
 
   /**
    * Get paginated bookings directly using get_bookings_paginated SP
-
-   * Default limit: 15 records
+   * Supports role-based filtering:
+   * - Role 1 (Company) & Role 2 (Coordinator): List all clients
+   * - Role 3 (Branch Head): Filter by district_id
+   * - Role 4 (Dealer) & Role 5 (Customer): Filter by login_id
    */
-  async getBookings({ page = 1, limit = 15 } = {}) {
+  async getBookings({ page = 1, limit = 15, roleId = null, loginId = null, districtId = null } = {}) {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.max(1, parseInt(limit, 10) || 15);
+    const roleIdNum = roleId != null && roleId !== '' ? parseInt(roleId, 10) : null;
+    const loginIdNum = loginId != null && loginId !== '' ? parseInt(loginId, 10) : null;
+    const districtIdNum = districtId != null && districtId !== '' ? parseInt(districtId, 10) : null;
 
-    const [results] = await pool.query('CALL get_bookings_paginated(?, ?)', [pageNum, limitNum]);
+    const [results] = await pool.query(
+      'CALL get_bookings_paginated(?, ?, ?, ?, ?)',
+      [pageNum, limitNum, roleIdNum, loginIdNum, districtIdNum]
+    );
 
     const rows = results?.[0] || [];
     const meta = results?.[1]?.[0] || {};
@@ -163,10 +171,14 @@ export class BookingsService {
     return {
       id: b.id,
       name: b.name,
+      clientName: b.name,
       mobile: b.mobile,
+      contactPhone: b.mobile,
+      contactEmail: `${(b.name || 'client').toLowerCase().replace(/\s+/g, '')}@example.com`,
+      clientType: 'customer',
       address: b.address,
       notes: b.notes || null,
-      status: b.status || 'NEW',
+      status: b.status || 'Pending',
       loginRoleId: b.loginRoleId ?? b.login_role_id ?? null,
       loginId: b.loginId ?? b.login_id ?? null,
       loginName: b.loginName ?? b.login_name ?? null,
@@ -174,10 +186,15 @@ export class BookingsService {
       stateName: b.stateName ?? b.state_name ?? null,
       districtId: b.districtId ?? b.district_id ?? null,
       districtName: b.districtName ?? b.district_name ?? null,
+      area: b.areaName ?? b.area_name ?? '',
       areaId: b.areaId ?? b.area_id ?? null,
       areaName: b.areaName ?? b.area_name ?? null,
+<<<<<<< Updated upstream
       branchHeadId: b.branchHeadId ?? b.branch_head_id ?? null,
       branchHeadName: b.branchHeadName ?? b.branch_head_name ?? null,
+=======
+      branchHeadName: b.districtName === 'Trivandrum' ? 'Suresh Kumar' : 'Rajesh Menon',
+>>>>>>> Stashed changes
       documents: docs,
       createdAt: b.createdAt || b.created_at,
       updatedAt: b.updatedAt || b.updated_at

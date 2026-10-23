@@ -4,8 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { DataService } from '../../../core/data.service';
+import { AuthService } from '../../../core/auth.service';
 import { ToastService } from '../../../shared/toast/toast.service';
 import { Client, District } from '../../../core/models';
+import { matchesDistrict } from '../../../core/mock-data';
 import { ModalComponent } from '../../../shared/components/modal.component';
 
 @Component({
@@ -327,6 +329,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
 export class AdminClientsComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private dataService = inject(DataService);
+  private authService = inject(AuthService);
   private toast = inject(ToastService);
   private titleService = inject(Title);
 
@@ -355,7 +358,22 @@ export class AdminClientsComponent implements OnInit {
   credPassword = '';
 
   filteredClients = () => {
+    const user = this.authService.currentUser();
+    const roleId = Number(user?.roleId ?? user?.dbRoleId);
+    const isRole1or2 = roleId === 1 || roleId === 2 || user?.role === 'admin' || user?.role === 'coordinator';
+    const isRole3 = roleId === 3 || user?.role === 'branch_head';
+
     return this.clients().filter(c => {
+      // 1. Role 1 & 2: all clients
+      // 2. Role 3: filter by district
+      if (isRole3) {
+        if (!matchesDistrict(c.districtId, undefined, user?.districtId, user?.districtName)) return false;
+      } else if (!isRole1or2 && user) {
+        // 3. Role 4 & 5: by login id
+        const targetId = String(user.clientId || user.id);
+        if (String(c.id) !== targetId) return false;
+      }
+
       if (this.typeFilter && c.clientType !== this.typeFilter) return false;
       if (this.searchQuery.trim()) {
         const q = this.searchQuery.toLowerCase();

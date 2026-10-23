@@ -5,8 +5,8 @@ import { optionalAuth } from '../auth/jwt.util.js';
 
 const router = Router();
 
-// GET /api/bookings - List paginated bookings (Default 15 records per page)
-router.get('/', (req, res, next) => bookingsController.getAll(req, res, next));
+// GET /api/bookings - List paginated bookings (Default 15 records per page, role-based filtering)
+router.get('/', optionalAuth, (req, res, next) => bookingsController.getAll(req, res, next));
 
 // POST /api/bookings - Create new booking (Extracts authenticated user if token present)
 router.post('/', optionalAuth, (req, res, next) => bookingsController.create(req, res, next));
