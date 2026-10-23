@@ -6,14 +6,20 @@ export class DropdownsController {
    */
   resolveParams(req, type) {
     const user = req.user || {};
-    const roleId = Number(user.roleId ?? user.dbRoleId ?? null);
+    const roleId = Number(user.roleId ?? user.dbRoleId ?? user.role_id ?? (
+      user.role === 'admin' || user.role === 'company' ? 1 :
+      user.role === 'coordinator' ? 2 :
+      user.role === 'branch_head' ? 3 :
+      user.role === 'dealer' || user.role === 'client' ? 4 :
+      user.role === 'customer' || user.role === 'user' ? 5 : null
+    ));
     const isBranchHead = roleId === 3;
 
     let parentId = req.query.parentId ?? req.query.parent_id ?? req.query.stateId ?? req.query.districtId ?? null;
 
     // For Role 3 (Branch Head), district is locked to their assigned district
     if (isBranchHead) {
-      parentId = user.districtId ?? parentId;
+      parentId = user.districtId ?? user.district_id ?? parentId;
     }
 
     const search = req.query.search ?? req.query.q ?? null;
@@ -22,7 +28,7 @@ export class DropdownsController {
 
     return {
       roleId: roleId || null,
-      loginId: user.id ?? null,
+      loginId: user.id ?? user.userId ?? user.login_id ?? null,
       parentId: parentId ? Number(parentId) : null,
       search: search ? String(search).trim() : null,
       page,

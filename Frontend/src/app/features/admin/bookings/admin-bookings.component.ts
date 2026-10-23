@@ -913,13 +913,13 @@ export class AdminBookingsComponent implements OnInit {
     const resolvedBookings = this.route.snapshot.data['bookings'];
     if (resolvedBookings && resolvedBookings.length > 0) {
       this.bookings.set(resolvedBookings);
+    } else {
+      this.dataService.getBookings().subscribe(b => {
+        if (b && b.length > 0) {
+          this.bookings.set(b);
+        }
+      });
     }
-    // Fetch fresh bookings to ensure latest updates are reflected
-    this.dataService.getBookings().subscribe(b => {
-      if (b && b.length > 0) {
-        this.bookings.set(b);
-      }
-    });
 
     const resolvedDistricts = this.route.snapshot.data['districts'];
     if (resolvedDistricts) {

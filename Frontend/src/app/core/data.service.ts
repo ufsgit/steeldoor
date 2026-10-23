@@ -135,13 +135,27 @@ export class DataService {
     return this.http.delete(this.url(`/api/areas/${id}`));
   }
 
-  // ---------------- Districts & Areas (Legacy endpoints) ----------------
+  // ---------------- Districts & Areas (sp_get_dropdown_data) ----------------
 
   getDistricts(): Observable<District[]> {
     if (isPlatformServer(this.platformId)) {
       return of([]);
     }
     return this.http.get<District[]>(this.url('/api/districts')).pipe(
+      catchError(() => of([]))
+    );
+  }
+
+  getDropdownData(type: 'district' | 'area', parentId?: number | string, search?: string): Observable<Array<{ id: number; name: string }>> {
+    if (isPlatformServer(this.platformId)) {
+      return of([]);
+    }
+    let params = new HttpParams().set('type', type);
+    if (parentId) params = params.set('parentId', String(parentId));
+    if (search && search.trim()) params = params.set('search', search.trim());
+
+    return this.http.get<{ data: Array<{ id: number; name: string }> }>(this.url('/api/dropdowns'), { params }).pipe(
+      map(res => res?.data || []),
       catchError(() => of([]))
     );
   }
@@ -262,14 +276,6 @@ export class DataService {
 
   getBookings(filter?: BookingFilters): Observable<Booking[]> {
     const currentUser = this.auth.currentUser();
-    const roleId = Number(currentUser?.roleId ?? currentUser?.dbRoleId ?? (
-      currentUser?.role === 'admin' ? 1 :
-      currentUser?.role === 'coordinator' ? 2 :
-      currentUser?.role === 'branch_head' ? 3 :
-      currentUser?.role === 'user' ? 5 : 4
-    ));
-    const loginId = currentUser?.id ?? '';
-    const districtId = currentUser?.districtId ?? '';
 
     if (isPlatformServer(this.platformId)) {
       return of([]);
@@ -278,10 +284,6 @@ export class DataService {
     let params = new HttpParams()
       .set('page', '1')
       .set('limit', '100');
-
-    if (roleId) params = params.set('roleId', String(roleId));
-    if (loginId) params = params.set('loginId', String(loginId));
-    if (districtId) params = params.set('districtId', String(districtId));
 
     if (filter) {
       if (filter.status) params = params.set('status', filter.status);
