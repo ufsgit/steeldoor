@@ -19,6 +19,42 @@ export class AuthService {
   }
 
   /**
+   * Web Login for Company (Role 1) and Dealer (Role 4)
+   * Invokes the MySQL stored procedure `web_login(username, password)`
+   */
+  async webLogin(username, password) {
+    const [results] = await pool.query('CALL web_login(?, ?)', [username, password]);
+    const spRows = results && results.length > 0 ? results[0] : [];
+
+    if (!spRows || spRows.length === 0) {
+      return {
+        status: 401,
+        message: 'Invalid login credentials.',
+        data: null
+      };
+    }
+
+    const row = spRows[0];
+    const status = Number(row.status) || 200;
+    const message = row.message || (status === 200 ? 'Login successful.' : 'Login failed.');
+
+    if (status !== 200) {
+      return {
+        status,
+        message,
+        data: null
+      };
+    }
+
+    const sessionData = this.formatSessionResponse(row);
+    return {
+      status: 200,
+      message,
+      data: sessionData
+    };
+  }
+
+  /**
    * Helper to normalize user session token and ensure frontend role compatibility
    */
   formatSessionResponse(user) {
