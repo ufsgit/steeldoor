@@ -83,10 +83,7 @@ export const ADMIN_ROUTES: Routes = [
       },
       {
         path: 'areas',
-        component: AdminAreasComponent,
-        resolve: {
-          districts: districtsResolver
-        }
+        component: AdminAreasComponent
       },
       {
         path: 'users',
