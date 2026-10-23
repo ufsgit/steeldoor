@@ -6,7 +6,7 @@ import { Title } from '@angular/platform-browser';
 import { DataService } from '../../../core/data.service';
 import { AuthService } from '../../../core/auth.service';
 import { Booking, District, BookingStatus } from '../../../core/models';
-import { matchesDistrict } from '../../../core/mock-data';
+import { matchesDistrict } from '../../../core/role-utils';
 import { DistrictDropdownComponent } from '../../../shared/components';
 import { ToastService } from '../../../shared/toast/toast.service';
 

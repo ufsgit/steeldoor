@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { matchesDistrict, filterBookingsForUser } from './mock-data';
+import { matchesDistrict, filterBookingsForUser } from './role-utils';
 import { Booking, User } from './models';
 
 describe('Role-based filtering logic', () => {

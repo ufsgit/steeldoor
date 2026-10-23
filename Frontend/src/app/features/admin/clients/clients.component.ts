@@ -7,7 +7,7 @@ import { DataService } from '../../../core/data.service';
 import { AuthService } from '../../../core/auth.service';
 import { ToastService } from '../../../shared/toast/toast.service';
 import { Client, District } from '../../../core/models';
-import { matchesDistrict } from '../../../core/mock-data';
+import { matchesDistrict } from '../../../core/role-utils';
 import { ModalComponent } from '../../../shared/components/modal.component';
 
 @Component({

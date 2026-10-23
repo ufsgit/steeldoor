@@ -189,12 +189,8 @@ export class BookingsService {
       area: b.areaName ?? b.area_name ?? '',
       areaId: b.areaId ?? b.area_id ?? null,
       areaName: b.areaName ?? b.area_name ?? null,
-<<<<<<< Updated upstream
       branchHeadId: b.branchHeadId ?? b.branch_head_id ?? null,
       branchHeadName: b.branchHeadName ?? b.branch_head_name ?? null,
-=======
-      branchHeadName: b.districtName === 'Trivandrum' ? 'Suresh Kumar' : 'Rajesh Menon',
->>>>>>> Stashed changes
       documents: docs,
       createdAt: b.createdAt || b.created_at,
       updatedAt: b.updatedAt || b.updated_at

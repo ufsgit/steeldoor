@@ -20,6 +20,8 @@ export interface BranchHead {
   active: boolean;
   joinedDate?: string;
   experienceYears?: number;
+  username?: string;
+  password?: string;
 }
 
 export interface Client {
@@ -114,8 +116,6 @@ export interface User {
   districtName?: string;
   clientId?: string;
   clientType?: ClientType;
-  roleId?: number;
-  dbRoleId?: number;
 }
 
 export interface ServiceItem {
