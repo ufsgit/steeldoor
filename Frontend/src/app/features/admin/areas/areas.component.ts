@@ -259,8 +259,8 @@ import { ModalComponent } from '../../../shared/components/modal.component';
               <p class="text-xs font-bold text-gray-900">Are you sure you want to delete this area?</p>
               <p class="text-xs text-gray-600 mt-0.5">
                 Locality: <span class="font-bold text-gray-800">"{{ areaToDelete?.name }}"</span>
-                @if (areaToDelete?.pincode) {
-                  (PIN: {{ areaToDelete?.pincode }})
+                @if (areaToDelete?.pincode; as pin) {
+                  (PIN: {{ pin }})
                 }
               </p>
               <p class="text-[11px] text-red-600 mt-1">This action cannot be undone.</p>
