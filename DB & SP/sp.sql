@@ -1,4 +1,65 @@
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `create_or_reactivate_area`(
+    IN p_district_id INT,
+    IN p_name VARCHAR(100),
+    IN p_pincode VARCHAR(10)
+)
+BEGIN
+    DECLARE v_existing_id INT DEFAULT NULL;
+    DECLARE v_is_deleted TINYINT DEFAULT NULL;
+    DECLARE v_clean_name VARCHAR(100);
+    DECLARE v_clean_pincode VARCHAR(10);
+
+    SET v_clean_name = TRIM(p_name);
+    SET v_clean_pincode = NULLIF(TRIM(p_pincode), '');
+
+    IF p_district_id IS NULL OR v_clean_name IS NULL OR v_clean_name = '' THEN
+        SELECT 400 AS status, 'District ID and Area Name are required.' AS message, NULL AS id;
+    ELSE
+        -- Check if area name exists in this district
+        SELECT id, is_deleted
+        INTO v_existing_id, v_is_deleted
+        FROM areas
+        WHERE district_id = p_district_id
+          AND LOWER(name) = LOWER(v_clean_name)
+        LIMIT 1;
+
+        -- Conflict: Already active
+        IF v_existing_id IS NOT NULL AND v_is_deleted = 0 THEN
+            SELECT 409 AS status, 'Area already exists in this district.' AS message, v_existing_id AS id;
+
+        -- Reactivate if soft-deleted
+        ELSEIF v_existing_id IS NOT NULL AND v_is_deleted = 1 THEN
+            UPDATE areas
+            SET is_deleted = 0,
+                name = v_clean_name,
+                pincode = v_clean_pincode
+            WHERE id = v_existing_id;
+
+            SELECT 200 AS status, 'Area reactivated successfully.' AS message, v_existing_id AS id;
+
+            SELECT id, district_id, name, pincode, is_deleted, created_at
+            FROM areas
+            WHERE id = v_existing_id;
+
+        -- Insert new
+        ELSE
+            INSERT INTO areas (district_id, name, pincode, is_deleted)
+            VALUES (p_district_id, v_clean_name, v_clean_pincode, 0);
+
+            SET v_existing_id = LAST_INSERT_ID();
+
+            SELECT 201 AS status, 'Area created successfully.' AS message, v_existing_id AS id;
+
+            SELECT id, district_id, name, pincode, is_deleted, created_at
+            FROM areas
+            WHERE id = v_existing_id;
+        END IF;
+    END IF;
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `delete_booking`(
     IN p_id INT
 )
@@ -23,12 +84,95 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_areas_by_district`(
+    IN p_district_id INT,
+    IN p_search VARCHAR(100)
+)
+BEGIN
+    SELECT 
+        a.id,
+        a.district_id,
+        a.name,
+        a.pincode,
+        a.is_deleted,
+        a.created_at,
+        d.name AS district_name,
+        d.state_id,
+        s.name AS state_name
+    FROM areas a
+    JOIN districts d ON a.district_id = d.id
+    JOIN states s ON d.state_id = s.id
+    WHERE a.district_id = p_district_id
+      AND a.is_deleted = 0
+      AND (
+          p_search IS NULL 
+          OR TRIM(p_search) = '' 
+          OR a.name LIKE CONCAT('%', TRIM(p_search), '%')     -- Area name search
+          OR a.pincode LIKE CONCAT('%', TRIM(p_search), '%')  -- Pincode search
+      )
+    ORDER BY a.name ASC;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_area_hierarchy`(
+    IN p_district_id INT
+)
+BEGIN
+    DECLARE v_target_district_id INT DEFAULT p_district_id;
+
+    -- Pick first district if none specified
+    IF v_target_district_id IS NULL OR v_target_district_id <= 0 THEN
+        SELECT id INTO v_target_district_id
+        FROM districts
+        ORDER BY name ASC
+        LIMIT 1;
+    END IF;
+
+    -- Result Set 1: States
+    SELECT id, name, code, created_at
+    FROM states
+    ORDER BY name ASC;
+
+    -- Result Set 2: Districts with active area count
+    SELECT 
+        d.id,
+        d.state_id,
+        d.name,
+        d.code,
+        d.created_at,
+        COUNT(CASE WHEN a.is_deleted = 0 THEN 1 END) AS area_count
+    FROM districts d
+    LEFT JOIN areas a ON a.district_id = d.id
+    GROUP BY d.id, d.state_id, d.name, d.code, d.created_at
+    ORDER BY d.name ASC;
+
+    -- Result Set 3: Selected District ID
+    SELECT v_target_district_id AS selected_district_id;
+
+    -- Result Set 4: Active Areas of target district
+    SELECT 
+        a.id,
+        a.district_id,
+        a.name,
+        a.pincode,
+        a.is_deleted,
+        a.created_at
+    FROM areas a
+    WHERE a.district_id = v_target_district_id
+      AND a.is_deleted = 0
+    ORDER BY a.name ASC;
+
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_bookings_paginated`(
-    IN p_page        INT,  -- Page number (e.g. 1, 2, 3...)
-    IN p_limit       INT,  -- Number of records per page (default: 15)
-    IN p_role_id     INT,  -- User role_id (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer)
-    IN p_login_id    INT,  -- User login ID
-    IN p_district_id INT   -- User district ID (for role 3 branch_head)
+    IN p_page        INT,
+    IN p_limit       INT,
+    IN p_role_id     INT,
+    IN p_login_id    INT,
+    IN p_district_id INT
 )
 BEGIN
     DECLARE v_limit INT DEFAULT 15;
@@ -36,12 +180,10 @@ BEGIN
     DECLARE v_offset INT DEFAULT 0;
     DECLARE v_district_id INT DEFAULT NULL;
 
-    -- Apply default limit 15 if null or <= 0
     IF p_limit IS NOT NULL AND p_limit > 0 THEN
         SET v_limit = p_limit;
     END IF;
 
-    -- Apply default page 1 if null or <= 0
     IF p_page IS NOT NULL AND p_page > 0 THEN
         SET v_page = p_page;
     END IF;
@@ -49,7 +191,6 @@ BEGIN
     SET v_offset = (v_page - 1) * v_limit;
     SET v_district_id = p_district_id;
 
-    -- If Role 3 (Branch Head) and district_id was not provided, resolve from users table
     IF p_role_id = 3 AND (v_district_id IS NULL OR v_district_id <= 0) AND p_login_id IS NOT NULL THEN
         SELECT district_id INTO v_district_id
         FROM users
@@ -57,7 +198,6 @@ BEGIN
         LIMIT 1;
     END IF;
 
-    -- Query 1: Fetch paginated bookings matching role rules
     SELECT 
         id,
         name,
@@ -74,23 +214,21 @@ BEGIN
         district_name,
         area_id,
         area_name,
+        branch_head_id,
+        branch_head_name,
         documents,
         created_at,
         updated_at
     FROM bookings
     WHERE is_deleted = 0
       AND (
-          -- Role 1 (company) & Role 2 (coordinator): list ALL clients
           (p_role_id IN (1, 2) OR p_role_id IS NULL)
-          -- Role 3 (branch_head): display client details by district_id
           OR (p_role_id = 3 AND district_id = v_district_id)
-          -- Role 4 (dealer) & Role 5 (customer): take list by login_id
           OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
       )
     ORDER BY created_at DESC
     LIMIT v_limit OFFSET v_offset;
 
-    -- Query 2: Pagination metadata matching the exact same role filter
     SELECT 
         COUNT(*) AS total_records,
         v_page AS current_page,
@@ -292,6 +430,130 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `set_booking_branch_head`(
+    IN p_booking_id       INT,
+    IN p_branch_head_id   INT,
+    IN p_branch_head_name VARCHAR(150)
+)
+BEGIN
+    DECLARE v_branch_head_name VARCHAR(150);
+
+    -- 1. Validate booking_id
+    IF p_booking_id IS NULL OR p_booking_id <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'booking_id is required.';
+    END IF;
+
+    SET v_branch_head_name = TRIM(p_branch_head_name);
+
+    -- 2. If branch_head_name is omitted or blank, auto-resolve from users table (role_id = 3: branch_head)
+    IF (v_branch_head_name IS NULL OR v_branch_head_name = '') AND p_branch_head_id IS NOT NULL THEN
+        SELECT name INTO v_branch_head_name 
+        FROM users 
+        WHERE id = p_branch_head_id AND role_id = 3 AND is_deleted = 0 
+        LIMIT 1;
+    END IF;
+
+    -- 3. Update the booking with the branch head details
+    UPDATE bookings
+    SET 
+        branch_head_id   = p_branch_head_id,
+        branch_head_name = v_branch_head_name,
+        updated_at       = CURRENT_TIMESTAMP
+    WHERE id = p_booking_id AND is_deleted = 0;
+
+    -- 4. Return the updated booking record
+    SELECT 
+        id, name, mobile, address, notes, status,
+        login_role_id, login_id, login_name,
+        state_id, state_name, district_id, district_name,
+        area_id, area_name, branch_head_id, branch_head_name,
+        documents, is_deleted, created_at, updated_at
+    FROM bookings
+    WHERE id = p_booking_id AND is_deleted = 0;
+
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `soft_delete_area`(
+    IN p_area_id INT
+)
+BEGIN
+    DECLARE v_affected_rows INT DEFAULT 0;
+
+    UPDATE areas
+    SET is_deleted = 1
+    WHERE id = p_area_id AND is_deleted = 0;
+
+    SET v_affected_rows = ROW_COUNT();
+
+    IF v_affected_rows > 0 THEN
+        SELECT 200 AS status, 'Area deleted successfully.' AS message;
+    ELSE
+        SELECT 404 AS status, 'Area not found or already deleted.' AS message;
+    END IF;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_branch_heads_dropdown`(
+    IN p_district_id INT,           -- Optional: Filter by specific district (NULL = all branch heads)
+    IN p_search      VARCHAR(100),  -- Optional: Search keyword (matches name, phone, or district)
+    IN p_page        INT,           -- Page number (default: 1)
+    IN p_limit       INT            -- Items per page (default: 50)
+)
+BEGIN
+    DECLARE v_limit INT DEFAULT 50;
+    DECLARE v_page INT DEFAULT 1;
+    DECLARE v_offset INT DEFAULT 0;
+    DECLARE v_search VARCHAR(105) DEFAULT NULL;
+
+    -- 1. Apply defaults for page and limit
+    IF p_limit IS NOT NULL AND p_limit > 0 THEN
+        SET v_limit = p_limit;
+    END IF;
+
+    IF p_page IS NOT NULL AND p_page > 0 THEN
+        SET v_page = p_page;
+    END IF;
+
+    SET v_offset = (v_page - 1) * v_limit;
+
+    -- 2. Normalize search
+    IF p_search IS NOT NULL AND TRIM(p_search) != '' THEN
+        SET v_search = TRIM(p_search);
+    END IF;
+
+    -- 3. Return active Branch Heads (role_id = 3)
+    SELECT 
+        u.id,
+        u.name,
+        u.district_id,
+        TRIM(REPLACE(d.name, ' Hub', '')) AS district_name,
+        u.phone,
+        u.email
+    FROM users u
+    LEFT JOIN districts d ON u.district_id = d.id
+    WHERE u.role_id = 3
+      AND u.is_active = 1
+      AND u.is_deleted = 0
+      -- District filter (if provided)
+      AND (p_district_id IS NULL OR u.district_id = p_district_id)
+      -- Search filter
+      AND (
+          v_search IS NULL 
+          OR u.name LIKE CONCAT('%', v_search, '%') 
+          OR d.name LIKE CONCAT('%', v_search, '%')
+          OR u.phone LIKE CONCAT('%', v_search, '%')
+      )
+    ORDER BY u.name ASC
+    LIMIT v_limit OFFSET v_offset;
+
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_client_status_history`(
     IN p_client_id INT
 )
@@ -308,6 +570,115 @@ BEGIN
     FROM client_status_logs
     WHERE client_id = p_client_id
     ORDER BY created_at DESC;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_coordinator_bookings`(
+    IN p_status       VARCHAR(50),
+    IN p_district_id  INT,
+    IN p_search       VARCHAR(100),
+    IN p_page         INT,
+    IN p_limit        INT
+)
+BEGIN
+    DECLARE v_limit INT DEFAULT 15;
+    DECLARE v_page INT DEFAULT 1;
+    DECLARE v_offset INT DEFAULT 0;
+    DECLARE v_search VARCHAR(105) DEFAULT NULL;
+    DECLARE v_status VARCHAR(50) DEFAULT NULL;
+
+    IF p_limit IS NOT NULL AND p_limit > 0 THEN
+        SET v_limit = p_limit;
+    END IF;
+
+    IF p_page IS NOT NULL AND p_page > 0 THEN
+        SET v_page = p_page;
+    END IF;
+
+    SET v_offset = (v_page - 1) * v_limit;
+
+    IF p_search IS NOT NULL AND TRIM(p_search) != '' THEN
+        SET v_search = TRIM(p_search);
+    END IF;
+
+    IF p_status IS NOT NULL AND TRIM(p_status) != '' THEN
+        SET v_status = UPPER(TRIM(p_status));
+    END IF;
+
+    SELECT 
+        b.id,
+        b.name,
+        b.mobile,
+        b.address,
+        b.notes,
+        b.status,
+        b.schedule_date,
+        b.created_by,
+        b.created_by_name,
+        b.login_role_id,
+        b.login_id,
+        b.login_name,
+        b.state_id,
+        b.state_name,
+        b.district_id,
+        b.district_name,
+        b.area_id,
+        b.area_name,
+        b.branch_head_id,
+        b.branch_head_name,
+        b.documents,
+        b.created_at,
+        b.updated_at
+    FROM bookings b
+    WHERE b.is_deleted = 0
+      AND (
+          v_status IS NULL 
+          OR v_status = 'ALL' 
+          OR b.status = v_status
+          OR (v_status = 'UNREAD' AND b.status = 'NEW')
+          OR (v_status = 'PENDING' AND b.status = 'SCHEDULED')
+      )
+      AND (p_district_id IS NULL OR b.district_id = p_district_id)
+      AND (
+          v_search IS NULL
+          OR b.name LIKE CONCAT('%', v_search, '%')
+          OR b.mobile LIKE CONCAT('%', v_search, '%')
+          OR b.address LIKE CONCAT('%', v_search, '%')
+          OR b.area_name LIKE CONCAT('%', v_search, '%')
+          OR b.district_name LIKE CONCAT('%', v_search, '%')
+          OR b.branch_head_name LIKE CONCAT('%', v_search, '%')
+          OR b.created_by_name LIKE CONCAT('%', v_search, '%')
+      )
+    ORDER BY b.created_at DESC
+    LIMIT v_limit OFFSET v_offset;
+
+    SELECT 
+        COUNT(*) AS total_records,
+        v_page AS current_page,
+        v_limit AS page_size,
+        CEIL(COUNT(*) / v_limit) AS total_pages
+    FROM bookings b
+    WHERE b.is_deleted = 0
+      AND (
+          v_status IS NULL 
+          OR v_status = 'ALL' 
+          OR b.status = v_status
+          OR (v_status = 'UNREAD' AND b.status = 'NEW')
+          OR (v_status = 'PENDING' AND b.status = 'SCHEDULED')
+      )
+      AND (p_district_id IS NULL OR b.district_id = p_district_id)
+      AND (
+          v_search IS NULL
+          OR b.name LIKE CONCAT('%', v_search, '%')
+          OR b.mobile LIKE CONCAT('%', v_search, '%')
+          OR b.address LIKE CONCAT('%', v_search, '%')
+          OR b.area_name LIKE CONCAT('%', v_search, '%')
+          OR b.district_name LIKE CONCAT('%', v_search, '%')
+          OR b.branch_head_name LIKE CONCAT('%', v_search, '%')
+          OR b.created_by_name LIKE CONCAT('%', v_search, '%')
+      );
+
 END$$
 DELIMITER ;
 
@@ -437,80 +808,64 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_save_client_status`(
     IN p_schedule_date   DATE,
     IN p_notes           TEXT,
     IN p_created_by      INT,
-    IN p_created_by_name VARCHAR(100)
+    IN p_created_by_name VARCHAR(100),
+    IN p_branch_head_id  INT            -- <-- Pass selected Branch Head from dropdown
 )
 BEGIN
     DECLARE v_new_id INT;
     DECLARE v_clean_date DATE;
     DECLARE v_client_name VARCHAR(150);
+    DECLARE v_created_by_name VARCHAR(100);
+    DECLARE v_branch_head_name VARCHAR(150);
 
-    -- 1. Validate mandatory fields
-    IF p_client_id IS NULL OR p_client_id <= 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'client_id is required.';
-    END IF;
-
-    IF p_status IS NULL OR TRIM(p_status) = '' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Status is required.';
-    END IF;
-
-    -- 2. Auto-fetch client_name from bookings if not passed
+    -- 1. Auto-fetch client_name if omitted
     SET v_client_name = TRIM(p_client_name);
     IF v_client_name IS NULL OR v_client_name = '' THEN
         SELECT name INTO v_client_name FROM bookings WHERE id = p_client_id LIMIT 1;
     END IF;
 
-    -- 3. If status is Cancelled, clear schedule_date to NULL
+    -- 2. Auto-fetch created_by_name (Who submitted the status update)
+    SET v_created_by_name = TRIM(p_created_by_name);
+    IF (v_created_by_name IS NULL OR v_created_by_name = '') AND p_created_by IS NOT NULL THEN
+        SELECT name INTO v_created_by_name FROM users WHERE id = p_created_by LIMIT 1;
+    END IF;
+
+    -- 3. Auto-resolve Branch Head Name from users table
+    IF p_branch_head_id IS NOT NULL AND p_branch_head_id > 0 THEN
+        SELECT name INTO v_branch_head_name FROM users WHERE id = p_branch_head_id AND role_id = 3 LIMIT 1;
+    END IF;
+
+    -- 4. If status is Cancelled, clear schedule_date
     IF LOWER(TRIM(p_status)) = 'cancelled' THEN
         SET v_clean_date = NULL;
     ELSE
         SET v_clean_date = p_schedule_date;
     END IF;
 
-    -- 4. Insert history/audit record into client_status_logs
+    -- 5. Insert audit trail into client_status_logs
     INSERT INTO client_status_logs (
-        client_id,
-        client_name,
-        status,
-        schedule_date,
-        notes,
-        created_by,
-        created_by_name
+        client_id, client_name, status, schedule_date, notes, created_by, created_by_name
     ) VALUES (
-        p_client_id,
-        v_client_name,
-        TRIM(p_status),
-        v_clean_date,
-        TRIM(p_notes),
-        p_created_by,
-        TRIM(p_created_by_name)
+        p_client_id, v_client_name, UPPER(TRIM(p_status)), v_clean_date, TRIM(p_notes), p_created_by, v_created_by_name
     );
 
     SET v_new_id = LAST_INSERT_ID();
 
-    -- 5. ALSO UPDATE THE MAIN `bookings` TABLE STATUS & NOTES
+    -- 6. Update BOTH Status AND Branch Head in bookings
     UPDATE bookings
     SET 
-        status = UPPER(TRIM(p_status)),
-        notes = CASE 
-            WHEN p_notes IS NOT NULL AND TRIM(p_notes) != '' THEN TRIM(p_notes) 
-            ELSE notes 
-        END,
-        updated_at = CURRENT_TIMESTAMP
+        status           = UPPER(TRIM(p_status)),
+        schedule_date    = v_clean_date,
+        notes            = CASE WHEN p_notes IS NOT NULL AND TRIM(p_notes) != '' THEN TRIM(p_notes) ELSE notes END,
+        created_by       = p_created_by,
+        created_by_name  = v_created_by_name,
+        branch_head_id   = COALESCE(p_branch_head_id, branch_head_id),
+        branch_head_name = COALESCE(v_branch_head_name, branch_head_name),
+        updated_at       = CURRENT_TIMESTAMP
     WHERE id = p_client_id;
 
-    -- 6. Return the saved record
-    SELECT 
-        id,
-        client_id,
-        client_name,
-        status,
-        schedule_date,
-        notes,
-        created_by,
-        created_by_name,
-        created_at
+    -- 7. Return saved log
+    SELECT id, client_id, client_name, status, schedule_date, notes, created_by, created_by_name, created_at
     FROM client_status_logs
     WHERE id = v_new_id;
 
@@ -596,6 +951,120 @@ BEGIN
     FROM bookings
     WHERE id = p_booking_id AND is_deleted = 0;
 
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_update_coordinator_names`()
+BEGIN
+    -- =========================================================================
+    -- 1. UPDATE `users` TABLE (Coordinators with role_id = 2)
+    -- =========================================================================
+    UPDATE users
+    SET name = 'Elena Vance (Coordinator)'
+    WHERE id = 2 OR username = 'admin';
+
+    UPDATE users
+    SET name = 'Alex George (Coordinator)'
+    WHERE id = 3 OR username = 'coordinator';
+
+    -- Replace any other "(Operations Coordinator)" or "(Field Coordinator)"
+    UPDATE users
+    SET name = REPLACE(REPLACE(name, '(Operations Coordinator)', '(Coordinator)'), '(Field Coordinator)', '(Coordinator)')
+    WHERE role_id = 2;
+
+    -- =========================================================================
+    -- 2. UPDATE `bookings` TABLE (login_name & created_by_name)
+    -- =========================================================================
+    UPDATE bookings
+    SET login_name = 'Elena Vance (Coordinator)'
+    WHERE login_id = 2 OR login_name LIKE '%Elena Vance%';
+
+    UPDATE bookings
+    SET login_name = 'Alex George (Coordinator)'
+    WHERE login_id = 3 OR login_name LIKE '%Alex George%';
+
+    UPDATE bookings
+    SET created_by_name = 'Elena Vance (Coordinator)'
+    WHERE created_by = 2 OR created_by_name LIKE '%Elena Vance%';
+
+    UPDATE bookings
+    SET created_by_name = 'Alex George (Coordinator)'
+    WHERE created_by = 3 OR created_by_name LIKE '%Alex George%';
+
+    -- =========================================================================
+    -- 3. UPDATE `client_status_logs` TABLE (created_by_name)
+    -- =========================================================================
+    UPDATE client_status_logs
+    SET created_by_name = 'Elena Vance (Coordinator)'
+    WHERE created_by = 2 OR created_by_name LIKE '%Elena Vance%';
+
+    UPDATE client_status_logs
+    SET created_by_name = 'Alex George (Coordinator)'
+    WHERE created_by = 3 OR created_by_name LIKE '%Alex George%';
+
+    -- =========================================================================
+    -- 4. CONFIRM UPDATED COORDINATOR USERS
+    -- =========================================================================
+    SELECT id, username, name, role_id, role 
+    FROM users 
+    WHERE role_id = 2;
+
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `update_area`(
+    IN p_area_id INT,
+    IN p_district_id INT,
+    IN p_name VARCHAR(100),
+    IN p_pincode VARCHAR(10)
+)
+BEGIN
+    DECLARE v_current_district_id INT DEFAULT NULL;
+    DECLARE v_duplicate_id INT DEFAULT NULL;
+    DECLARE v_clean_name VARCHAR(100);
+    DECLARE v_clean_pincode VARCHAR(10);
+    DECLARE v_target_district_id INT;
+
+    SET v_clean_name = TRIM(p_name);
+    SET v_clean_pincode = NULLIF(TRIM(p_pincode), '');
+
+    SELECT district_id INTO v_current_district_id
+    FROM areas
+    WHERE id = p_area_id
+    LIMIT 1;
+
+    IF v_current_district_id IS NULL THEN
+        SELECT 404 AS status, 'Area not found.' AS message;
+    ELSE
+        SET v_target_district_id = COALESCE(p_district_id, v_current_district_id);
+
+        -- Check duplicate in target district
+        SELECT id INTO v_duplicate_id
+        FROM areas
+        WHERE district_id = v_target_district_id
+          AND LOWER(name) = LOWER(v_clean_name)
+          AND id != p_area_id
+          AND is_deleted = 0
+        LIMIT 1;
+
+        IF v_duplicate_id IS NOT NULL THEN
+            SELECT 409 AS status, 'Another area with this name already exists in this district.' AS message;
+        ELSE
+            UPDATE areas
+            SET name = v_clean_name,
+                pincode = v_clean_pincode,
+                district_id = v_target_district_id
+            WHERE id = p_area_id;
+
+            SELECT 200 AS status, 'Area updated successfully.' AS message;
+
+            SELECT id, district_id, name, pincode, is_deleted, created_at
+            FROM areas
+            WHERE id = p_area_id;
+        END IF;
+    END IF;
 END$$
 DELIMITER ;
 
