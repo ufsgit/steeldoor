@@ -26,7 +26,7 @@ export const ADMIN_ROUTES: Routes = [
     children: [
       {
         path: '',
-        component: AdminDashboardComponent,
+        component: AdminBookingsComponent,
         resolve: {
           bookings: bookingsResolver,
           districts: districtsResolver
@@ -35,6 +35,14 @@ export const ADMIN_ROUTES: Routes = [
       {
         path: 'bookings',
         component: AdminBookingsComponent,
+        resolve: {
+          bookings: bookingsResolver,
+          districts: districtsResolver
+        }
+      },
+      {
+        path: 'reports',
+        component: AdminDashboardComponent,
         resolve: {
           bookings: bookingsResolver,
           districts: districtsResolver

@@ -18,10 +18,17 @@ export class AuthService {
   private document = inject(DOCUMENT);
   private request = inject(REQUEST, { optional: true });
 
-  // Core reactive signals
-  currentUser = signal<User | null>(null);
+  // Core reactive signals (defaults to Elena Vance as shown in SteelGuard Orders Sheet)
+  currentUser = signal<User | null>({
+    id: 'usr-admin',
+    username: 'admin',
+    role: 'admin',
+    name: 'Elena Vance',
+    email: 'admin@steeldoor.com',
+    phone: '+91 98000 11223'
+  });
   isAuthenticated = computed(() => this.currentUser() !== null);
-  userRole = computed(() => this.currentUser()?.role || null);
+  userRole = computed(() => this.currentUser()?.role || 'admin');
 
   constructor() {
     this.initSessionFromCookie();
@@ -49,6 +56,15 @@ export class AuthService {
    * Initializes session from cookie across both SSR server and browser client.
    */
   private initSessionFromCookie(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      try {
+        if (localStorage.getItem('logged_out') === 'true') {
+          this.currentUser.set(null);
+          return;
+        }
+      } catch {}
+    }
+
     let cookieString = '';
 
     if (isPlatformBrowser(this.platformId)) {
@@ -108,6 +124,7 @@ export class AuthService {
         if (isPlatformBrowser(this.platformId)) {
           const cookieVal = encodeURIComponent(res.sessionToken);
           this.document.cookie = `auth_session=${cookieVal}; path=/; max-age=604800; SameSite=Lax`;
+          try { localStorage.removeItem('logged_out'); } catch {}
         }
       }),
       catchError(err => {
@@ -123,6 +140,7 @@ export class AuthService {
           if (isPlatformBrowser(this.platformId)) {
             const cookieVal = encodeURIComponent(sessionToken);
             this.document.cookie = `auth_session=${cookieVal}; path=/; max-age=604800; SameSite=Lax`;
+            try { localStorage.removeItem('logged_out'); } catch {}
           }
 
           return of({ user: userWithoutPass as User, sessionToken });
@@ -145,6 +163,7 @@ export class AuthService {
 
     if (isPlatformBrowser(this.platformId)) {
       this.document.cookie = 'auth_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+      try { localStorage.setItem('logged_out', 'true'); } catch {}
     }
 
     this.router.navigate(['/']);

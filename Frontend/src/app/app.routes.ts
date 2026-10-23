@@ -17,6 +17,16 @@ export const routes: Routes = [
     loadChildren: () => import('./features/admin/admin.routes').then(m => m.ADMIN_ROUTES)
   },
   {
+    path: 'orders',
+    redirectTo: 'admin',
+    pathMatch: 'full'
+  },
+  {
+    path: 'website',
+    redirectTo: '',
+    pathMatch: 'prefix'
+  },
+  {
     path: 'branch',
     loadChildren: () => import('./features/branch/branch.routes').then(m => m.BRANCH_ROUTES)
   },
