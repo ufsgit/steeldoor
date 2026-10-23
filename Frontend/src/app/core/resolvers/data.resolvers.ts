@@ -20,6 +20,12 @@ export const districtsResolver: ResolveFn<District[]> = () => {
   );
 };
 
+export const usersResolver: ResolveFn<any[]> = () => {
+  return inject(DataService).getUsers().pipe(
+    catchError(() => of([]))
+  );
+};
+
 export const branchHeadsResolver: ResolveFn<BranchHead[]> = () => {
   return inject(DataService).getBranchHeads().pipe(
     catchError(() => of([]))

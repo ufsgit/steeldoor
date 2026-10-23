@@ -3,22 +3,9 @@ import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { REQUEST } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { map, catchError, tap } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
-import {
-  MOCK_BOOKINGS,
-  MOCK_BRANCH_HEADS,
-  MOCK_CLIENTS,
-  MOCK_DISTRICTS,
-  MOCK_SERVICES,
-  MOCK_SITE_CONTENT,
-  MOCK_TESTIMONIALS,
-  MOCK_USERS,
-  filterBookingsForUser,
-  isAdminRole,
-  isUserRole
-} from './mock-data';
 import {
   Booking,
   BookingFilters,
@@ -46,15 +33,11 @@ export class DataService {
   private getBaseUrl(): string {
     if (isPlatformServer(this.platformId)) {
       if (this.request) {
-        // Standard Web Request object
         if ('url' in this.request && typeof this.request.url === 'string' && this.request.url.startsWith('http')) {
           try {
             return new URL(this.request.url).origin;
-          } catch {
-            // fallback
-          }
+          } catch {}
         }
-        // Express Request object
         const reqAny = this.request as any;
         const host = reqAny.headers?.get?.('host') || reqAny.headers?.host || 'localhost:4000';
         const protocol = reqAny.protocol || 'http';
@@ -62,7 +45,7 @@ export class DataService {
       }
       return 'http://localhost:4000';
     }
-    return ''; // Relative path on client browser
+    return '';
   }
 
   private url(endpoint: string): string {
@@ -80,10 +63,10 @@ export class DataService {
 
   getDistricts(): Observable<District[]> {
     if (isPlatformServer(this.platformId)) {
-      return of(MOCK_DISTRICTS);
+      return of([]);
     }
     return this.http.get<District[]>(this.url('/api/districts')).pipe(
-      catchError(() => of(MOCK_DISTRICTS))
+      catchError(() => of([]))
     );
   }
 
@@ -122,17 +105,16 @@ export class DataService {
 
   getBranchHeads(): Observable<BranchHead[]> {
     if (isPlatformServer(this.platformId)) {
-      return of(MOCK_BRANCH_HEADS);
+      return of([]);
     }
     return this.http.get<BranchHead[]>(this.url('/api/branch-heads')).pipe(
-      catchError(() => of(MOCK_BRANCH_HEADS))
+      catchError(() => of([]))
     );
   }
 
   getBranchHeadById(id: string): Observable<BranchHead> {
     if (isPlatformServer(this.platformId)) {
-      const bh = MOCK_BRANCH_HEADS.find(b => b.id === id);
-      return of(bh || {} as BranchHead);
+      return of({} as BranchHead);
     }
     return this.http.get<BranchHead>(this.url(`/api/branch-heads/${id}`));
   }
@@ -152,104 +134,23 @@ export class DataService {
   // ---------------- Clients ----------------
 
   getClients(): Observable<Client[]> {
-    const currentUser = this.auth.currentUser();
     if (isPlatformServer(this.platformId)) {
-      if (currentUser && currentUser.clientType === 'company') {
-        return of(MOCK_CLIENTS);
-      }
-      if (currentUser && isUserRole(currentUser.role)) {
-        const targetId = currentUser.clientId || currentUser.id;
-        return of(MOCK_CLIENTS.filter(c => c.id === targetId));
-      }
-      return of(MOCK_CLIENTS);
+      return of([]);
     }
     return this.http.get<Client[]>(this.url('/api/clients')).pipe(
-      map(clients => {
-        // Company account oversees all dealers
-        if (currentUser && currentUser.clientType === 'company') {
-          return clients;
-        }
-        if (currentUser && isUserRole(currentUser.role)) {
-          const targetId = currentUser.clientId || currentUser.id;
-          return clients.filter(c => c.id === targetId);
-        }
-        return clients;
-      }),
-      catchError(() => {
-        if (currentUser && currentUser.clientType === 'company') {
-          return of(MOCK_CLIENTS);
-        }
-        if (currentUser && isUserRole(currentUser.role)) {
-          const targetId = currentUser.clientId || currentUser.id;
-          return of(MOCK_CLIENTS.filter(c => c.id === targetId));
-        }
-        return of(MOCK_CLIENTS);
-      })
+      catchError(() => of([]))
     );
   }
 
   getClientById(id: string): Observable<Client> {
     if (isPlatformServer(this.platformId)) {
-      const c = MOCK_CLIENTS.find(cl => cl.id === id);
-      return of(c || {} as Client);
+      return of({} as Client);
     }
     return this.http.get<Client>(this.url(`/api/clients/${id}`));
   }
 
   createClient(data: Partial<Client>, credentials?: { username: string; password: string }): Observable<Client> {
-    return this.http.post<Client>(this.url('/api/clients'), { ...data, credentials }).pipe(
-      tap(created => {
-        // Keep in-memory mock store synchronized
-        MOCK_CLIENTS.unshift(created);
-        if (credentials) {
-          MOCK_USERS.push({
-            id: `usr-${created.id}`,
-            username: credentials.username,
-            password: credentials.password,
-            role: 'client',
-            clientId: created.id,
-            clientType: 'dealer',
-            name: created.name,
-            email: created.email,
-            phone: created.phone
-          });
-        }
-      }),
-      catchError(err => {
-        // Safe fallback in-memory client creation if server returns error
-        const id = `cli-${Date.now()}`;
-        const created: Client = {
-          id,
-          name: data.name || 'New Dealer',
-          clientType: data.clientType || 'dealer',
-          email: data.email || '',
-          phone: data.phone || '',
-          address: data.address || '',
-          districtId: data.districtId || 'dist-ekm',
-          area: data.area || '',
-          contactPerson: data.contactPerson,
-          dealerLicense: data.dealerLicense,
-          hasLogin: Boolean(credentials),
-          username: credentials?.username,
-          createdAt: new Date().toISOString()
-        };
-        MOCK_CLIENTS.unshift(created);
-        if (credentials) {
-          MOCK_USERS.push({
-            id: `usr-${id}`,
-            username: credentials.username,
-            password: credentials.password,
-            role: 'client',
-            clientId: id,
-            clientType: 'dealer',
-            name: created.name,
-            email: created.email,
-            phone: created.phone
-          });
-        }
-        return of(created);
-      })
-    );
+    return this.http.post<Client>(this.url('/api/clients'), { ...data, credentials });
   }
 
   updateClient(id: string, data: Partial<Client>): Observable<Client> {
@@ -260,43 +161,11 @@ export class DataService {
     return this.http.post<{ success: boolean }>(this.url(`/api/clients/${id}/credentials`), credentials);
   }
 
-  // ---------------- Bookings (Admin sees all, User sees only their data, Company oversees dealers) ----------------
+  // ---------------- Bookings ----------------
 
   getBookings(filter?: BookingFilters): Observable<Booking[]> {
-    const currentUser = this.auth.currentUser();
     if (isPlatformServer(this.platformId)) {
-      let list = filterBookingsForUser(MOCK_BOOKINGS, currentUser);
-      if (filter?.status) {
-        list = list.filter(b => b.status === filter.status);
-      }
-      if (filter?.districtId) {
-        list = list.filter(b => b.districtId === filter.districtId);
-      }
-      if (filter?.branchHeadId) {
-        list = list.filter(b => b.branchHeadId === filter.branchHeadId);
-      }
-      if (filter?.clientId) {
-        list = list.filter(b => b.clientId === filter.clientId);
-      }
-      if (filter?.search) {
-        const s = filter.search.toLowerCase();
-        list = list.filter(b =>
-          b.id.toLowerCase().includes(s) ||
-          b.clientName.toLowerCase().includes(s) ||
-          b.districtName.toLowerCase().includes(s)
-        );
-      }
-      return of(list);
-    }
-
-    let effectiveClientId = filter?.clientId;
-
-    // Enforce role-based scoping: regular user/customer/dealer can only view their own records,
-    // while company accounts oversee all dealer bookings.
-    if (currentUser && isUserRole(currentUser.role)) {
-      if (currentUser.clientType !== 'company') {
-        effectiveClientId = currentUser.clientId || currentUser.id;
-      }
+      return of([]);
     }
 
     let params = new HttpParams();
@@ -304,91 +173,27 @@ export class DataService {
       if (filter.status) params = params.set('status', filter.status);
       if (filter.districtId) params = params.set('districtId', filter.districtId);
       if (filter.branchHeadId) params = params.set('branchHeadId', filter.branchHeadId);
-      if (effectiveClientId) params = params.set('clientId', effectiveClientId);
+      if (filter.clientId) params = params.set('clientId', filter.clientId);
       if (filter.clientType) params = params.set('clientType', filter.clientType);
       if (filter.search) params = params.set('search', filter.search);
-    } else if (effectiveClientId) {
-      params = params.set('clientId', effectiveClientId);
     }
 
     return this.http.get<Booking[]>(this.url('/api/bookings'), { params }).pipe(
-      map(bookings => filterBookingsForUser(bookings, currentUser)),
-      catchError(() => {
-        let list = filterBookingsForUser(MOCK_BOOKINGS, currentUser);
-        if (filter?.status) {
-          list = list.filter(b => b.status === filter.status);
-        }
-        if (filter?.search) {
-          const s = filter.search.toLowerCase();
-          list = list.filter(b =>
-            b.id.toLowerCase().includes(s) ||
-            b.clientName.toLowerCase().includes(s) ||
-            b.districtName.toLowerCase().includes(s)
-          );
-        }
-        return of(list);
-      })
+      catchError(() => of([]))
     );
   }
 
   getBookingById(id: string): Observable<Booking> {
     if (isPlatformServer(this.platformId)) {
-      const found = MOCK_BOOKINGS.find(b => b.id === id);
-      return found ? of(found) : of({} as Booking);
+      return of({} as Booking);
     }
     return this.http.get<Booking>(this.url(`/api/bookings/${id}`)).pipe(
-      catchError(() => {
-        const found = MOCK_BOOKINGS.find(b => b.id === id);
-        return found ? of(found) : of({} as Booking);
-      })
+      catchError(() => of({} as Booking))
     );
   }
 
   createBooking(payload: CreateBookingPayload): Observable<Booking> {
-    return this.http.post<Booking>(this.url('/api/bookings'), payload).pipe(
-      tap(created => {
-        MOCK_BOOKINGS.unshift(created);
-      }),
-      catchError(() => {
-        const idSeq = 1000 + MOCK_BOOKINGS.length + 1;
-        const bookingId = `BK-${new Date().getFullYear()}-${idSeq}`;
-        const branchHead = MOCK_BRANCH_HEADS.find(bh => bh.districtId === payload.districtId && bh.active);
-        const district = MOCK_DISTRICTS.find(d => d.id === payload.districtId);
-        const created: Booking = {
-          id: bookingId,
-          clientId: payload.clientId,
-          clientName: payload.clientName,
-          clientType: payload.clientType,
-          contactPhone: payload.contactPhone,
-          contactEmail: payload.contactEmail,
-          districtId: payload.districtId,
-          districtName: district ? district.name : payload.districtId,
-          area: payload.area,
-          address: payload.address,
-          landmark: payload.landmark,
-          pincode: payload.pincode,
-          doorDetails: payload.doorDetails,
-          status: 'Pending',
-          branchHeadId: branchHead?.id,
-          branchHeadName: branchHead?.name,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          history: [
-            {
-              id: `hist-${Date.now().toString().slice(-4)}`,
-              action: 'Created',
-              status: 'Pending',
-              timestamp: new Date().toISOString(),
-              performedBy: `${payload.clientName} (Client)`,
-              role: 'client',
-              notes: 'Booking registered.'
-            }
-          ]
-        };
-        MOCK_BOOKINGS.unshift(created);
-        return of(created);
-      })
-    );
+    return this.http.post<Booking>(this.url('/api/bookings'), payload);
   }
 
   updateBookingStatus(id: string, payload: StatusUpdatePayload): Observable<Booking> {
@@ -419,29 +224,60 @@ export class DataService {
   // ---------------- Marketing & Site Content ----------------
 
   getServices(): Observable<ServiceItem[]> {
-    if (isPlatformServer(this.platformId)) {
-      return of(MOCK_SERVICES);
-    }
     return this.http.get<ServiceItem[]>(this.url('/api/services')).pipe(
-      catchError(() => of(MOCK_SERVICES))
+      catchError(() => of([]))
     );
   }
 
   getTestimonials(): Observable<TestimonialItem[]> {
-    if (isPlatformServer(this.platformId)) {
-      return of(MOCK_TESTIMONIALS);
-    }
     return this.http.get<TestimonialItem[]>(this.url('/api/testimonials')).pipe(
-      catchError(() => of(MOCK_TESTIMONIALS))
+      catchError(() => of([]))
     );
   }
 
   getSiteContent(): Observable<SiteContent> {
-    if (isPlatformServer(this.platformId)) {
-      return of(MOCK_SITE_CONTENT);
-    }
     return this.http.get<SiteContent>(this.url('/api/site-content')).pipe(
-      catchError(() => of(MOCK_SITE_CONTENT))
+      catchError(() => of({
+        companyName: 'SteelGuard Systems & Fitting',
+        tagline: 'Precision Steel Door Installation & District Fitting Services',
+        banners: [],
+        stats: [],
+        howItWorks: []
+      }))
     );
+  }
+
+  // ---------------- Users Management ----------------
+
+  getUsers(): Observable<any[]> {
+    if (isPlatformServer(this.platformId)) {
+      return of([]);
+    }
+    return this.http.get<{ success: boolean; data: any[] }>(this.url('/api/users')).pipe(
+      map(res => res?.data || []),
+      catchError(() => of([]))
+    );
+  }
+
+  createUser(userData: any): Observable<any> {
+    return this.http.post<{ success: boolean; data: any }>(this.url('/api/users'), userData).pipe(
+      map(res => res?.data || res)
+    );
+  }
+
+  updateUser(id: number | string, userData: any): Observable<any> {
+    return this.http.put<{ success: boolean; data: any }>(this.url(`/api/users/${id}`), userData).pipe(
+      map(res => res?.data || res)
+    );
+  }
+
+  toggleUserStatus(id: number | string): Observable<any> {
+    return this.http.patch<{ success: boolean; data: any }>(this.url(`/api/users/${id}/status`), {}).pipe(
+      map(res => res?.data || res)
+    );
+  }
+
+  deleteUser(id: number | string): Observable<any> {
+    return this.http.delete(this.url(`/api/users/${id}`));
   }
 }

@@ -3,9 +3,8 @@ import { isPlatformBrowser, isPlatformServer, DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { REQUEST } from '@angular/core';
-import { Observable, tap, catchError, of, throwError } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { User, UserRole } from './models';
-import { MOCK_USERS } from './mock-data';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -18,152 +17,81 @@ export class AuthService {
   private document = inject(DOCUMENT);
   private request = inject(REQUEST, { optional: true });
 
-  // Core reactive signals (defaults to Elena Vance as shown in SteelGuard Orders Sheet)
-  currentUser = signal<User | null>({
-    id: 'usr-admin',
-    username: 'admin',
-    role: 'admin',
-    name: 'Elena Vance',
-    email: 'admin@steeldoor.com',
-    phone: '+91 98000 11223'
-  });
+  // Core reactive signals
+  currentUser = signal<User | null>(null);
+  token = signal<string | null>(null);
   isAuthenticated = computed(() => this.currentUser() !== null);
   userRole = computed(() => this.currentUser()?.role || 'admin');
 
   constructor() {
-    this.initSessionFromCookie();
-  }
-
-  private getBaseUrl(): string {
-    if (isPlatformServer(this.platformId)) {
-      if (this.request) {
-        if ('url' in this.request && typeof this.request.url === 'string' && this.request.url.startsWith('http')) {
-          try {
-            return new URL(this.request.url).origin;
-          } catch {}
-        }
-        const reqAny = this.request as any;
-        const host = reqAny.headers?.get?.('host') || reqAny.headers?.host || 'localhost:4000';
-        const protocol = reqAny.protocol || 'http';
-        return `${protocol}://${host}`;
-      }
-      return 'http://localhost:4000';
-    }
-    return '';
+    this.initSessionFromStorage();
   }
 
   /**
-   * Initializes session from cookie across both SSR server and browser client.
+   * Initializes session from localStorage in the browser.
    */
-  private initSessionFromCookie(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      try {
-        if (localStorage.getItem('logged_out') === 'true') {
-          this.currentUser.set(null);
-          return;
-        }
-      } catch {}
+  private initSessionFromStorage(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
     }
 
-    let cookieString = '';
+    try {
+      const storedToken = localStorage.getItem('auth_token');
+      const storedUser = localStorage.getItem('auth_user');
 
-    if (isPlatformBrowser(this.platformId)) {
-      cookieString = this.document.cookie || '';
-    } else if (isPlatformServer(this.platformId) && this.request) {
-      if (typeof (this.request as any).headers?.get === 'function') {
-        cookieString = (this.request as any).headers.get('cookie') || '';
-      } else if ((this.request as any).headers?.cookie) {
-        cookieString = (this.request as any).headers.cookie || '';
+      if (storedToken && storedUser) {
+        this.token.set(storedToken);
+        this.currentUser.set(JSON.parse(storedUser));
+      } else {
+        this.currentUser.set(null);
+        this.token.set(null);
       }
-    }
-
-    const sessionToken = this.parseCookieValue(cookieString, 'auth_session');
-    if (sessionToken) {
-      try {
-        const decoded = this.decodeBase64(sessionToken);
-        const userData = JSON.parse(decoded);
-        if (userData && userData.id && userData.role) {
-          this.currentUser.set(userData as User);
-        }
-      } catch (err) {
-        console.error('Failed to parse auth_session cookie:', err);
-      }
+    } catch (err) {
+      console.error('Failed to load session from localStorage:', err);
+      this.currentUser.set(null);
+      this.token.set(null);
     }
   }
 
-  private parseCookieValue(cookies: string, name: string): string | null {
-    if (!cookies) return null;
-    const match = cookies.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
-    return match ? decodeURIComponent(match[3]) : null;
-  }
-
-  private decodeBase64(str: string): string {
-    if (typeof atob === 'function') {
-      return atob(str);
-    }
-    return Buffer.from(str, 'base64').toString('utf-8');
-  }
-
-  private encodeBase64(str: string): string {
-    if (typeof btoa === 'function') {
-      return btoa(str);
-    }
-    return Buffer.from(str, 'utf-8').toString('base64');
-  }
-
-  login(username: string, password: string): Observable<{ user: User; sessionToken: string }> {
+  login(username: string, password: string): Observable<{ user: User; token: string }> {
     const baseApi = isPlatformBrowser(this.platformId) && environment.apiUrl
       ? environment.apiUrl.replace(/\/$/, '')
-      : `${this.getBaseUrl()}/api`;
-    const url = `${baseApi}/auth/login`;
-    return this.http.post<{ user: User; sessionToken: string }>(url, { username, password }).pipe(
+      : 'http://localhost:5000/api';
+    const url = `${baseApi}/auth/web-login`;
+
+    return this.http.post<{ status: number; message: string; user: User; token: string }>(url, { username, password }).pipe(
       tap(res => {
-        this.currentUser.set(res.user);
+        const userObj = res.user;
+        const jwtToken = res.token;
 
-        // Set cookie on browser as well for immediate persistence
+        this.currentUser.set(userObj);
+        this.token.set(jwtToken);
+
         if (isPlatformBrowser(this.platformId)) {
-          const cookieVal = encodeURIComponent(res.sessionToken);
-          this.document.cookie = `auth_session=${cookieVal}; path=/; max-age=604800; SameSite=Lax`;
-          try { localStorage.removeItem('logged_out'); } catch {}
-        }
-      }),
-      catchError(err => {
-        // Fallback for development when standalone backend is offline
-        const matched = MOCK_USERS.find(
-          u => u.username.toLowerCase() === username.trim().toLowerCase() && u.password === password
-        );
-        if (matched) {
-          const { password: _, ...userWithoutPass } = matched;
-          const sessionToken = this.encodeBase64(JSON.stringify(userWithoutPass));
-          this.currentUser.set(userWithoutPass as User);
-
-          if (isPlatformBrowser(this.platformId)) {
-            const cookieVal = encodeURIComponent(sessionToken);
-            this.document.cookie = `auth_session=${cookieVal}; path=/; max-age=604800; SameSite=Lax`;
-            try { localStorage.removeItem('logged_out'); } catch {}
+          try {
+            localStorage.setItem('auth_token', jwtToken);
+            localStorage.setItem('auth_user', JSON.stringify(userObj));
+            localStorage.removeItem('logged_out');
+          } catch (e) {
+            console.error('Error saving to localStorage:', e);
           }
-
-          return of({ user: userWithoutPass as User, sessionToken });
         }
-        return throwError(() => err);
       })
     );
   }
 
   logout(): void {
-    const baseApi = isPlatformBrowser(this.platformId) && environment.apiUrl
-      ? environment.apiUrl.replace(/\/$/, '')
-      : `${this.getBaseUrl()}/api`;
-    const url = `${baseApi}/auth/logout`;
-    this.http.post(url, {}).pipe(
-      catchError(() => of(null))
-    ).subscribe();
-
     this.currentUser.set(null);
+    this.token.set(null);
 
     if (isPlatformBrowser(this.platformId)) {
-      this.document.cookie = 'auth_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
-      try { localStorage.setItem('logged_out', 'true'); } catch {}
+      try {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        localStorage.setItem('logged_out', 'true');
+        // Clear any old auth_session cookies if they were left over
+        this.document.cookie = 'auth_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+      } catch {}
     }
 
     this.router.navigate(['/']);
@@ -191,18 +119,7 @@ export class AuthService {
     return user.role === requiredRole;
   }
 
-  getRedirectUrlForRole(role: UserRole): string {
-    switch (role) {
-      case 'admin':
-      case 'coordinator':
-        return '/admin';
-      case 'branch_head':
-        return '/branch';
-      case 'user':
-      case 'client':
-        return '/client';
-      default:
-        return '/';
-    }
+  getRedirectUrlForRole(_role?: UserRole): string {
+    return '/admin';
   }
 }

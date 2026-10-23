@@ -260,6 +260,55 @@ export const swaggerDocument = {
         }
       }
     },
+    '/api/auth/web-login': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Web Login with JWT (Stored Procedure: web_login)',
+        description: 'Authenticates Company (Role 1) and Dealer (Role 4) via the `web_login` stored procedure and generates a signed JWT token.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/MobileLoginRequest' }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: 'Authentication successful. Returns user profile, JWT token, and sets auth_session cookie.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/UserResponse' }
+              }
+            }
+          },
+          400: {
+            description: 'Username or password missing',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' }
+              }
+            }
+          },
+          401: {
+            description: 'Invalid login credentials',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' }
+              }
+            }
+          },
+          403: {
+            description: 'Deactivated account or insufficient permissions for web login',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' }
+              }
+            }
+          }
+        }
+      }
+    },
     '/api/bookings': {
       get: {
         tags: ['Bookings'],

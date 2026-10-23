@@ -104,6 +104,8 @@ export interface User {
   districtId?: string;
   clientId?: string;
   clientType?: ClientType;
+  roleId?: number;
+  dbRoleId?: number;
 }
 
 export interface ServiceItem {
