@@ -9,7 +9,7 @@ import { AdminClientsComponent } from './clients/clients.component';
 import { AdminAreasComponent } from './areas/areas.component';
 import { AdminUsersComponent } from './users/admin-users.component';
 import { AdminHistoryComponent } from './history/history.component';
-import { roleGuard } from '../../core/guards/auth.guard';
+import { authGuard } from '../../core/guards/auth.guard';
 import {
   bookingDetailResolver,
   bookingsResolver,
@@ -24,7 +24,7 @@ export const ADMIN_ROUTES: Routes = [
   {
     path: '',
     component: AdminLayoutComponent,
-    canActivate: [roleGuard(['admin', 'coordinator'])],
+    canActivate: [authGuard],
     children: [
       {
         path: '',

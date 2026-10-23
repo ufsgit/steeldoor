@@ -27,14 +27,6 @@ export const routes: Routes = [
     pathMatch: 'prefix'
   },
   {
-    path: 'branch',
-    loadChildren: () => import('./features/branch/branch.routes').then(m => m.BRANCH_ROUTES)
-  },
-  {
-    path: 'client',
-    loadChildren: () => import('./features/client/client.routes').then(m => m.CLIENT_ROUTES)
-  },
-  {
     path: '**',
     redirectTo: ''
   }

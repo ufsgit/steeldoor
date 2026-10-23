@@ -9,93 +9,7 @@ import { Booking, BranchHead, Client, District, ServiceItem, SiteContent, Testim
  * ============================================================================
  */
 
-export const MOCK_USERS: User[] = [
-  {
-    "id": "usr-admin",
-    "username": "admin",
-    "password": "123",
-    "role": "admin",
-    "name": "Elena Vance (Super Admin)",
-    "email": "admin@steeldoor.com",
-    "phone": "+91 98000 11223"
-  },
-  {
-    "id": "usr-user",
-    "username": "user",
-    "password": "123",
-    "role": "user",
-    "clientId": "cli-1",
-    "name": "John Mathew (Customer)",
-    "email": "john.mathew@gmail.com",
-    "phone": "+91 94470 55443",
-    "clientType": "customer"
-  },
-  {
-    "id": "usr-admin-2",
-    "username": "coordinator",
-    "password": "123",
-    "role": "admin",
-    "name": "Elena Vance (Super Admin)",
-    "email": "admin@steeldoor.com",
-    "phone": "+91 98000 11223"
-  },
-  {
-    "id": "usr-bh1",
-    "username": "branch_ekm",
-    "password": "123",
-    "role": "branch_head",
-    "branchHeadId": "bh-1",
-    "name": "Rajesh Menon",
-    "email": "rajesh.menon@steeldoor.com",
-    "phone": "+91 98470 12345",
-    "districtId": "dist-ekm"
-  },
-  {
-    "id": "usr-bh2",
-    "username": "branch_tvm",
-    "password": "123",
-    "role": "branch_head",
-    "branchHeadId": "bh-2",
-    "name": "Suresh Kumar",
-    "email": "suresh.kumar@steeldoor.com",
-    "phone": "+91 98471 23456",
-    "districtId": "dist-tvm"
-  },
-  {
-    "id": "usr-cust1",
-    "username": "john_customer",
-    "password": "123",
-    "role": "client",
-    "clientId": "cli-1",
-    "name": "John Mathew",
-    "email": "john.mathew@gmail.com",
-    "phone": "+91 94470 55443",
-    "clientType": "customer"
-  },
-  {
-    "id": "usr-dlr1",
-    "username": "apex_dealer",
-    "password": "123",
-    "role": "client",
-    "clientId": "cli-6",
-    "name": "Apex Hardware Supplies",
-    "email": "orders@apexhardware.in",
-    "phone": "+91 94471 88776",
-    "clientType": "dealer"
-  },
-  {
-    "id": "usr-cmp1",
-    "username": "metro_builders",
-    "password": "123",
-    "role": "client",
-    "clientId": "cli-11",
-    "name": "Metro Infra & Builders",
-    "email": "procurement@metroinfra.com",
-    "phone": "+91 94472 99001",
-    "clientType": "company"
-  }
-];
-
+export const MOCK_USERS: User[] = [];
 
 export const MOCK_DISTRICTS: District[] = [
   {
@@ -249,9 +163,9 @@ export const MOCK_BRANCH_HEADS: BranchHead[] = [
     "joinedDate": "2023-11-12T09:00:00.000Z",
     "experienceYears": 7
   }
-];
+export const MOCK_CLIENTS: Client[] = [];
 
-export const MOCK_CLIENTS: Client[] = [
+export const MOCK_BOOKINGS: Booking[] = [];
   {
     "id": "cli-1",
     "name": "John Mathew",

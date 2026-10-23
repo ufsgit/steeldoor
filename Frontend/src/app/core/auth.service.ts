@@ -3,9 +3,8 @@ import { isPlatformBrowser, isPlatformServer, DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { REQUEST } from '@angular/core';
-import { Observable, tap, catchError, of, throwError } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { User, UserRole } from './models';
-import { MOCK_USERS } from './mock-data';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -77,29 +76,6 @@ export class AuthService {
             console.error('Error saving to localStorage:', e);
           }
         }
-      }),
-      catchError(err => {
-        // Fallback for development if backend is not reachable
-        const matched = MOCK_USERS.find(
-          u => u.username.toLowerCase() === username.trim().toLowerCase() && u.password === password
-        );
-        if (matched) {
-          const { password: _, ...userWithoutPass } = matched;
-          const dummyToken = 'mock-jwt-token-' + userWithoutPass.id;
-          this.currentUser.set(userWithoutPass as User);
-          this.token.set(dummyToken);
-
-          if (isPlatformBrowser(this.platformId)) {
-            try {
-              localStorage.setItem('auth_token', dummyToken);
-              localStorage.setItem('auth_user', JSON.stringify(userWithoutPass));
-              localStorage.removeItem('logged_out');
-            } catch {}
-          }
-
-          return of({ user: userWithoutPass as User, token: dummyToken });
-        }
-        return throwError(() => err);
       })
     );
   }
@@ -143,18 +119,7 @@ export class AuthService {
     return user.role === requiredRole;
   }
 
-  getRedirectUrlForRole(role: UserRole): string {
-    switch (role) {
-      case 'admin':
-      case 'coordinator':
-        return '/admin';
-      case 'branch_head':
-        return '/branch';
-      case 'user':
-      case 'client':
-        return '/client';
-      default:
-        return '/';
-    }
+  getRedirectUrlForRole(_role?: UserRole): string {
+    return '/admin';
   }
 }
