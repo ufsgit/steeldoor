@@ -444,4 +444,38 @@ export class DataService {
       catchError(() => of(MOCK_SITE_CONTENT))
     );
   }
+
+  // ---------------- Users Management ----------------
+
+  getUsers(): Observable<any[]> {
+    if (isPlatformServer(this.platformId)) {
+      return of(MOCK_USERS);
+    }
+    return this.http.get<{ success: boolean; data: any[] }>(this.url('/api/users')).pipe(
+      map(res => res?.data || []),
+      catchError(() => of(MOCK_USERS))
+    );
+  }
+
+  createUser(userData: any): Observable<any> {
+    return this.http.post<{ success: boolean; data: any }>(this.url('/api/users'), userData).pipe(
+      map(res => res?.data || res)
+    );
+  }
+
+  updateUser(id: number | string, userData: any): Observable<any> {
+    return this.http.put<{ success: boolean; data: any }>(this.url(`/api/users/${id}`), userData).pipe(
+      map(res => res?.data || res)
+    );
+  }
+
+  toggleUserStatus(id: number | string): Observable<any> {
+    return this.http.patch<{ success: boolean; data: any }>(this.url(`/api/users/${id}/status`), {}).pipe(
+      map(res => res?.data || res)
+    );
+  }
+
+  deleteUser(id: number | string): Observable<any> {
+    return this.http.delete(this.url(`/api/users/${id}`));
+  }
 }

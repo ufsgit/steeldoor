@@ -66,11 +66,11 @@ import { AuthService } from '../core/auth.service';
               >
                 <div class="bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 text-xs overflow-hidden">
                   <a
-                    routerLink="/admin/branch-heads"
+                    routerLink="/admin/users"
                     (click)="closeAllDropdowns()"
                     class="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-[#0f9d58] font-medium transition-colors cursor-pointer"
                   >
-                    Branch Heads
+                    Users
                   </a>
                   <a
                     routerLink="/admin/areas"
@@ -78,13 +78,6 @@ import { AuthService } from '../core/auth.service';
                     class="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-[#0f9d58] font-medium transition-colors cursor-pointer"
                   >
                     District Areas
-                  </a>
-                  <a
-                    routerLink="/admin/clients"
-                    (click)="closeAllDropdowns()"
-                    class="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-[#0f9d58] font-medium transition-colors cursor-pointer"
-                  >
-                    Clients Directory
                   </a>
                 </div>
               </div>
@@ -132,14 +125,11 @@ import { AuthService } from '../core/auth.service';
                 <p class="text-[10px] text-gray-500">Super Admin (Operations)</p>
               </div>
 
-              <a routerLink="/admin/branch-heads" class="block px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                <span>Branch Heads</span>
+              <a routerLink="/admin/users" class="block px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                <span>Users</span>
               </a>
               <a routerLink="/admin/areas" class="block px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                 <span>District Areas</span>
-              </a>
-              <a routerLink="/admin/clients" class="block px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                <span>Clients Directory</span>
               </a>
 
               <div class="border-t border-gray-100 my-1"></div>

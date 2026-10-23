@@ -7,6 +7,7 @@ import { BookNowComponent } from '../public/book-now/book-now.component';
 import { AdminBranchHeadsComponent } from './branch-heads/branch-heads.component';
 import { AdminClientsComponent } from './clients/clients.component';
 import { AdminAreasComponent } from './areas/areas.component';
+import { AdminUsersComponent } from './users/admin-users.component';
 import { AdminHistoryComponent } from './history/history.component';
 import { roleGuard } from '../../core/guards/auth.guard';
 import {
@@ -15,7 +16,8 @@ import {
   branchHeadsResolver,
   clientsResolver,
   districtsResolver,
-  historyResolver
+  historyResolver,
+  usersResolver
 } from '../../core/resolvers/data.resolvers';
 
 export const ADMIN_ROUTES: Routes = [
@@ -83,6 +85,14 @@ export const ADMIN_ROUTES: Routes = [
         path: 'areas',
         component: AdminAreasComponent,
         resolve: {
+          districts: districtsResolver
+        }
+      },
+      {
+        path: 'users',
+        component: AdminUsersComponent,
+        resolve: {
+          users: usersResolver,
           districts: districtsResolver
         }
       },

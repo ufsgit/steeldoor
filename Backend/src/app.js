@@ -11,6 +11,7 @@ import bookingsRoutes from './modules/bookings/bookings.routes.js';
 import dropdownsRoutes from './modules/dropdowns/dropdowns.routes.js';
 import uploadsRoutes from './modules/uploads/uploads.routes.js';
 import statusRoutes from './modules/status/status.routes.js';
+import usersRoutes from './modules/users/users.routes.js';
 
 dotenv.config();
 
@@ -73,6 +74,7 @@ app.use('/api/dropdowns', dropdownsRoutes);
 app.use('/api/uploads', uploadsRoutes);
 app.use('/api/status', statusRoutes);
 app.use('/api/client-status', statusRoutes);
+app.use('/api/users', usersRoutes);
 
 // ---------------- 404 Handler ----------------
 
