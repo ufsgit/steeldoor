@@ -85,9 +85,10 @@ export class StatusService {
     const notes = data.notes ?? null;
     const createdBy = data.createdBy ?? data.created_by ?? data.userId ?? null;
     const createdByName = data.createdByName ?? data.created_by_name ?? data.userName ?? null;
+    const branchHeadId = data.branchHeadId ?? data.branch_head_id ?? data.branchManagerId ?? null;
 
     const [results] = await pool.query(
-      `CALL sp_save_client_status(?, ?, ?, ?, ?, ?, ?)`,
+      `CALL sp_save_client_status(?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         clientId,
         clientName,
@@ -95,7 +96,8 @@ export class StatusService {
         scheduleDate,
         notes,
         createdBy,
-        createdByName
+        createdByName,
+        branchHeadId ? parseInt(branchHeadId, 10) : null
       ]
     );
 
