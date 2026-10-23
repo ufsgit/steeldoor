@@ -1,288 +1,307 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
-import { Router, RouterModule, ActivatedRoute } from '@angular/router';
-import { Title, Meta } from '@angular/platform-browser';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
+import { Title } from '@angular/platform-browser';
 import { DataService } from '../../../core/data.service';
-import { ToastService } from '../../../shared/toast/toast.service';
 import { AuthService } from '../../../core/auth.service';
-import { Booking, BranchHead, District, ClientType, UserRole, CreateBookingPayload } from '../../../core/models';
-import { environment } from '../../../../environments/environment';
-
-// Custom validator for 10-digit phone number
-function phoneValidator(control: AbstractControl) {
-  if (!control.value) return null;
-  const clean = control.value.toString().trim().replace(/\D/g, '');
-  const isValid = /^\d{10}$/.test(clean);
-  return isValid ? null : { invalidPhone: true };
-}
-
-// Custom validator for pincode
-function pincodeValidator(control: AbstractControl) {
-  if (!control.value) return null;
-  const clean = control.value.toString().trim();
-  const isValid = /^\d{6}$/.test(clean);
-  return isValid ? null : { invalidPincode: true };
-}
+import { ToastService } from '../../../shared/toast/toast.service';
+import { DistrictDropdownComponent } from '../../../shared/components';
+import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core/models';
 
 @Component({
   selector: 'app-book-now',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, DistrictDropdownComponent],
   template: `
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 animate-fadeIn">
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 animate-fadeIn">
+
       @if (submittedBooking()) {
-        <!-- SUCCESS CONFIRMATION SCREEN -->
-        <div class="bg-surface rounded-3xl border border-border shadow-elevated p-8 sm:p-12 text-center space-y-6">
-          <div class="w-16 h-16 rounded-3xl bg-success/15 text-success mx-auto flex items-center justify-center shadow-soft">
+        <!-- Success Confirmation Screen -->
+        <div class="max-w-2xl mx-auto my-8 bg-white rounded-3xl border border-gray-200 shadow-xl p-8 sm:p-10 text-center space-y-6 animate-scaleUp">
+          <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-[#0f9d58] border border-emerald-100 mx-auto flex items-center justify-center shadow-xs">
             <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
             </svg>
           </div>
 
-          <div class="space-y-2">
-            <span class="text-xs font-bold uppercase tracking-widest text-accent">Installation Request Registered</span>
-            <h1 class="text-3xl sm:text-4xl font-extrabold text-text tracking-tight">Installation Confirmed!</h1>
-            <p class="text-xs sm:text-sm text-text-muted max-w-md mx-auto leading-relaxed">
-              Your steel door installation request has been recorded. Our regional district branch team will contact you to confirm the installation schedule.
+          <div class="space-y-1.5">
+            <span class="text-xs font-bold uppercase tracking-wider text-[#0f9d58]">Installation Enquiry Registered</span>
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Booking Confirmed!</h2>
+            <p class="text-xs sm:text-sm text-gray-500 max-w-md mx-auto leading-relaxed">
+              Your steel door installation request has been recorded. Our regional district branch team will contact you shortly to confirm the installation schedule.
             </p>
           </div>
 
           <!-- Highlight Booking Summary Box -->
-          <div class="max-w-md mx-auto p-5 rounded-2xl bg-surface-muted/60 border border-border space-y-3 text-left">
-            <div class="flex items-center justify-between text-xs border-b border-border/50 pb-2.5">
-              <span class="text-text-muted font-medium">Booking ID:</span>
-              <span class="font-mono font-black text-sm text-primary">{{ submittedBooking()?.id }}</span>
+          <div class="max-w-md mx-auto p-5 rounded-2xl bg-gray-50 border border-gray-200 space-y-3 text-left">
+            <div class="flex items-center justify-between text-xs border-b border-gray-200 pb-2.5">
+              <span class="text-gray-500 font-medium">Booking ID:</span>
+              <span class="font-mono font-bold text-sm text-[#0f9d58]">#{{ submittedBooking()?.id || 'NEW' }}</span>
             </div>
-            <div class="flex items-center justify-between text-xs border-b border-border/50 pb-2.5">
-              <span class="text-text-muted font-medium">Name:</span>
-              <span class="font-bold text-text">{{ submittedBooking()?.clientName }}</span>
+            <div class="flex items-center justify-between text-xs border-b border-gray-200 pb-2.5">
+              <span class="text-gray-500 font-medium">Customer Name:</span>
+              <span class="font-bold text-gray-900">{{ submittedBooking()?.name || name }}</span>
             </div>
-            <div class="flex items-center justify-between text-xs border-b border-border/50 pb-2.5">
-              <span class="text-text-muted font-medium">Contact Phone:</span>
-              <span class="font-bold text-text">+91 {{ submittedBooking()?.contactPhone }}</span>
+            <div class="flex items-center justify-between text-xs border-b border-gray-200 pb-2.5">
+              <span class="text-gray-500 font-medium">Mobile Number:</span>
+              <span class="font-semibold text-gray-900">{{ submittedBooking()?.mobile || mobile }}</span>
             </div>
-            <div class="flex items-center justify-between text-xs border-b border-border/50 pb-2.5">
-              <span class="text-text-muted font-medium">Brand & Model:</span>
-              <span class="font-bold text-text">{{ submittedBooking()?.doorDetails?.brand || 'SteelGuard' }} • {{ submittedBooking()?.doorDetails?.doorType }}</span>
+            <div class="flex items-center justify-between text-xs border-b border-gray-200 pb-2.5">
+              <span class="text-gray-500 font-medium">District & Area:</span>
+              <span class="font-semibold text-gray-900">
+                {{ submittedBooking()?.districtName || districtName }} {{ areaName ? '· ' + areaName : '' }}
+              </span>
             </div>
-            <div class="flex items-center justify-between text-xs border-b border-border/50 pb-2.5">
-              <span class="text-text-muted font-medium">Quantity:</span>
-              <span class="font-bold text-primary">{{ submittedBooking()?.doorDetails?.quantity }} Unit(s)</span>
-            </div>
-            @if (submittedBooking()?.doorDetails?.images?.length) {
-              <div class="space-y-1.5 border-b border-border/50 pb-2.5">
-                <span class="text-text-muted font-medium text-xs">Site Photos ({{ submittedBooking()?.doorDetails?.images?.length }}):</span>
-                <div class="flex flex-wrap gap-2 pt-1">
-                  @for (pic of submittedBooking()?.doorDetails?.images; track $index) {
-                    <img [src]="pic" class="w-12 h-12 rounded-lg object-cover border border-border shadow-2xs" alt="Site thumbnail" />
-                  }
-                </div>
-              </div>
-            }
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-text-muted font-medium">Location:</span>
-              <span class="font-bold text-text">{{ submittedBooking()?.area }}, {{ submittedBooking()?.districtName }}</span>
+            <div class="flex items-start justify-between text-xs pt-0.5">
+              <span class="text-gray-500 font-medium shrink-0 mr-4">Address:</span>
+              <span class="text-gray-800 text-right truncate max-w-[240px]">{{ submittedBooking()?.address || address }}</span>
             </div>
           </div>
 
-          <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <!-- Actions -->
+          <div class="flex items-center justify-center gap-3 pt-2">
             <button
               type="button"
               (click)="resetForm()"
-              class="w-full sm:w-auto px-6 py-3 rounded-xl bg-primary text-text-inverted text-xs font-bold shadow-soft hover:bg-primary-hover transition-colors"
+              class="px-5 py-2.5 rounded-xl border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
             >
-              Book Another Installation
+              Book Another Door
             </button>
             <a
               routerLink="/"
-              class="w-full sm:w-auto px-6 py-3 rounded-xl border border-border text-text text-xs font-semibold hover:bg-surface-muted transition-colors"
+              class="px-6 py-2.5 rounded-xl bg-[#246b3f] hover:bg-[#1e5834] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
             >
               Return to Home
             </a>
           </div>
         </div>
       } @else {
-        <!-- PAGE TITLE -->
-        <div class="text-center max-w-xl mx-auto space-y-2">
-          <h1 class="text-3xl sm:text-4xl font-extrabold text-text tracking-tight">
-            Book Door Installation
-          </h1>
-          <p class="text-xs sm:text-sm text-text-muted leading-relaxed">
-            Fill in your contact and location details to schedule an installation.
-          </p>
+        <!-- Back Link & Header -->
+        <div class="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-200">
+          <div>
+            <button
+              type="button"
+              (click)="goBack()"
+              class="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-900 transition-colors mb-2 cursor-pointer"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+              </svg>
+              <span>Back</span>
+            </button>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Create New Booking</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Register a customer door fitting enquiry according to booking records</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              (click)="goBack()"
+              class="px-4 py-2 rounded-xl border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              (click)="saveBooking()"
+              [disabled]="isSubmitting || !name.trim() || !mobile.trim() || !address.trim()"
+              class="px-5 py-2 rounded-xl bg-[#246b3f] hover:bg-[#1e5834] disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-2"
+            >
+              @if (isSubmitting) {
+                <svg class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>Saving...</span>
+              } @else {
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span>Save Booking</span>
+              }
+            </button>
+          </div>
         </div>
 
-        <!-- SIMPLE SINGLE-STEP BOOKING FORM -->
-        <form [formGroup]="bookingForm" (ngSubmit)="submitBooking()" class="bg-surface rounded-3xl border border-border shadow-elevated p-6 sm:p-10 space-y-6">
+        <!-- Main Form Card -->
+        <form (ngSubmit)="saveBooking()" class="bg-white rounded-2xl border border-gray-200 shadow-xs p-6 space-y-6">
+          
+          <!-- Section 1: Customer Details & Fitting Locality (4 Columns) -->
+          <div>
+            <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+              <span>1. Customer & Location Details</span>
+            </h2>
 
-          <!-- Name & Contact Phone -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <!-- Name -->
-            <div class="space-y-1.5">
-              <label class="block text-xs font-semibold text-text">
-                Name <span class="text-danger">*</span>
-              </label>
-              <input
-                type="text"
-                formControlName="clientName"
-                placeholder="e.g. John Mathew"
-                class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-border bg-background text-text focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
-                [class.border-danger]="bookingForm.get('clientName')?.touched && bookingForm.get('clientName')?.invalid"
-              />
-              @if (bookingForm.get('clientName')?.touched && bookingForm.get('clientName')?.hasError('required')) {
-                <p class="text-[11px] text-danger font-medium">Name is required</p>
-              }
-            </div>
-
-            <!-- Contact Phone -->
-            <div class="space-y-1.5">
-              <div class="flex items-center justify-between min-h-[18px]">
-                <label class="block text-xs font-semibold text-text">
-                  Contact Phone <span class="text-danger">*</span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <!-- Col 1: Customer Name (name) -->
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                  Client / Customer Name <span class="text-red-500">*</span>
                 </label>
-                <span class="text-[10px] font-mono text-text-muted">
-                  {{ bookingForm.get('contactPhone')?.value?.length || 0 }}/10 digits
-                </span>
+                <input
+                  type="text"
+                  name="name"
+                  [(ngModel)]="name"
+                  required
+                  maxlength="150"
+                  placeholder="e.g. John Mathew"
+                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+                />
               </div>
-              <div class="relative flex items-center">
-                <div class="absolute left-3 flex items-center gap-1.5 pointer-events-none text-xs font-semibold text-text-muted border-r border-border pr-2.5">
-                  <span class="font-mono text-text font-bold">+91</span>
-                </div>
+
+              <!-- Col 2: Mobile (mobile) -->
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                  Mobile Number <span class="text-red-500">*</span>
+                </label>
                 <input
                   type="tel"
-                  formControlName="contactPhone"
-                  placeholder="9847012345"
-                  maxlength="10"
-                  inputmode="numeric"
-                  (keydown)="onPhoneKeyDown($event)"
-                  (input)="onPhoneInput($event)"
-                  class="w-full text-xs pl-16 pr-3.5 py-2.5 rounded-xl border border-border bg-background text-text focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all font-medium tracking-wide"
-                  [class.border-danger]="bookingForm.get('contactPhone')?.touched && bookingForm.get('contactPhone')?.invalid"
+                  name="mobile"
+                  [(ngModel)]="mobile"
+                  required
+                  maxlength="25"
+                  placeholder="e.g. +91 98470 12345"
+                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
                 />
               </div>
-              @if (bookingForm.get('contactPhone')?.touched && (bookingForm.get('contactPhone')?.hasError('required') || bookingForm.get('contactPhone')?.hasError('invalidPhone'))) {
-                <p class="text-[11px] text-danger font-medium">Enter a valid 10-digit phone number</p>
-              }
-            </div>
-          </div>
 
-          <!-- Brand & Quantity (2 columns) -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <!-- Brand Selection -->
-            <div class="space-y-1.5">
-              <label class="block text-xs font-semibold text-text">
-                Door Brand <span class="text-danger">*</span>
-              </label>
-              <select
-                formControlName="brand"
-                class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-border bg-background text-text focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all font-medium"
-              >
-                <option value="Tata Pravesh">Tata Pravesh</option>
-                <option value="SteelGuard Signature">SteelGuard Signature</option>
-                <option value="Godrej Security Doors">Godrej Security Doors</option>
-                <option value="Dormakaba Architectural">Dormakaba Architectural</option>
-                <option value="Kalpataru Doors">Kalpataru Doors</option>
-                <option value="Custom / Other Brand">Custom / Other Brand</option>
-              </select>
-            </div>
+              <!-- Col 3: District Hub (district_id / district_name) -->
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                  District <span class="text-red-500">*</span>
+                </label>
+                <app-district-dropdown
+                  [(ngModel)]="districtName"
+                  [districts]="districts()"
+                  valueField="name"
+                  suffix="Hub"
+                  placeholder="Select District"
+                  searchPlaceholder="Search district..."
+                  (districtChange)="onDistrictChange($event)"
+                ></app-district-dropdown>
+              </div>
 
-            <!-- Quantity with +/- Buttons -->
-            <div class="space-y-1.5">
-              <label class="block text-xs font-semibold text-text">
-                Quantity (Doors to Install) <span class="text-danger">*</span>
-              </label>
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  (click)="decrementQuantity()"
-                  class="w-10 h-10 rounded-xl border border-border bg-surface hover:bg-surface-muted text-text font-black text-sm flex items-center justify-center transition-colors cursor-pointer select-none"
-                  title="Decrease quantity"
-                >
-                  −
-                </button>
-                <input
-                  type="number"
-                  formControlName="quantity"
-                  min="1"
-                  max="100"
-                  class="w-full text-center text-xs px-3.5 py-2.5 rounded-xl border border-border bg-background text-text focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all font-black"
-                />
-                <button
-                  type="button"
-                  (click)="incrementQuantity()"
-                  class="w-10 h-10 rounded-xl border border-border bg-surface hover:bg-surface-muted text-text font-black text-sm flex items-center justify-center transition-colors cursor-pointer select-none"
-                  title="Increase quantity"
-                >
-                  +
-                </button>
+              <!-- Col 4: Area / Locality (area_id / area_name) -->
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                  <span>Area / Locality <span class="text-red-500">*</span></span>
+                  @if (!districtId) {
+                    <span class="text-[10px] font-normal text-amber-600 italic">Select district first</span>
+                  }
+                </label>
+
+                @if (districtAreas().length > 0) {
+                  <select
+                    name="areaName"
+                    [(ngModel)]="areaName"
+                    (ngModelChange)="onAreaSelected($event)"
+                    [disabled]="!districtId"
+                    class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58] cursor-pointer disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <option value="">{{ !districtId ? 'Select District First...' : '-- Select Registered Area --' }}</option>
+                    @for (a of districtAreas(); track a.id) {
+                      <option [value]="a.name">{{ a.name }} {{ a.pincode ? '(' + a.pincode + ')' : '' }}</option>
+                    }
+                  </select>
+                } @else {
+                  <input
+                    type="text"
+                    name="areaName"
+                    [(ngModel)]="areaName"
+                    required
+                    [disabled]="!districtId"
+                    [placeholder]="!districtId ? 'Select district first...' : 'e.g. Edapally'"
+                    class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58] disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed transition-colors"
+                  />
+                }
+              </div>
+
+              <!-- Full Address (address) spans all 4 columns -->
+              <div class="sm:col-span-2 lg:col-span-4">
+                <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                  Full Address <span class="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="address"
+                  [(ngModel)]="address"
+                  required
+                  rows="2"
+                  placeholder="Door No, Street Name, Landmark, Post"
+                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+                ></textarea>
               </div>
             </div>
           </div>
 
-          <!-- Requirement -->
-          <div class="space-y-1.5">
-            <label class="block text-xs font-semibold text-text">
-              Door Model / Specific Requirement <span class="text-danger">*</span>
-            </label>
-            <textarea
-              formControlName="requirement"
-              rows="2"
-              placeholder="e.g. Main entrance double door, bedroom single door, flush fire door, old frame replacement..."
-              class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-border bg-background text-text focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
-              [class.border-danger]="bookingForm.get('requirement')?.touched && bookingForm.get('requirement')?.invalid"
-            ></textarea>
-            @if (bookingForm.get('requirement')?.touched && bookingForm.get('requirement')?.hasError('required')) {
-              <p class="text-[11px] text-danger font-medium">Please enter your door installation requirement</p>
-            }
+          <!-- Section 2: Notes & Instructions (4 Columns) -->
+          <div>
+            <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+              <span>2. Booking Notes & Fitting Specifications</span>
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="sm:col-span-2 lg:col-span-4">
+                <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                  Notes / Instructions
+                </label>
+                <textarea
+                  name="notes"
+                  [(ngModel)]="notes"
+                  rows="3"
+                  placeholder="Fitting requirements, door specifications, masonry status, delivery notes..."
+                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+                ></textarea>
+              </div>
+            </div>
           </div>
 
-          <!-- Site / Door Photos Upload -->
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <label class="block text-xs font-semibold text-text">
-                Upload Site / Door Photos <span class="text-[11px] text-text-muted font-normal">(Optional, up to 5 photos)</span>
-              </label>
-              @if (uploadedImages().length > 0) {
-                <span class="text-[11px] text-primary font-bold">{{ uploadedImages().length }}/5 added</span>
-              }
-            </div>
+          <!-- Section 3: Documents (JSON) -->
+          <div>
+            <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
+              <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+              <span>3. Documents (documents JSON)</span>
+            </h2>
 
-            <!-- Upload Dropzone -->
-            <div
-              (click)="fileInput.click()"
-              class="border-2 border-dashed border-border hover:border-primary/50 bg-background hover:bg-surface-muted/50 rounded-2xl p-4 sm:p-5 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5"
-            >
+            <div class="border-2 border-dashed border-gray-300 hover:border-gray-400 rounded-xl p-5 bg-gray-50/50 hover:bg-gray-50 text-center transition-colors">
               <input
-                #fileInput
                 type="file"
-                accept="image/*"
                 multiple
-                (change)="onFileSelected($event)"
+                #fileInput
+                (change)="onFilesSelected($event)"
                 class="hidden"
+                accept="image/*,.pdf,.doc,.docx"
               />
-              <svg class="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <div class="text-xs font-semibold text-text">
-                Click to attach site, wall or existing door photos
+              <div class="flex flex-col items-center justify-center gap-1.5 cursor-pointer" (click)="fileInput.click()">
+                <div class="w-10 h-10 rounded-full bg-emerald-50 text-[#0f9d58] flex items-center justify-center">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <span class="text-xs text-gray-700 font-semibold">Click to select documents or site photos</span>
+                <span class="text-[10px] text-gray-400">Upload door frame pictures or architectural site documents</span>
               </div>
-              <p class="text-[10px] text-text-muted">PNG, JPG or WEBP (Max 5 photos)</p>
             </div>
 
-            <!-- Image Thumbnail Previews -->
-            @if (uploadedImages().length > 0) {
-              <div class="flex flex-wrap gap-2.5 pt-1">
-                @for (img of uploadedImages(); track $index; let i = $index) {
-                  <div class="relative w-18 h-18 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-border group bg-surface shadow-xs">
-                    <img [src]="getFileUrl(img)" alt="Site preview" class="w-full h-full object-cover" />
+            @if (documents.length > 0) {
+              <div class="flex flex-wrap gap-2 mt-3">
+                @for (doc of documents; track $index) {
+                  <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 border border-gray-200 text-xs text-gray-800">
+                    <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span class="truncate max-w-[200px] font-medium">{{ getFilename(doc) }}</span>
                     <button
                       type="button"
-                      (click)="removeImage(i); $event.stopPropagation()"
-                      class="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/75 hover:bg-danger text-white text-[11px] font-bold flex items-center justify-center transition-colors cursor-pointer"
-                      title="Remove photo"
+                      (click)="removeDoc($index)"
+                      class="p-0.5 text-gray-400 hover:text-red-500 rounded cursor-pointer"
+                      title="Remove"
                     >
-                      ✕
+                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
                     </button>
                   </div>
                 }
@@ -290,105 +309,30 @@ function pincodeValidator(control: AbstractControl) {
             }
           </div>
 
-          <!-- Location Details Section -->
-          <div class="pt-2 border-t border-border/70 space-y-4">
-            <h2 class="text-xs font-bold uppercase tracking-wider text-text-muted">Location Details</h2>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <!-- District -->
-              <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-text">District <span class="text-danger">*</span></label>
-                <select
-                  formControlName="districtId"
-                  (change)="onDistrictChange()"
-                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-border bg-background text-text focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all font-medium"
-                >
-                  @for (d of districts; track d.id) {
-                    <option [value]="d.id">{{ d.name }} District ({{ d.code }})</option>
-                  }
-                </select>
-              </div>
-
-              <!-- Area / Neighborhood -->
-              <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-text">Area / Neighborhood <span class="text-danger">*</span></label>
-                <select
-                  formControlName="area"
-                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-border bg-background text-text focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all font-medium"
-                >
-                  @for (area of currentDistrictAreas; track area) {
-                    <option [value]="area">{{ area }}</option>
-                  }
-                </select>
-              </div>
-
-              <!-- Site Address -->
-              <div class="sm:col-span-2 space-y-1.5">
-                <label class="block text-xs font-semibold text-text">Site Address / House Details <span class="text-danger">*</span></label>
-                <textarea
-                  formControlName="streetAddress"
-                  rows="2"
-                  placeholder="Building name, flat/house number, street name..."
-                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-border bg-background text-text focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
-                  [class.border-danger]="bookingForm.get('streetAddress')?.touched && bookingForm.get('streetAddress')?.invalid"
-                ></textarea>
-                @if (bookingForm.get('streetAddress')?.touched && bookingForm.get('streetAddress')?.hasError('required')) {
-                  <p class="text-[11px] text-danger font-medium">Site address is required</p>
-                }
-              </div>
-
-              <!-- Landmark -->
-              <div class="space-y-1.5">
-                <label class="block text-xs font-medium text-text-muted">Landmark (Optional)</label>
-                <input
-                  type="text"
-                  formControlName="landmark"
-                  placeholder="Near temple, hospital, metro pillar..."
-                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-border bg-background text-text focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
-                />
-              </div>
-
-              <!-- PIN Code -->
-              <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-text">PIN Code (6 digits) <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  formControlName="pincode"
-                  placeholder="e.g. 682030"
-                  maxlength="6"
-                  inputmode="numeric"
-                  (input)="onPincodeInput($event)"
-                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-border bg-background text-text focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all font-medium tracking-wide"
-                  [class.border-danger]="bookingForm.get('pincode')?.touched && bookingForm.get('pincode')?.invalid"
-                />
-                @if (bookingForm.get('pincode')?.touched && (bookingForm.get('pincode')?.hasError('required') || bookingForm.get('pincode')?.hasError('invalidPincode'))) {
-                  <p class="text-[11px] text-danger font-medium">Enter a valid 6-digit postal code</p>
-                }
-              </div>
-            </div>
-          </div>
-
-          <!-- CONFIRM & SCHEDULE INSTALLATION BUTTON (UNDER THESE DETAILS) -->
-          <div class="pt-4 border-t border-border space-y-3">
+          <!-- Bottom Form Actions -->
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              (click)="goBack()"
+              class="px-5 py-2.5 rounded-xl border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
-              [disabled]="isSubmitting()"
-              class="w-full py-4 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-50 text-text-inverted text-base font-extrabold shadow-soft transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2.5 cursor-pointer"
+              [disabled]="isSubmitting || !name.trim() || !mobile.trim() || !address.trim()"
+              class="px-6 py-2.5 rounded-xl bg-[#246b3f] hover:bg-[#1e5834] disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-2"
             >
-              @if (isSubmitting()) {
-                <span class="w-4 h-4 border-2 border-text-inverted border-t-transparent rounded-full animate-spin"></span>
-                <span>Scheduling Installation...</span>
-              } @else {
-                <span>Confirm & Schedule Installation</span>
-                <svg class="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+              @if (isSubmitting) {
+                <svg class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                 </svg>
+                <span>Saving Booking...</span>
+              } @else {
+                <span>Submit & Create Booking</span>
               }
             </button>
-
-            <p class="text-center text-[11px] text-text-muted">
-              Zero wall damage guaranteed • Sub-millimeter laser calibration across Kerala districts.
-            </p>
           </div>
 
         </form>
@@ -397,338 +341,216 @@ function pincodeValidator(control: AbstractControl) {
   `
 })
 export class BookNowComponent implements OnInit {
-  private fb = inject(FormBuilder);
   private dataService = inject(DataService);
+  private authService = inject(AuthService);
   private toast = inject(ToastService);
-  auth = inject(AuthService);
-  private route = inject(ActivatedRoute);
   private router = inject(Router);
   private titleService = inject(Title);
-  private metaService = inject(Meta);
 
-  districts: District[] = [];
-  branchHeads: BranchHead[] = [];
+  districts = signal<District[]>([]);
+  districtAreas = signal<AreaItem[]>([]);
+  submittedBooking = signal<any>(null);
 
-  isSubmitting = signal(false);
-  submittedBooking = signal<Booking | null>(null);
-  uploadedImages = signal<string[]>([]);
+  // Form fields matching admin/bookings/new
+  name = '';
+  mobile = '';
+  address = '';
+  notes = '';
+  status = 'NEW';
+  loginRoleId: number | null = null;
+  loginId: number | null = null;
+  loginName: string | null = null;
+  stateId: number | null = 1;
+  stateName = 'Kerala';
+  districtId: number | null = null;
+  districtName = '';
+  areaId: number | null = null;
+  areaName = '';
+  branchHeadId: number | null = null;
+  branchHeadName = 'Rajesh Menon';
+  documents: string[] = [];
 
-  bookingForm!: FormGroup;
+  isSubmitting = false;
 
-  get currentDistrictAreas(): string[] {
-    const selectedDistId = this.bookingForm?.get('districtId')?.value;
-    const match = this.districts.find(d => d.id === selectedDistId);
-    return match ? match.areas : [];
+  ngOnInit(): void {
+    this.titleService.setTitle('Book Installation & Door Fitting | SteelGuard');
+
+    // Pre-populate user defaults if logged in
+    const u = this.authService.currentUser();
+    if (u) {
+      this.loginId = u.id ? Number(u.id) || null : null;
+      this.loginName = u.name || null;
+      this.loginRoleId = Number(u.roleId ?? u.dbRoleId) || (
+        u.role === 'admin' ? 1 :
+        u.role === 'coordinator' ? 2 :
+        u.role === 'branch_head' ? 3 :
+        (u.role as string) === 'dealer' ? 4 : 5
+      );
+      if (u.role === 'branch_head') {
+        if (u.districtName) {
+          this.districtName = u.districtName.replace(/\s+Hub$/i, '').trim();
+        }
+        if (u.districtId) {
+          this.districtId = Number(u.districtId) || null;
+        }
+        if (u.name) {
+          this.branchHeadName = u.name;
+          this.branchHeadId = this.loginId;
+        }
+      }
+    }
+
+    this.loadDistricts();
   }
 
-  decrementQuantity(): void {
-    const cur = Number(this.bookingForm.get('quantity')?.value) || 1;
-    if (cur > 1) {
-      this.bookingForm.get('quantity')?.setValue(cur - 1);
+  loadDistricts(): void {
+    this.dataService.getDistricts().subscribe({
+      next: dists => {
+        this.districts.set(dists);
+        if (this.districtId) {
+          this.loadAreasForDistrict(this.districtId);
+        }
+      }
+    });
+  }
+
+  loadAreasForDistrict(districtId: number | string): void {
+    this.dataService.getAreasByDistrict(districtId).subscribe({
+      next: areas => {
+        this.districtAreas.set(areas);
+      }
+    });
+  }
+
+  onDistrictChange(district: District | null): void {
+    if (!district) return;
+    this.districtName = district.name;
+    this.districtId = Number(district.id) || null;
+    this.areaName = '';
+    this.areaId = null;
+    this.branchHeadName = district.name === 'Trivandrum' ? 'Suresh Kumar' : 'Rajesh Menon';
+    this.loadAreasForDistrict(district.id);
+  }
+
+  onAreaSelected(selectedName: string): void {
+    const matched = this.districtAreas().find(a => a.name === selectedName);
+    if (matched) {
+      this.areaId = Number(matched.id) || null;
+      this.areaName = matched.name;
     }
   }
 
-  incrementQuantity(): void {
-    const cur = Number(this.bookingForm.get('quantity')?.value) || 1;
-    if (cur < 100) {
-      this.bookingForm.get('quantity')?.setValue(cur + 1);
-    }
-  }
-
-  getFileUrl(img: string): string {
-    if (!img) return '';
-    if (img.startsWith('data:') || img.startsWith('http://') || img.startsWith('https://')) {
-      return img;
-    }
-    const base = environment.fileUrl || 'http://localhost:5000';
-    return `${base}${img.startsWith('/') ? '' : '/'}${img}`;
-  }
-
-  onFileSelected(event: Event): void {
+  onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
 
     const files = Array.from(input.files);
-    const remaining = 5 - this.uploadedImages().length;
-    if (remaining <= 0) {
-      this.toast.error('Maximum 5 photos allowed per booking');
-      input.value = '';
-      return;
-    }
-
-    const toProcess = files.slice(0, remaining);
-
-    // Upload physical files directly to Backend /api/uploads
-    this.dataService.uploadDocuments(toProcess).subscribe({
-      next: (res) => {
+    this.dataService.uploadDocuments(files).subscribe({
+      next: res => {
         if (res && res.urls && res.urls.length > 0) {
-          this.uploadedImages.update(prev => [...prev, ...res.urls]);
-          this.toast.success(`${res.urls.length} photo(s) uploaded successfully!`);
+          this.documents = [...this.documents, ...res.urls];
+        } else {
+          const fallback = files.map(f => `/uploads/${f.name}`);
+          this.documents = [...this.documents, ...fallback];
         }
       },
       error: () => {
-        // Fallback: local compression preview (backend will persist it to uploads directory on submit)
-        for (const file of toProcess) {
-          if (!file.type.startsWith('image/')) continue;
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const dataUrl = e.target?.result as string;
-            if (dataUrl) {
-              this.compressImage(dataUrl, (compressed) => {
-                this.uploadedImages.update(prev => [...prev, compressed]);
-              });
-            }
-          };
-          reader.readAsDataURL(file);
-        }
+        const fallback = files.map(f => `/uploads/${f.name}`);
+        this.documents = [...this.documents, ...fallback];
       }
     });
-
     input.value = '';
   }
 
-  removeImage(index: number): void {
-    this.uploadedImages.update(prev => prev.filter((_, i) => i !== index));
+  removeDoc(index: number): void {
+    this.documents.splice(index, 1);
   }
 
-  private compressImage(dataUrl: string, callback: (compressed: string) => void): void {
-    const img = new Image();
-    img.onload = () => {
-      const maxDim = 900;
-      let w = img.width;
-      let h = img.height;
-      if (w > maxDim || h > maxDim) {
-        if (w > h) {
-          h = Math.round((h * maxDim) / w);
-          w = maxDim;
-        } else {
-          w = Math.round((w * maxDim) / h);
-          h = maxDim;
-        }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(img, 0, 0, w, h);
-        callback(canvas.toDataURL('image/jpeg', 0.8));
-      } else {
-        callback(dataUrl);
-      }
-    };
-    img.onerror = () => callback(dataUrl);
-    img.src = dataUrl;
+  getFilename(url: string): string {
+    if (!url) return '';
+    try {
+      const parts = url.split('/');
+      return parts[parts.length - 1] || url;
+    } catch {
+      return url;
+    }
   }
 
-  ngOnInit(): void {
-    this.titleService.setTitle('Schedule Steel Door Installation | SteelGuard Kerala');
-    this.metaService.updateTag({
-      name: 'description',
-      content: 'Book professional steel door installation and precision frame mounting across Kerala with automated district branch routing.'
-    });
-
-    this.initForm();
-    this.loadDistrictsAndBranchHeads();
-    this.prefillQueryParamOrUser();
-  }
-
-  private initForm(): void {
-    this.bookingForm = this.fb.group({
-      clientName: ['', [Validators.required, Validators.minLength(3)]],
-      contactPhone: ['', [Validators.required, phoneValidator]],
-      brand: ['Tata Pravesh', Validators.required],
-      quantity: [1, [Validators.required, Validators.min(1), Validators.max(100)]],
-      requirement: ['', [Validators.required, Validators.minLength(3)]],
-      districtId: ['dist-ekm', Validators.required],
-      area: ['Kakkanad', Validators.required],
-      streetAddress: ['', [Validators.required, Validators.minLength(5)]],
-      landmark: [''],
-      pincode: ['682030', [Validators.required, pincodeValidator]]
-    });
-  }
-
-  private loadDistrictsAndBranchHeads(): void {
-    const resolvedDistricts = this.route.snapshot.data['districts'];
-    if (resolvedDistricts && resolvedDistricts.length) {
-      this.districts = resolvedDistricts;
-      this.updateAreasForSelectedDistrict();
+  goBack(): void {
+    if (this.authService.isAdmin()) {
+      this.router.navigate(['/admin/bookings']);
     } else {
-      this.dataService.getDistricts().subscribe(dists => {
-        this.districts = dists;
-        this.updateAreasForSelectedDistrict();
-      });
+      this.router.navigate(['/']);
     }
-
-    const resolvedHeads = this.route.snapshot.data['branchHeads'];
-    if (resolvedHeads && resolvedHeads.length) {
-      this.branchHeads = resolvedHeads;
-    } else {
-      this.dataService.getBranchHeads().subscribe(heads => {
-        this.branchHeads = heads;
-      });
-    }
-  }
-
-  private prefillQueryParamOrUser(): void {
-    const currentUser = this.auth.currentUser();
-    if (currentUser && currentUser.role === 'client') {
-      let prefillPhone = (currentUser.phone || '').replace(/\D/g, '');
-      if (prefillPhone.length > 10 && prefillPhone.startsWith('91')) {
-        prefillPhone = prefillPhone.substring(2);
-      }
-      if (prefillPhone.startsWith('0')) {
-        prefillPhone = prefillPhone.replace(/^0+/, '');
-      }
-      prefillPhone = prefillPhone.substring(0, 10);
-
-      this.bookingForm.patchValue({
-        clientName: currentUser.name,
-        contactPhone: prefillPhone
-      });
-      if (currentUser.districtId) {
-        this.bookingForm.patchValue({ districtId: currentUser.districtId });
-        this.updateAreasForSelectedDistrict();
-      }
-    }
-
-    this.route.queryParamMap.subscribe(params => {
-      const typeParam = params.get('doorType') || params.get('service');
-      if (typeParam) {
-        this.bookingForm.patchValue({ requirement: typeParam });
-      }
-    });
-  }
-
-  onPhoneKeyDown(event: KeyboardEvent): void {
-    const allowedNav = ['Backspace', 'Tab', 'Delete', 'ArrowLeft', 'ArrowRight', 'Enter', 'Escape', 'Home', 'End'];
-    if (allowedNav.includes(event.key)) {
-      return;
-    }
-    if (event.ctrlKey || event.metaKey) {
-      return;
-    }
-    if (!/^\d$/.test(event.key)) {
-      event.preventDefault();
-      return;
-    }
-    const input = event.target as HTMLInputElement;
-    const currentVal = input.value;
-    const selStart = input.selectionStart ?? 0;
-    const selEnd = input.selectionEnd ?? 0;
-    const selectionLength = selEnd - selStart;
-
-    if (currentVal.length >= 10 && selectionLength === 0) {
-      event.preventDefault();
-    }
-  }
-
-  onPhoneInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    let val = input.value.replace(/\D/g, '');
-
-    if (val.length > 10 && val.startsWith('91')) {
-      val = val.substring(2);
-    }
-    if (val.length > 10) {
-      val = val.substring(0, 10);
-    }
-
-    input.value = val;
-    this.bookingForm.get('contactPhone')?.setValue(val, { emitEvent: true });
-    this.bookingForm.get('contactPhone')?.markAsDirty();
-  }
-
-  onPincodeInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    let clean = input.value.replace(/\D/g, '').slice(0, 6);
-    input.value = clean;
-    this.bookingForm.get('pincode')?.setValue(clean, { emitEvent: true });
-    this.bookingForm.get('pincode')?.markAsDirty();
-  }
-
-  onDistrictChange(): void {
-    this.updateAreasForSelectedDistrict();
-  }
-
-  private updateAreasForSelectedDistrict(): void {
-    const areas = this.currentDistrictAreas;
-    if (areas.length > 0) {
-      this.bookingForm.get('area')?.setValue(areas[0]);
-    } else {
-      this.bookingForm.get('area')?.setValue('');
-    }
-  }
-
-  submitBooking(): void {
-    this.bookingForm.markAllAsTouched();
-    if (this.bookingForm.invalid) {
-      this.toast.error('Please complete all required fields correctly');
-      return;
-    }
-
-    this.isSubmitting.set(true);
-
-    const val = this.bookingForm.value;
-    const cleanPhone = (val.contactPhone || '').replace(/\D/g, '').slice(0, 10);
-    const currentUser = this.auth.currentUser();
-
-    const payload: CreateBookingPayload = {
-      name: (val.clientName || '').trim(),
-      mobile: cleanPhone,
-      clientId: currentUser?.clientId || undefined,
-      clientName: (val.clientName || '').trim(),
-      clientType: (currentUser?.clientType || 'customer') as ClientType,
-      contactPhone: cleanPhone,
-      contactEmail: currentUser?.email || `${cleanPhone}@customer.steelguard.in`,
-      districtId: val.districtId,
-      area: val.area,
-      address: (val.streetAddress || '').trim(),
-      landmark: val.landmark ? val.landmark.trim() : undefined,
-      pincode: (val.pincode || '').trim(),
-      doorDetails: {
-        doorType: (val.requirement || 'Steel Door Installation').trim(),
-        brand: (val.brand || 'Tata Pravesh').trim(),
-        finish: 'Precision Alignment',
-        dimensions: 'Site Clearance Survey',
-        thickness: 'Standard Frame',
-        quantity: Math.max(1, Number(val.quantity) || 1),
-        isUrgent: false,
-        notes: (val.requirement || '').trim(),
-        images: this.uploadedImages()
-      },
-      performedBy: currentUser?.name || `${(val.clientName || '').trim()} (Customer)`,
-      role: (currentUser?.role || 'client') as UserRole
-    };
-
-    this.dataService.createBooking(payload).subscribe({
-      next: created => {
-        this.isSubmitting.set(false);
-        this.submittedBooking.set(created);
-        this.toast.success(`Installation booking ${created.id} scheduled for ${created.districtName}!`);
-      },
-      error: err => {
-        this.isSubmitting.set(false);
-        this.toast.error(err?.error?.error || 'Failed to submit installation request. Please check inputs.');
-      }
-    });
   }
 
   resetForm(): void {
+    this.name = '';
+    this.mobile = '';
+    this.address = '';
+    this.notes = '';
+    this.districtId = null;
+    this.districtName = '';
+    this.areaId = null;
+    this.areaName = '';
+    this.documents = [];
     this.submittedBooking.set(null);
-    this.uploadedImages.set([]);
-    this.bookingForm.reset({
-      clientName: '',
-      contactPhone: '',
-      brand: 'Tata Pravesh',
-      quantity: 1,
-      requirement: '',
-      districtId: 'dist-ekm',
-      area: 'Kakkanad',
-      streetAddress: '',
-      landmark: '',
-      pincode: '682030'
+  }
+
+  saveBooking(): void {
+    if (!this.name.trim() || !this.mobile.trim() || !this.address.trim()) {
+      this.toast.error('Please fill in Name, Mobile Number, and Address.');
+      return;
+    }
+
+    this.isSubmitting = true;
+
+    // DDL matching payload
+    const payload: CreateBookingPayload = {
+      name: this.name.trim(),
+      mobile: this.mobile.trim(),
+      address: this.address.trim(),
+      notes: this.notes.trim() || null,
+      status: this.status || 'NEW',
+      loginRoleId: this.loginRoleId,
+      loginId: this.loginId,
+      loginName: this.loginName,
+      stateId: this.stateId,
+      stateName: this.stateName,
+      districtId: this.districtId,
+      district_id: this.districtId,
+      districtName: this.districtName,
+      district_name: this.districtName,
+      areaId: this.areaId,
+      area_id: this.areaId,
+      areaName: this.areaName.trim() || undefined,
+      area_name: this.areaName.trim() || undefined,
+      area: this.areaName.trim() || undefined,
+      branchHeadId: this.branchHeadId,
+      branch_head_id: this.branchHeadId,
+      branchHeadName: this.branchHeadName || undefined,
+      branch_head_name: this.branchHeadName || undefined,
+      documents: this.documents,
+
+      // UI compatibility aliases
+      clientName: this.name.trim(),
+      contactPhone: this.mobile.trim()
+    };
+
+    this.dataService.createBooking(payload).subscribe({
+      next: (res: any) => {
+        this.isSubmitting = false;
+        this.toast.success('Booking created successfully!');
+        if (this.authService.isAdmin()) {
+          this.router.navigate(['/admin/bookings']);
+        } else {
+          this.submittedBooking.set(res?.data || res || payload);
+        }
+      },
+      error: err => {
+        this.isSubmitting = false;
+        this.toast.error(err?.error?.error || 'Failed to create booking. Please try again.');
+      }
     });
-    this.updateAreasForSelectedDistrict();
   }
 }
