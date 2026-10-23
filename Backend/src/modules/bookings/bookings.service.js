@@ -2,7 +2,7 @@ import { pool } from '../../../db.js';
 
 export class BookingsService {
   /**
-   * Create a new booking using create_booking SP
+   * Create a new booking using save_booking SP (p_id = NULL)
    */
   async createBooking(data) {
     const name = data.name;
@@ -19,14 +19,16 @@ export class BookingsService {
     const districtName = data.districtName ?? data.district_name ?? null;
     const areaId = data.areaId ?? data.area_id ?? null;
     const areaName = data.areaName ?? data.area_name ?? null;
+    const branchHeadId = data.branchHeadId ?? data.branch_head_id ?? null;
+    const branchHeadName = data.branchHeadName ?? data.branch_head_name ?? null;
     const documents = data.documents ?? [];
-
 
     const docsJson = typeof documents === 'string' ? documents : JSON.stringify(documents);
 
     const [results] = await pool.query(
-      `CALL create_booking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `CALL save_booking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
+        null, // p_id: NULL for CREATE
         name,
         mobile,
         address,
@@ -41,6 +43,8 @@ export class BookingsService {
         districtName,
         areaId,
         areaName,
+        branchHeadId,
+        branchHeadName,
         docsJson
       ]
     );
@@ -50,7 +54,7 @@ export class BookingsService {
   }
 
   /**
-   * Update an existing booking using update_booking SP
+   * Update an existing booking using save_booking SP (p_id = bookingId)
    */
   async updateBooking(id, data = {}) {
     const bookingId = parseInt(id, 10);
@@ -63,12 +67,17 @@ export class BookingsService {
     const address = data.address ?? null;
     const notes = data.notes ?? null;
     const status = data.status ?? null;
+    const loginRoleId = data.loginRoleId ?? data.login_role_id ?? null;
+    const loginId = data.loginId ?? data.login_id ?? null;
+    const loginName = data.loginName ?? data.login_name ?? null;
     const stateId = data.stateId ?? data.state_id ?? null;
     const stateName = data.stateName ?? data.state_name ?? null;
     const districtId = data.districtId ?? data.district_id ?? null;
     const districtName = data.districtName ?? data.district_name ?? null;
     const areaId = data.areaId ?? data.area_id ?? null;
     const areaName = data.areaName ?? data.area_name ?? null;
+    const branchHeadId = data.branchHeadId ?? data.branch_head_id ?? null;
+    const branchHeadName = data.branchHeadName ?? data.branch_head_name ?? null;
     const documents = data.documents;
 
     let docsJson = null;
@@ -77,26 +86,42 @@ export class BookingsService {
     }
 
     const [results] = await pool.query(
-      `CALL update_booking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `CALL save_booking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        bookingId,
+        bookingId, // p_id: valid ID for UPDATE
         name,
         mobile,
         address,
         notes,
         status,
+        loginRoleId,
+        loginId,
+        loginName,
         stateId,
         stateName,
         districtId,
         districtName,
         areaId,
         areaName,
+        branchHeadId,
+        branchHeadName,
         docsJson
       ]
     );
 
     const rows = results?.[0] || [];
     return rows.length > 0 ? this.formatBookingRecord(rows[0]) : null;
+  }
+
+  /**
+   * Unified save handler (calls create if id is null/0, else update)
+   */
+  async saveBooking(data = {}) {
+    const id = data.id ? parseInt(data.id, 10) : null;
+    if (id) {
+      return this.updateBooking(id, data);
+    }
+    return this.createBooking(data);
   }
 
   /**
@@ -130,6 +155,39 @@ export class BookingsService {
     const [results] = await pool.query(
       'CALL get_bookings_paginated(?, ?, ?, ?, ?)',
       [pageNum, limitNum, roleIdNum, loginIdNum, districtIdNum]
+    );
+
+    const rows = results?.[0] || [];
+    const meta = results?.[1]?.[0] || {};
+
+    const formattedRows = rows.map(b => this.formatBookingRecord(b));
+    const total = Number(meta.total_records ?? formattedRows.length);
+
+    return {
+      data: formattedRows,
+      pagination: {
+        total,
+        page: Number(meta.current_page ?? pageNum),
+        limit: Number(meta.page_size ?? limitNum),
+        totalPages: Number(meta.total_pages ?? Math.ceil(total / limitNum) ?? 1)
+      }
+    };
+  }
+
+  /**
+   * Get Coordinator bookings with status tabs (ALL, UNREAD, PENDING), district filter, and search
+   * Uses stored procedure sp_get_coordinator_bookings
+   */
+  async getCoordinatorBookings({ status = null, districtId = null, search = null, page = 1, limit = 15 } = {}) {
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 15);
+    const districtIdNum = districtId != null && districtId !== '' ? parseInt(districtId, 10) : null;
+    const cleanStatus = status ? String(status).trim() : null;
+    const cleanSearch = search ? String(search).trim() : null;
+
+    const [results] = await pool.query(
+      'CALL sp_get_coordinator_bookings(?, ?, ?, ?, ?)',
+      [cleanStatus, districtIdNum, cleanSearch, pageNum, limitNum]
     );
 
     const rows = results?.[0] || [];

@@ -215,6 +215,26 @@ export const swaggerDocument = {
             items: { $ref: '#/components/schemas/StatusRecord' }
           }
         }
+      },
+      DropdownItem: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer', example: 1 },
+          name: { type: 'string', example: 'Ernakulam' }
+        }
+      },
+      DropdownResponse: {
+        type: 'object',
+        properties: {
+          type: { type: 'string', example: 'district' },
+          page: { type: 'integer', example: 1 },
+          limit: { type: 'integer', example: 20 },
+          count: { type: 'integer', example: 5 },
+          data: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/DropdownItem' }
+          }
+        }
       }
     }
   },
@@ -303,6 +323,64 @@ export const swaggerDocument = {
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' }
+              }
+            }
+          }
+        }
+      }
+    },
+    '/api/bookings/coordinator': {
+      get: {
+        tags: ['Bookings'],
+        summary: 'Coordinator Bookings List (Stored Procedure: sp_get_coordinator_bookings)',
+        description: 'Retrieves bookings for the Coordinator screen with status filtering tabs (ALL, UNREAD [NEW], PENDING [SCHEDULED]), district filter, search keyword, and pagination.',
+        security: [{ BearerAuth: [] }, { CookieAuth: [] }],
+        parameters: [
+          {
+            name: 'status',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', enum: ['ALL', 'UNREAD', 'PENDING', 'NEW', 'SCHEDULED', 'COMPLETED', 'CANCELLED'] },
+            description: 'Filter by status tab: ALL, UNREAD (status=NEW), PENDING (status=SCHEDULED)',
+            example: 'ALL'
+          },
+          {
+            name: 'districtId',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer' },
+            description: 'Filter by district ID (from Coordinator District dropdown, e.g. 1 for Ernakulam)',
+            example: 1
+          },
+          {
+            name: 'search',
+            in: 'query',
+            required: false,
+            schema: { type: 'string' },
+            description: 'Search by client name, mobile, address, area, or assigned branch head',
+            example: 'Rahul'
+          },
+          {
+            name: 'page',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', default: 1 },
+            description: 'Page number'
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', default: 15 },
+            description: 'Number of records per page'
+          }
+        ],
+        responses: {
+          200: {
+            description: 'Coordinator bookings retrieved successfully',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/PaginatedBookingsResponse' }
               }
             }
           }
@@ -764,6 +842,168 @@ export const swaggerDocument = {
           },
           400: {
             description: 'Invalid client ID',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' }
+              }
+            }
+          }
+        }
+      }
+    },
+    '/api/dropdowns/districts': {
+      get: {
+        tags: ['Dropdowns'],
+        summary: 'Get Districts Dropdown (Coordinator / Branch Head)',
+        description: 'Fetches list of districts using stored procedure `sp_get_dropdown_data`. For Coordinator (Role 2) or unauthenticated users, returns all districts. For Branch Head (Role 3), returns only their assigned district.',
+        security: [{ BearerAuth: [] }, { CookieAuth: [] }],
+        parameters: [
+          {
+            name: 'stateId',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer' },
+            description: 'Filter by State ID (optional)',
+            example: 1
+          },
+          {
+            name: 'search',
+            in: 'query',
+            required: false,
+            schema: { type: 'string' },
+            description: 'Search keyword for district name or code',
+            example: 'Ern'
+          },
+          {
+            name: 'page',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', default: 1 },
+            description: 'Page number'
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', default: 20 },
+            description: 'Items per page'
+          }
+        ],
+        responses: {
+          200: {
+            description: 'Districts retrieved successfully',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/DropdownResponse' }
+              }
+            }
+          }
+        }
+      }
+    },
+    '/api/dropdowns/areas': {
+      get: {
+        tags: ['Dropdowns'],
+        summary: 'Get Areas Dropdown (Filtered by District)',
+        description: 'Fetches list of areas using stored procedure `sp_get_dropdown_data`. When districtId is provided or user is Branch Head, returns areas for that specific district.',
+        security: [{ BearerAuth: [] }, { CookieAuth: [] }],
+        parameters: [
+          {
+            name: 'districtId',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer' },
+            description: 'District ID to filter areas by (e.g. 1 for Ernakulam Hub)',
+            example: 1
+          },
+          {
+            name: 'search',
+            in: 'query',
+            required: false,
+            schema: { type: 'string' },
+            description: 'Search keyword for area name or pincode',
+            example: 'Edapally'
+          },
+          {
+            name: 'page',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', default: 1 },
+            description: 'Page number'
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', default: 20 },
+            description: 'Items per page'
+          }
+        ],
+        responses: {
+          200: {
+            description: 'Areas retrieved successfully',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/DropdownResponse' }
+              }
+            }
+          }
+        }
+      }
+    },
+    '/api/dropdowns': {
+      get: {
+        tags: ['Dropdowns'],
+        summary: 'Generic Dropdown Lookup (type: district | area)',
+        description: 'Generic dropdown lookup endpoint supporting both `district` and `area` types.',
+        security: [{ BearerAuth: [] }, { CookieAuth: [] }],
+        parameters: [
+          {
+            name: 'type',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', enum: ['district', 'area'] },
+            description: 'Dropdown type',
+            example: 'district'
+          },
+          {
+            name: 'parentId',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer' },
+            description: 'Parent ID (stateId for district, districtId for area)'
+          },
+          {
+            name: 'search',
+            in: 'query',
+            required: false,
+            schema: { type: 'string' },
+            description: 'Search keyword'
+          },
+          {
+            name: 'page',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', default: 1 }
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', default: 20 }
+          }
+        ],
+        responses: {
+          200: {
+            description: 'Dropdown items retrieved successfully',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/DropdownResponse' }
+              }
+            }
+          },
+          400: {
+            description: 'Invalid type parameter',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' }

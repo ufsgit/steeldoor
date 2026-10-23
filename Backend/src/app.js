@@ -66,6 +66,7 @@ app.get('/api/health', (req, res) => {
 
 // Static files serving (for uploaded documents and images)
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/uploads', express.static(path.join(process.cwd(), 'Backend', 'uploads')));
 
 // ---------------- Mount Module Routes ----------------
 

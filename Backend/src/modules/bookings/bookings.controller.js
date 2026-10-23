@@ -7,7 +7,12 @@ import path from 'path';
  * are physically written to the Backend/uploads directory.
  */
 function processIncomingDocuments(rawDocs, reqFiles = []) {
-  const uploadsDir = path.join(process.cwd(), 'uploads');
+  const uploadsDir = fs.existsSync(path.join(process.cwd(), 'uploads'))
+    ? path.join(process.cwd(), 'uploads')
+    : (fs.existsSync(path.join(process.cwd(), 'Backend', 'uploads'))
+        ? path.join(process.cwd(), 'Backend', 'uploads')
+        : path.join(process.cwd(), 'uploads'));
+
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
@@ -15,9 +20,10 @@ function processIncomingDocuments(rawDocs, reqFiles = []) {
   const processed = [];
 
   // 1. Add any files uploaded via multipart/form-data
-  if (Array.isArray(reqFiles) && reqFiles.length > 0) {
-    for (const f of reqFiles) {
-      if (f.filename) {
+  const filesList = Array.isArray(reqFiles) ? reqFiles : (reqFiles ? Object.values(reqFiles).flat() : []);
+  if (filesList.length > 0) {
+    for (const f of filesList) {
+      if (f && f.filename) {
         processed.push(`/uploads/${f.filename}`);
       }
     }
@@ -25,18 +31,35 @@ function processIncomingDocuments(rawDocs, reqFiles = []) {
 
   // 2. Process documents array / strings
   if (rawDocs) {
-    const list = Array.isArray(rawDocs) ? rawDocs : [rawDocs];
+    let list = rawDocs;
+    if (typeof rawDocs === 'string') {
+      try {
+        const parsed = JSON.parse(rawDocs);
+        list = Array.isArray(parsed) ? parsed : [rawDocs];
+      } catch {
+        list = [rawDocs];
+      }
+    } else if (!Array.isArray(rawDocs)) {
+      list = [rawDocs];
+    }
+
     for (let i = 0; i < list.length; i++) {
       const item = list[i];
       if (typeof item !== 'string' || !item.trim()) continue;
 
-      // Check if it is a base64 Data URL (e.g. data:image/png;base64,...)
-      if (item.startsWith('data:image/')) {
+      // Check if it is a base64 Data URL (images, PDFs, documents)
+      if (item.startsWith('data:')) {
         try {
-          const matches = item.match(/^data:image\/([a-zA-Z0-9.+]+);base64,(.+)$/);
+          const matches = item.match(/^data:([a-zA-Z0-9.+/-]+);base64,(.+)$/);
           if (matches) {
-            let ext = matches[1].toLowerCase();
-            if (ext === 'jpeg') ext = 'jpg';
+            const mime = matches[1].toLowerCase();
+            let ext = 'bin';
+            if (mime.includes('pdf')) ext = 'pdf';
+            else if (mime.includes('png')) ext = 'png';
+            else if (mime.includes('jpeg') || mime.includes('jpg')) ext = 'jpg';
+            else if (mime.includes('webp')) ext = 'webp';
+            else if (mime.includes('text') || mime.includes('plain')) ext = 'txt';
+
             const buffer = Buffer.from(matches[2], 'base64');
             const filename = `${Date.now()}-${i}-${Math.round(Math.random() * 1e5)}.${ext}`;
             const filePath = path.join(uploadsDir, filename);
@@ -67,20 +90,44 @@ export class BookingsController {
    */
   async getAll(req, res, next) {
     try {
-      const page = req.query.page;
-      const limit = req.query.limit;
+      const { page, limit, status, search } = req.query;
 
-      const user = req.user || {};
-      const roleId = req.query.roleId ?? req.query.role_id ?? user.roleId ?? user.dbRoleId ?? null;
-      const loginId = req.query.loginId ?? req.query.login_id ?? user.id ?? null;
-      const districtId = req.query.districtId ?? req.query.district_id ?? user.districtId ?? null;
+      const roleId = req.user?.roleId ?? req.user?.dbRoleId ?? (req.query.roleId ? parseInt(req.query.roleId, 10) : null);
+      const loginId = req.user?.id ?? (req.query.loginId ? parseInt(req.query.loginId, 10) : null);
+      const districtId = req.user?.districtId ?? (req.query.districtId ? parseInt(req.query.districtId, 10) : null);
 
-      const result = await bookingsService.getBookings({
+      // If status filter tab or search keyword is supplied, use coordinator filter SP
+      if (status || search) {
+        const result = await bookingsService.getCoordinatorBookings({
+          status,
+          districtId,
+          search,
+          page,
+          limit
+        });
+        return res.json(result);
+      }
+
+      const result = await bookingsService.getBookings({ page, limit, roleId, loginId, districtId });
+      return res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * GET /api/bookings/coordinator?status=ALL|UNREAD|PENDING&districtId=1&search=xyz&page=1&limit=15
+   * Dedicated coordinator list with UI tabs (All, Unread, Pending), district filter, and search
+   */
+  async getCoordinatorBookings(req, res, next) {
+    try {
+      const { status, districtId, search, page, limit } = req.query;
+      const result = await bookingsService.getCoordinatorBookings({
+        status,
+        districtId,
+        search,
         page,
-        limit,
-        roleId,
-        loginId,
-        districtId
+        limit
       });
       return res.json(result);
     } catch (err) {
