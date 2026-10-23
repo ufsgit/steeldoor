@@ -7,8 +7,12 @@ export const swaggerDocument = {
   },
   servers: [
     {
-      url: 'http://localhost:5000',
-      description: 'Local Development Server'
+      url: 'https://steeldoorapi.ufstech.in',
+      description: 'Live Production API'
+    },
+    {
+      url: 'http://localhost:1025',
+      description: 'Local Server (PORT 1025)'
     }
   ],
   tags: [

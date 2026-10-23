@@ -21,7 +21,20 @@ const app = express();
 
 // ---------------- Global Middleware ----------------
 
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:4200').split(',').map(s => s.trim());
+const defaultOrigins = [
+  'https://steeldoor.ufstech.in',
+  'https://steeldoorapi.ufstech.in',
+  'http://localhost:4200',
+  'http://localhost:1025',
+  'http://localhost:5000'
+];
+
+const envOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -29,11 +42,15 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
       return callback(null, true);
     }
-    return callback(null, true); // Permissive in development
+    // Also allow any subdomains of ufstech.in
+    if (/^https?:\/\/([a-zA-Z0-9-]+\.)*ufstech\.in(:[0-9]+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, true); // Permissive fallback to prevent breaking API calls
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept', 'Origin']
 }));
 
 app.use(express.json());

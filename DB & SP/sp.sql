@@ -168,11 +168,11 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_bookings_paginated`(
-    IN p_page        INT,
-    IN p_limit       INT,
-    IN p_role_id     INT,
-    IN p_login_id    INT,
-    IN p_district_id INT
+    IN p_page        INT,  -- Page number (e.g. 1, 2, 3...)
+    IN p_limit       INT,  -- Number of records per page (default: 15)
+    IN p_role_id     INT,  -- User role_id (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer)
+    IN p_login_id    INT,  -- User login ID
+    IN p_district_id INT   -- User district ID (for role 3 branch_head)
 )
 BEGIN
     DECLARE v_limit INT DEFAULT 15;
@@ -180,10 +180,12 @@ BEGIN
     DECLARE v_offset INT DEFAULT 0;
     DECLARE v_district_id INT DEFAULT NULL;
 
+    -- Apply default limit 15 if null or <= 0
     IF p_limit IS NOT NULL AND p_limit > 0 THEN
         SET v_limit = p_limit;
     END IF;
 
+    -- Apply default page 1 if null or <= 0
     IF p_page IS NOT NULL AND p_page > 0 THEN
         SET v_page = p_page;
     END IF;
@@ -191,6 +193,7 @@ BEGIN
     SET v_offset = (v_page - 1) * v_limit;
     SET v_district_id = p_district_id;
 
+    -- If Role 3 (Branch Head) and district_id was not provided, resolve from users table
     IF p_role_id = 3 AND (v_district_id IS NULL OR v_district_id <= 0) AND p_login_id IS NOT NULL THEN
         SELECT district_id INTO v_district_id
         FROM users
@@ -198,6 +201,7 @@ BEGIN
         LIMIT 1;
     END IF;
 
+    -- Query 1: Fetch paginated bookings matching role rules
     SELECT 
         id,
         name,
@@ -214,21 +218,23 @@ BEGIN
         district_name,
         area_id,
         area_name,
-        branch_head_id,
-        branch_head_name,
         documents,
         created_at,
         updated_at
     FROM bookings
     WHERE is_deleted = 0
       AND (
+          -- Role 1 (company) & Role 2 (coordinator): list ALL clients
           (p_role_id IN (1, 2) OR p_role_id IS NULL)
+          -- Role 3 (branch_head): display client details by district_id
           OR (p_role_id = 3 AND district_id = v_district_id)
+          -- Role 4 (dealer) & Role 5 (customer): take list by login_id
           OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
       )
     ORDER BY created_at DESC
     LIMIT v_limit OFFSET v_offset;
 
+    -- Query 2: Pagination metadata matching the exact same role filter
     SELECT 
         COUNT(*) AS total_records,
         v_page AS current_page,
@@ -425,52 +431,6 @@ BEGIN
         documents, is_deleted, created_at, updated_at
     FROM bookings
     WHERE id = v_booking_id AND is_deleted = 0;
-
-END$$
-DELIMITER ;
-
-DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `set_booking_branch_head`(
-    IN p_booking_id       INT,
-    IN p_branch_head_id   INT,
-    IN p_branch_head_name VARCHAR(150)
-)
-BEGIN
-    DECLARE v_branch_head_name VARCHAR(150);
-
-    -- 1. Validate booking_id
-    IF p_booking_id IS NULL OR p_booking_id <= 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'booking_id is required.';
-    END IF;
-
-    SET v_branch_head_name = TRIM(p_branch_head_name);
-
-    -- 2. If branch_head_name is omitted or blank, auto-resolve from users table (role_id = 3: branch_head)
-    IF (v_branch_head_name IS NULL OR v_branch_head_name = '') AND p_branch_head_id IS NOT NULL THEN
-        SELECT name INTO v_branch_head_name 
-        FROM users 
-        WHERE id = p_branch_head_id AND role_id = 3 AND is_deleted = 0 
-        LIMIT 1;
-    END IF;
-
-    -- 3. Update the booking with the branch head details
-    UPDATE bookings
-    SET 
-        branch_head_id   = p_branch_head_id,
-        branch_head_name = v_branch_head_name,
-        updated_at       = CURRENT_TIMESTAMP
-    WHERE id = p_booking_id AND is_deleted = 0;
-
-    -- 4. Return the updated booking record
-    SELECT 
-        id, name, mobile, address, notes, status,
-        login_role_id, login_id, login_name,
-        state_id, state_name, district_id, district_name,
-        area_id, area_name, branch_head_id, branch_head_name,
-        documents, is_deleted, created_at, updated_at
-    FROM bookings
-    WHERE id = p_booking_id AND is_deleted = 0;
 
 END$$
 DELIMITER ;
@@ -684,13 +644,13 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_dropdown_data`(
-    IN p_type       VARCHAR(20),   -- 'district' OR 'area'
-    IN p_parent_id  INT,           -- state_id (for district) OR district_id (for area)
-    IN p_search     VARCHAR(100),  -- Search keyword, NULL or empty for no filter
-    IN p_role_id    INT,           -- Logged in user role_id (3 = branch_head)
-    IN p_login_id   INT,           -- Logged in user id (optional fallback lookup)
-    IN p_page       INT,           -- Page number (default: 1)
-    IN p_limit      INT            -- Items per page (default: 20)
+    IN p_type       VARCHAR(20),
+    IN p_parent_id  INT,
+    IN p_search     VARCHAR(100),
+    IN p_role_id    INT,
+    IN p_login_id   INT,
+    IN p_page       INT,
+    IN p_limit      INT
 )
 BEGIN
     DECLARE v_search VARCHAR(105);
@@ -699,7 +659,6 @@ BEGIN
     DECLARE v_limit INT DEFAULT 20;
     DECLARE v_offset INT DEFAULT 0;
     
-    -- 1. Normalize search input
     IF p_search IS NOT NULL AND TRIM(p_search) != '' THEN
         SET v_search = TRIM(p_search);
     ELSE
@@ -708,7 +667,6 @@ BEGIN
 
     SET v_parent_id = p_parent_id;
 
-    -- 2. Handle Pagination & Calculate Offset
     IF p_page IS NOT NULL AND p_page > 0 THEN
         SET v_page = p_page;
     END IF;
@@ -717,33 +675,33 @@ BEGIN
         SET v_limit = p_limit;
     END IF;
 
-    -- Formula: offset = (page - 1) * limit
     SET v_offset = (v_page - 1) * v_limit;
 
-    -- 3. Safety check: If Role 3 (Branch Head) and parent_id was not passed, resolve from users table
-    IF p_role_id = 3 AND v_parent_id IS NULL AND p_login_id IS NOT NULL THEN
+    -- Safety check: If Role 3 (Branch Head), resolve their assigned district_id
+    IF p_role_id = 3 AND p_login_id IS NOT NULL THEN
         SELECT district_id INTO v_parent_id 
         FROM users 
         WHERE id = p_login_id AND is_deleted = 0 
         LIMIT 1;
     END IF;
 
-    -- ========================================================
-    -- 1. DISTRICT DROPDOWN (Strips ' Hub' from the name)
-    -- ========================================================
+    -- 1. DISTRICT DROPDOWN
     IF LOWER(TRIM(p_type)) = 'district' THEN
-        -- If Role 3 (Branch Head), only return their 1 assigned district without ' Hub'
         IF p_role_id = 3 THEN
             SELECT 
                 d.id, 
-                TRIM(REPLACE(d.name, ' Hub', '')) AS name
+                TRIM(REPLACE(d.name, ' Hub', '')) AS name,
+                d.code,
+                d.state_id AS stateId
             FROM districts d
             WHERE d.id = v_parent_id
             LIMIT 1;
         ELSE
             SELECT 
                 d.id, 
-                TRIM(REPLACE(d.name, ' Hub', '')) AS name
+                TRIM(REPLACE(d.name, ' Hub', '')) AS name,
+                d.code,
+                d.state_id AS stateId
             FROM districts d
             WHERE (v_parent_id IS NULL OR d.state_id = v_parent_id)
               AND (
@@ -755,20 +713,20 @@ BEGIN
             LIMIT v_limit OFFSET v_offset;
         END IF;
 
-    -- ========================================================
     -- 2. AREA DROPDOWN
-    -- ========================================================
     ELSEIF LOWER(TRIM(p_type)) = 'area' THEN
-        -- If Role 3 (Branch Head): STRICTLY fetch areas for their specific district_id
         IF p_role_id = 3 THEN
             IF v_parent_id IS NULL THEN
-                SELECT NULL AS id, NULL AS name WHERE 1 = 0;
+                SELECT NULL AS id, NULL AS name, NULL AS pincode, NULL AS districtId WHERE 1 = 0;
             ELSE
                 SELECT 
                     a.id, 
-                    a.name
+                    a.name,
+                    a.pincode,
+                    a.district_id AS districtId
                 FROM areas a
                 WHERE a.district_id = v_parent_id
+                  AND a.is_deleted = 0
                   AND (
                         v_search IS NULL 
                         OR a.name LIKE CONCAT('%', v_search, '%') 
@@ -778,12 +736,14 @@ BEGIN
                 LIMIT v_limit OFFSET v_offset;
             END IF;
         ELSE
-            -- For other roles: filter by district if selected, with pagination
             SELECT 
                 a.id, 
-                a.name
+                a.name,
+                a.pincode,
+                a.district_id AS districtId
             FROM areas a
             WHERE (v_parent_id IS NULL OR a.district_id = v_parent_id)
+              AND a.is_deleted = 0
               AND (
                     v_search IS NULL 
                     OR a.name LIKE CONCAT('%', v_search, '%') 
@@ -808,64 +768,73 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_save_client_status`(
     IN p_schedule_date   DATE,
     IN p_notes           TEXT,
     IN p_created_by      INT,
-    IN p_created_by_name VARCHAR(100),
-    IN p_branch_head_id  INT            -- <-- Pass selected Branch Head from dropdown
+    IN p_created_by_name VARCHAR(100)
 )
 BEGIN
     DECLARE v_new_id INT;
     DECLARE v_clean_date DATE;
-    DECLARE v_client_name VARCHAR(150);
-    DECLARE v_created_by_name VARCHAR(100);
-    DECLARE v_branch_head_name VARCHAR(150);
 
-    -- 1. Auto-fetch client_name if omitted
-    SET v_client_name = TRIM(p_client_name);
-    IF v_client_name IS NULL OR v_client_name = '' THEN
-        SELECT name INTO v_client_name FROM bookings WHERE id = p_client_id LIMIT 1;
+    -- 1. Validate mandatory fields
+    IF p_client_id IS NULL OR p_client_id <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'client_id is required.';
     END IF;
 
-    -- 2. Auto-fetch created_by_name (Who submitted the status update)
-    SET v_created_by_name = TRIM(p_created_by_name);
-    IF (v_created_by_name IS NULL OR v_created_by_name = '') AND p_created_by IS NOT NULL THEN
-        SELECT name INTO v_created_by_name FROM users WHERE id = p_created_by LIMIT 1;
+    IF p_status IS NULL OR TRIM(p_status) = '' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Status is required.';
     END IF;
 
-    -- 3. Auto-resolve Branch Head Name from users table
-    IF p_branch_head_id IS NOT NULL AND p_branch_head_id > 0 THEN
-        SELECT name INTO v_branch_head_name FROM users WHERE id = p_branch_head_id AND role_id = 3 LIMIT 1;
-    END IF;
-
-    -- 4. If status is Cancelled, clear schedule_date
+    -- 2. If status is Cancelled, force schedule_date to NULL
     IF LOWER(TRIM(p_status)) = 'cancelled' THEN
         SET v_clean_date = NULL;
     ELSE
         SET v_clean_date = p_schedule_date;
     END IF;
 
-    -- 5. Insert audit trail into client_status_logs
+    -- 3. Insert the record into client_status_logs
     INSERT INTO client_status_logs (
-        client_id, client_name, status, schedule_date, notes, created_by, created_by_name
+        client_id,
+        client_name,
+        status,
+        schedule_date,
+        notes,
+        created_by,
+        created_by_name
     ) VALUES (
-        p_client_id, v_client_name, UPPER(TRIM(p_status)), v_clean_date, TRIM(p_notes), p_created_by, v_created_by_name
+        p_client_id,
+        TRIM(p_client_name),
+        TRIM(p_status),
+        v_clean_date,
+        TRIM(p_notes),
+        p_created_by,
+        TRIM(p_created_by_name)
     );
 
     SET v_new_id = LAST_INSERT_ID();
 
-    -- 6. Update BOTH Status AND Branch Head in bookings
-    UPDATE bookings
+    -- 4. (Optional) If you maintain a main `clients` or `leads` table, 
+    -- you can also update its current status here:
+    /*
+    UPDATE clients 
     SET 
-        status           = UPPER(TRIM(p_status)),
-        schedule_date    = v_clean_date,
-        notes            = CASE WHEN p_notes IS NOT NULL AND TRIM(p_notes) != '' THEN TRIM(p_notes) ELSE notes END,
-        created_by       = p_created_by,
-        created_by_name  = v_created_by_name,
-        branch_head_id   = COALESCE(p_branch_head_id, branch_head_id),
-        branch_head_name = COALESCE(v_branch_head_name, branch_head_name),
-        updated_at       = CURRENT_TIMESTAMP
+        current_status = TRIM(p_status),
+        next_schedule_date = v_clean_date,
+        updated_at = CURRENT_TIMESTAMP
     WHERE id = p_client_id;
+    */
 
-    -- 7. Return saved log
-    SELECT id, client_id, client_name, status, schedule_date, notes, created_by, created_by_name, created_at
+    -- 5. Return the saved record back to the caller
+    SELECT 
+        id,
+        client_id,
+        client_name,
+        status,
+        schedule_date,
+        notes,
+        created_by,
+        created_by_name,
+        created_at
     FROM client_status_logs
     WHERE id = v_new_id;
 
@@ -1130,77 +1099,5 @@ BEGIN
         LEFT JOIN districts d ON u.district_id = d.id
         WHERE u.id = v_user_id;
     END IF;
-END$$
-DELIMITER ;
-
-DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_save_client_status`(
-    IN p_client_id       INT,
-    IN p_client_name     VARCHAR(150),
-    IN p_status          VARCHAR(50),
-    IN p_schedule_date   DATE,
-    IN p_notes           TEXT,
-    IN p_created_by      INT,
-    IN p_created_by_name VARCHAR(100),
-    IN p_branch_head_id  INT
-)
-BEGIN
-    DECLARE v_new_id INT;
-    DECLARE v_clean_date DATE;
-    DECLARE v_client_name VARCHAR(150);
-    DECLARE v_created_by_name VARCHAR(100);
-    DECLARE v_branch_head_name VARCHAR(150);
-
-    -- 1. Auto-fetch client_name if omitted
-    SET v_client_name = TRIM(p_client_name);
-    IF v_client_name IS NULL OR v_client_name = '' THEN
-        SELECT name INTO v_client_name FROM bookings WHERE id = p_client_id LIMIT 1;
-    END IF;
-
-    -- 2. Auto-fetch created_by_name (Who submitted the status update)
-    SET v_created_by_name = TRIM(p_created_by_name);
-    IF (v_created_by_name IS NULL OR v_created_by_name = '') AND p_created_by IS NOT NULL THEN
-        SELECT name INTO v_created_by_name FROM users WHERE id = p_created_by LIMIT 1;
-    END IF;
-
-    -- 3. Auto-resolve Branch Head Name from users table
-    IF p_branch_head_id IS NOT NULL AND p_branch_head_id > 0 THEN
-        SELECT name INTO v_branch_head_name FROM users WHERE id = p_branch_head_id AND role_id = 3 LIMIT 1;
-    END IF;
-
-    -- 4. If status is Cancelled, clear schedule_date
-    IF LOWER(TRIM(p_status)) = 'cancelled' THEN
-        SET v_clean_date = NULL;
-    ELSE
-        SET v_clean_date = p_schedule_date;
-    END IF;
-
-    -- 5. Insert audit trail into client_status_logs
-    INSERT INTO client_status_logs (
-        client_id, client_name, status, schedule_date, notes, created_by, created_by_name
-    ) VALUES (
-        p_client_id, v_client_name, UPPER(TRIM(p_status)), v_clean_date, TRIM(p_notes), p_created_by, v_created_by_name
-    );
-
-    SET v_new_id = LAST_INSERT_ID();
-
-    -- 6. Update BOTH Status AND Branch Head in bookings
-    UPDATE bookings
-    SET 
-        status           = UPPER(TRIM(p_status)),
-        schedule_date    = v_clean_date,
-        notes            = CASE WHEN p_notes IS NOT NULL AND TRIM(p_notes) != '' THEN TRIM(p_notes) ELSE notes END,
-        created_by       = p_created_by,
-        created_by_name  = v_created_by_name,
-        branch_head_id   = COALESCE(p_branch_head_id, branch_head_id),
-        branch_head_name = COALESCE(v_branch_head_name, branch_head_name),
-        updated_at       = CURRENT_TIMESTAMP
-    WHERE id = p_client_id;
-
-    -- 7. Return saved log
-    SELECT id, client_id, client_name, status, schedule_date, notes, created_by, created_by_name, created_at
-    FROM client_status_logs
-    WHERE id = v_new_id;
-
 END$$
 DELIMITER ;
