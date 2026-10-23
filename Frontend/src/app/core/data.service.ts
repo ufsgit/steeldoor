@@ -8,6 +8,8 @@ import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 import { filterBookingsForUser, matchesDistrict } from './role-utils';
 import {
+  AreaHierarchyResponse,
+  AreaItem,
   Booking,
   BookingFilters,
   BookingHistoryEntry,
@@ -18,6 +20,7 @@ import {
   ReassignBookingPayload,
   ServiceItem,
   SiteContent,
+  State,
   StatusUpdatePayload,
   TestimonialItem
 } from './models';
@@ -62,7 +65,77 @@ export class DataService {
     return `${base}${cleanEndpoint}`;
   }
 
-  // ---------------- Districts & Areas ----------------
+  // ---------------- Areas & Location Hierarchy ----------------
+
+  getAreaHierarchy(districtId?: number | string): Observable<AreaHierarchyResponse | null> {
+    if (isPlatformServer(this.platformId)) {
+      return of(null);
+    }
+    const params = districtId ? new HttpParams().set('districtId', String(districtId)) : undefined;
+    return this.http.get<{ success: boolean; data: AreaHierarchyResponse }>(this.url('/api/areas/hierarchy'), { params }).pipe(
+      map(res => res?.data || null),
+      catchError(() => of(null))
+    );
+  }
+
+  getStates(): Observable<State[]> {
+    if (isPlatformServer(this.platformId)) {
+      return of([]);
+    }
+    return this.http.get<{ success: boolean; data: State[] }>(this.url('/api/areas/states')).pipe(
+      map(res => res?.data || []),
+      catchError(() => of([]))
+    );
+  }
+
+  getDistrictsByState(stateId?: number | string): Observable<District[]> {
+    if (isPlatformServer(this.platformId)) {
+      return of([]);
+    }
+    const params = stateId ? new HttpParams().set('stateId', String(stateId)) : undefined;
+    return this.http.get<{ success: boolean; data: any[] }>(this.url('/api/areas/districts'), { params }).pipe(
+      map(res => (res?.data || []).map(d => ({
+        id: String(d.id),
+        name: d.name,
+        code: d.code,
+        stateId: d.state_id,
+        areas: []
+      }))),
+      catchError(() => of([]))
+    );
+  }
+
+  getAreasByDistrict(districtId: number | string, search?: string): Observable<AreaItem[]> {
+    if (isPlatformServer(this.platformId)) {
+      return of([]);
+    }
+    let params = new HttpParams().set('districtId', String(districtId));
+    if (search && search.trim()) {
+      params = params.set('search', search.trim());
+    }
+    return this.http.get<{ success: boolean; data: AreaItem[] }>(this.url('/api/areas'), { params }).pipe(
+      map(res => res?.data || []),
+      catchError(() => of([]))
+    );
+  }
+
+  createAreaItem(data: { districtId: number | string; name: string; pincode?: string }): Observable<AreaItem> {
+    return this.http.post<{ success: boolean; data: AreaItem }>(this.url('/api/areas'), data).pipe(
+      map(res => res.data)
+    );
+  }
+
+  updateAreaItem(id: number | string, data: { name: string; pincode?: string; districtId?: number | string }): Observable<AreaItem> {
+    return this.http.put<{ success: boolean; data: AreaItem }>(this.url(`/api/areas/${id}`), data).pipe(
+      map(res => res.data)
+    );
+  }
+
+  deleteAreaItem(id: number | string): Observable<any> {
+    return this.http.delete(this.url(`/api/areas/${id}`));
+  }
+
+  // ---------------- Districts & Areas (Legacy endpoints) ----------------
 
   getDistricts(): Observable<District[]> {
     if (isPlatformServer(this.platformId)) {

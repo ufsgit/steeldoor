@@ -32,7 +32,7 @@ router.get('/', async (req, res, next) => {
     const rows = results?.[0] || [];
 
     const [areas] = await pool.query(
-      'SELECT district_id, name FROM areas ORDER BY name ASC'
+      'SELECT district_id, name FROM areas WHERE is_deleted = 0 ORDER BY name ASC'
     );
 
     const areaMap = {};

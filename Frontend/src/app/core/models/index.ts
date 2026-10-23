@@ -2,12 +2,45 @@ export type UserRole = 'admin' | 'user' | 'coordinator' | 'branch_head' | 'clien
 export type ClientType = 'customer' | 'dealer' | 'company';
 export type BookingStatus = 'Pending' | 'Accepted' | 'Scheduled' | 'Finished' | 'Rejected';
 
+export interface State {
+  id: number | string;
+  name: string;
+  code: string;
+  created_at?: string;
+}
+
 export interface District {
   id: string;
   name: string;
-  stateId: string;
+  stateId?: string | number;
+  state_id?: number;
   code: string;
   areas: string[];
+}
+
+export interface AreaItem {
+  id: number;
+  district_id: number;
+  name: string;
+  pincode?: string | null;
+  is_deleted?: number;
+  district_name?: string;
+  state_id?: number;
+  state_name?: string;
+  created_at?: string;
+}
+
+export interface AreaHierarchyResponse {
+  states: State[];
+  districts: Array<{
+    id: number | string;
+    state_id: number;
+    name: string;
+    code: string;
+    area_count?: number;
+  }>;
+  selectedDistrictId: number | string;
+  areas: AreaItem[];
 }
 
 export interface BranchHead {
