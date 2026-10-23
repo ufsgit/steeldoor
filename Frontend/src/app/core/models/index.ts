@@ -99,39 +99,57 @@ export interface DoorDetails {
 }
 
 export interface Booking {
-  id: string;
-  clientId?: string;
-  clientName: string;
-  clientType: ClientType;
-  contactPhone: string;
-  contactEmail: string;
-  districtId: string;
-  districtName: string;
-  area: string;
+  id: number | string;
+  name: string;
+  mobile: string;
   address: string;
-  landmark?: string;
-  pincode: string;
-  doorDetails: DoorDetails;
-  status: BookingStatus;
+  notes?: string | null;
+  status: string;
+  login_role_id?: number | null;
+  loginRoleId?: number | null;
+  login_id?: number | null;
+  loginId?: number | string | null;
+  login_name?: string | null;
+  loginName?: string | null;
+  state_id?: number | null;
+  stateId?: number | string | null;
+  state_name?: string | null;
+  stateName?: string | null;
+  district_id?: number | null;
+  districtId?: string;
+  district_name?: string | null;
+  districtName?: string;
+  area_id?: number | null;
+  areaId?: number | string | null;
+  area_name?: string | null;
+  areaName?: string;
+  area?: string;
+  branch_head_id?: number | null;
   branchHeadId?: string;
+  branch_head_name?: string | null;
   branchHeadName?: string;
+  documents?: string[] | any;
+  is_deleted?: number;
+  created_at?: string;
+  createdAt?: string;
+  updated_at?: string;
+  updatedAt?: string;
+
+  // Compatibility helper fields for orders table view & legacy components
+  clientId?: string | number;
+  clientName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  clientType?: ClientType;
+  pincode?: string;
+  landmark?: string;
   scheduledDate?: string;
   completedDate?: string;
   rejectionReason?: string;
-  createdAt: string;
-  updatedAt: string;
-  history: BookingHistoryEntry[];
-  // Computed flags
+  history?: BookingHistoryEntry[];
+  doorDetails?: DoorDetails;
   isDelayed?: boolean;
   hoursSinceSubmitted?: number;
-  documents?: string[];
-  name?: string;
-  mobile?: string;
-  areaName?: string;
-  notes?: string;
-  loginRoleId?: number;
-  loginId?: number | string;
-  loginName?: string;
 }
 
 export interface User {
@@ -200,27 +218,47 @@ export interface BookingFilters {
 }
 
 export interface CreateBookingPayload {
-  clientId?: string;
-  name?: string;
-  clientName: string;
-  clientType: ClientType;
-  mobile?: string;
-  contactPhone: string;
-  contactEmail: string;
-  districtId: string;
-  districtName?: string;
-  area: string;
-  areaName?: string;
+  name: string;
+  mobile: string;
   address: string;
-  landmark?: string;
-  pincode: string;
-  notes?: string;
+  notes?: string | null;
   status?: string;
-  doorDetails: DoorDetails;
-  documents?: string[];
+  loginRoleId?: number | null;
+  login_role_id?: number | null;
+  loginId?: number | string | null;
+  login_id?: number | string | null;
+  loginName?: string | null;
+  login_name?: string | null;
+  stateId?: number | string | null;
+  state_id?: number | string | null;
+  stateName?: string | null;
+  state_name?: string | null;
+  districtId?: number | string | null;
+  district_id?: number | string | null;
+  districtName?: string | null;
+  district_name?: string | null;
+  areaId?: number | string | null;
+  area_id?: number | string | null;
+  areaName?: string | null;
+  area_name?: string | null;
+  area?: string | null;
+  branchHeadId?: number | string | null;
+  branch_head_id?: number | string | null;
+  branchHeadName?: string | null;
+  branch_head_name?: string | null;
+  documents?: string[] | any;
+
+  // Compatibility fields
+  clientId?: string | number;
+  clientName?: string;
+  clientType?: ClientType;
+  contactPhone?: string;
+  contactEmail?: string;
+  pincode?: string;
+  landmark?: string;
+  doorDetails?: DoorDetails;
   performedBy?: string;
   role?: UserRole;
-  branchHeadName?: string;
 }
 
 export interface StatusUpdatePayload {

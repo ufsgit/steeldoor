@@ -674,6 +674,8 @@ export class BookNowComponent implements OnInit {
     const currentUser = this.auth.currentUser();
 
     const payload: CreateBookingPayload = {
+      name: (val.clientName || '').trim(),
+      mobile: cleanPhone,
       clientId: currentUser?.clientId || undefined,
       clientName: (val.clientName || '').trim(),
       clientType: (currentUser?.clientType || 'customer') as ClientType,

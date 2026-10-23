@@ -104,16 +104,16 @@ import { ModalComponent } from '../../../shared/components/modal.component';
             <div class="border-b border-border pb-2">
               <span class="text-[10px] font-bold uppercase tracking-wider text-text-muted">Door Details</span>
             </div>
-            <div class="text-base font-bold text-primary">{{ booking()!.doorDetails.doorType || 'Standard Steel Door' }}</div>
+            <div class="text-base font-bold text-primary">{{ booking()!.doorDetails?.doorType || 'Standard Steel Door' }}</div>
             <div class="grid grid-cols-2 gap-2 text-xs text-text-muted">
-              <div>Brand: <strong class="text-text block font-bold">{{ booking()!.doorDetails.brand || 'Tata Pravesh' }}</strong></div>
-              <div>Quantity: <strong class="text-text block font-bold">{{ booking()!.doorDetails.quantity || 1 }} Unit(s)</strong></div>
-              <div>Finish: <strong class="text-text block">{{ booking()!.doorDetails.finish || 'Standard' }}</strong></div>
-              <div>Thickness: <strong class="text-text block">{{ booking()!.doorDetails.thickness || '1.2mm' }}</strong></div>
+              <div>Brand: <strong class="text-text block font-bold">{{ booking()!.doorDetails?.brand || 'Tata Pravesh' }}</strong></div>
+              <div>Quantity: <strong class="text-text block font-bold">{{ booking()!.doorDetails?.quantity || 1 }} Unit(s)</strong></div>
+              <div>Finish: <strong class="text-text block">{{ booking()!.doorDetails?.finish || 'Standard' }}</strong></div>
+              <div>Thickness: <strong class="text-text block">{{ booking()!.doorDetails?.thickness || '1.2mm' }}</strong></div>
             </div>
-            @if (booking()!.notes || booking()!.doorDetails.notes) {
+            @if (booking()!.notes || booking()!.doorDetails?.notes) {
               <div class="text-[11px] text-text-muted bg-surface-muted p-2 rounded-lg italic">
-                Site Notes: {{ booking()!.notes || booking()!.doorDetails.notes }}
+                Site Notes: {{ booking()!.notes || booking()!.doorDetails?.notes }}
               </div>
             }
           </div>
@@ -176,10 +176,10 @@ import { ModalComponent } from '../../../shared/components/modal.component';
               <h2 class="text-base font-bold text-text">Audit Trail & Event Log</h2>
               <p class="text-xs text-text-muted">Chronological timeline of every creation, rejection, status update, and reassignment.</p>
             </div>
-            <span class="text-xs font-mono text-text-muted">{{ booking()!.history.length }} Events Logged</span>
+            <span class="text-xs font-mono text-text-muted">{{ booking()!.history?.length || 0 }} Events Logged</span>
           </div>
 
-          <app-timeline [history]="booking()!.history"></app-timeline>
+          <app-timeline [history]="booking()!.history || []"></app-timeline>
         </div>
 
         <!-- REASSIGN BRANCH HEAD MODAL -->
@@ -293,7 +293,7 @@ export class AdminBookingDetailComponent implements OnInit {
     if (!bId || !this.selectedNewBranchHeadId || !this.reassignReason.trim()) return;
 
     this.isReassigning = true;
-    this.dataService.reassignBooking(bId, {
+    this.dataService.reassignBooking(String(bId), {
       newBranchHeadId: this.selectedNewBranchHeadId,
       reason: this.reassignReason.trim(),
       performedBy: 'Elena Vance (Super Admin)',

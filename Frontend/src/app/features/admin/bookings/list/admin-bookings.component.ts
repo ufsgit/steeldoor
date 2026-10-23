@@ -3,12 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
-import { DataService } from '../../../core/data.service';
-import { AuthService } from '../../../core/auth.service';
-import { Booking, District, BookingStatus } from '../../../core/models';
-import { matchesDistrict } from '../../../core/role-utils';
-import { DistrictDropdownComponent } from '../../../shared/components';
-import { ToastService } from '../../../shared/toast/toast.service';
+import { DataService } from '../../../../core/data.service';
+import { AuthService } from '../../../../core/auth.service';
+import { Booking, District, BookingStatus } from '../../../../core/models';
+import { matchesDistrict } from '../../../../core/role-utils';
+import { DistrictDropdownComponent } from '../../../../shared/components';
+import { ToastService } from '../../../../shared/toast/toast.service';
 
 @Component({
   selector: 'app-admin-bookings',
@@ -208,16 +208,15 @@ import { ToastService } from '../../../shared/toast/toast.service';
           </button>
 
           <!-- + New Enquiry Green Button -->
-          <button
-            type="button"
-            (click)="openNewEnquiryModal()"
+          <a
+            routerLink="/admin/bookings/new"
             class="h-[36px] px-4 rounded-md bg-[#246b3f] hover:bg-[#1e5834] text-white font-semibold text-[13px] flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
           >
             <svg class="w-4 h-4 fill-none shrink-0" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" d="M12 4v16m8-8H4"/>
             </svg>
             <span>New Enquiry</span>
-          </button>
+          </a>
         </div>
       </div>
 
@@ -361,8 +360,16 @@ import { ToastService } from '../../../shared/toast/toast.service';
 
                   <!-- F · STATUS (Soft rounded-rectangle badges matching Image 1) -->
                   <td class="py-2 px-3.5 whitespace-nowrap" [class.border-b]="!last" [class.border-gray-200]="!last">
+                    <!-- NEW (Soft warm cream/emerald rounded rectangle) -->
+                    @if (isStatus(b, 'NEW')) {
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#e6f4ea] text-[#137333]">
+                        <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+                        <span>NEW</span>
+                      </span>
+                    }
+
                     <!-- Pending (Soft warm cream/amber rounded rectangle) -->
-                    @if (b.status === 'Pending' && !b.isDelayed) {
+                    @if (isStatus(b, 'Pending') && !b.isDelayed) {
                       <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#fef7e0] text-[#b45309]">
                         <span class="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
                         <span>Pending</span>
@@ -370,7 +377,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
                     }
 
                     <!-- Scheduled (Soft pale green rounded rectangle) -->
-                    @if (b.status === 'Scheduled' && !b.isDelayed) {
+                    @if (isStatus(b, 'Scheduled') && !b.isDelayed) {
                       <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#e6f4ea] text-[#137333]">
                         <span class="w-2 h-2 rounded-full bg-[#137333]"></span>
                         <span>Scheduled</span>
@@ -378,7 +385,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
                     }
 
                     <!-- Accepted (Soft pale blue rounded rectangle) -->
-                    @if (b.status === 'Accepted' && !b.isDelayed) {
+                    @if (isStatus(b, 'Accepted') && !b.isDelayed) {
                       <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#e8f0fe] text-[#1967d2]">
                         <span class="w-2 h-2 rounded-full bg-[#1a73e8]"></span>
                         <span>Accepted</span>
@@ -394,7 +401,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
                     }
 
                     <!-- Finished (Soft pale mint rounded rectangle) -->
-                    @if (b.status === 'Finished') {
+                    @if (isStatus(b, 'Finished')) {
                       <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#e6f4ea] text-[#137333]">
                         <span class="w-2 h-2 rounded-full bg-[#137333]"></span>
                         <span>Finished</span>
@@ -402,10 +409,18 @@ import { ToastService } from '../../../shared/toast/toast.service';
                     }
 
                     <!-- Rejected (Soft pale red rounded rectangle) -->
-                    @if (b.status === 'Rejected') {
+                    @if (isStatus(b, 'Rejected')) {
                       <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#fce8e6] text-[#c5221f]">
                         <span class="w-2 h-2 rounded-full bg-[#d93025]"></span>
                         <span>Rejected</span>
+                      </span>
+                    }
+
+                    <!-- Fallback if any other custom status -->
+                    @if (!isKnownStatus(b)) {
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-gray-100 text-gray-700">
+                        <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                        <span>{{ b.status || 'NEW' }}</span>
                       </span>
                     }
                   </td>
@@ -505,7 +520,14 @@ import { ToastService } from '../../../shared/toast/toast.service';
               <!-- Quick Status Actions -->
               <div class="space-y-1.5 pt-2">
                 <label class="font-semibold text-gray-700 block">Change Status:</label>
-                <div class="grid grid-cols-3 gap-2">
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    (click)="updateBookingStatus('NEW')"
+                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e6f4ea] text-[#137333] hover:opacity-90 cursor-pointer"
+                  >
+                    NEW
+                  </button>
                   <button
                     type="button"
                     (click)="updateBookingStatus('Pending')"
@@ -540,13 +562,6 @@ import { ToastService } from '../../../shared/toast/toast.service';
                     class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#fce8e6] text-[#c5221f] hover:opacity-90 cursor-pointer"
                   >
                     Rejected
-                  </button>
-                  <button
-                    type="button"
-                    (click)="viewFullDetails()"
-                    class="py-1.5 px-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer"
-                  >
-                    Full Page →
                   </button>
                 </div>
               </div>
@@ -850,15 +865,25 @@ export class AdminBookingsComponent implements OnInit {
     // Search query
     const q = this.searchQuery().trim().toLowerCase();
     if (q) {
-      list = list.filter(b =>
-        b.clientName.toLowerCase().includes(q) ||
-        b.contactPhone.toLowerCase().includes(q) ||
-        b.area.toLowerCase().includes(q) ||
-        b.districtName.toLowerCase().includes(q) ||
-        (b.branchHeadName && b.branchHeadName.toLowerCase().includes(q)) ||
-        (b.doorDetails && b.doorDetails.doorType && b.doorDetails.doorType.toLowerCase().includes(q)) ||
-        b.id.toLowerCase().includes(q)
-      );
+      list = list.filter(b => {
+        const cName = (b.clientName || b.name || '').toLowerCase();
+        const cPhone = (b.contactPhone || b.mobile || '').toLowerCase();
+        const cArea = (b.area || b.areaName || '').toLowerCase();
+        const cDist = (b.districtName || '').toLowerCase();
+        const cHead = (b.branchHeadName || '').toLowerCase();
+        const cDoor = (b.doorDetails?.doorType || '').toLowerCase();
+        const cId = String(b.id || '').toLowerCase();
+
+        return (
+          cName.includes(q) ||
+          cPhone.includes(q) ||
+          cArea.includes(q) ||
+          cDist.includes(q) ||
+          cHead.includes(q) ||
+          cDoor.includes(q) ||
+          cId.includes(q)
+        );
+      });
     }
 
     // Status tab filter
@@ -867,16 +892,16 @@ export class AdminBookingsComponent implements OnInit {
       if (status === 'Delayed') {
         list = list.filter(b => b.isDelayed);
       } else if (status === 'Pending') {
-        list = list.filter(b => b.status === 'Pending' && !b.isDelayed);
+        list = list.filter(b => (b.status === 'Pending' || b.status === 'NEW') && !b.isDelayed);
       } else {
-        list = list.filter(b => b.status === status);
+        list = list.filter(b => String(b.status || '').toLowerCase() === status.toLowerCase());
       }
     }
 
     // District
     const dist = this.selectedDistrict();
     if (dist) {
-      list = list.filter(b => b.districtId === dist || b.districtName.toLowerCase() === dist.toLowerCase());
+      list = list.filter(b => b.districtId === dist || (b.districtName && b.districtName.toLowerCase() === dist.toLowerCase()));
     }
 
     // Client Type
@@ -889,12 +914,12 @@ export class AdminBookingsComponent implements OnInit {
     const dFrom = this.dateFrom();
     if (dFrom) {
       const fromTime = new Date(dFrom).getTime();
-      list = list.filter(b => new Date(b.createdAt).getTime() >= fromTime);
+      list = list.filter(b => b.createdAt ? new Date(b.createdAt).getTime() >= fromTime : true);
     }
     const dTo = this.dateTo();
     if (dTo) {
       const toTime = new Date(dTo).setHours(23, 59, 59, 999);
-      list = list.filter(b => new Date(b.createdAt).getTime() <= toTime);
+      list = list.filter(b => b.createdAt ? new Date(b.createdAt).getTime() <= toTime : true);
     }
 
     return list;
@@ -975,6 +1000,22 @@ export class AdminBookingsComponent implements OnInit {
     }
   }
 
+  isStatus(booking: Booking, target: string): boolean {
+    if (!booking || !booking.status) return target.toUpperCase() === 'NEW';
+    const s = String(booking.status).trim().toLowerCase();
+    const t = target.trim().toLowerCase();
+    if (t === 'pending') {
+      return s === 'pending';
+    }
+    return s === t;
+  }
+
+  isKnownStatus(booking: Booking): boolean {
+    if (!booking || !booking.status) return false;
+    const s = String(booking.status).trim().toLowerCase();
+    return ['new', 'pending', 'scheduled', 'accepted', 'finished', 'rejected'].includes(s);
+  }
+
   openBooking(b: Booking): void {
     this.selectedBooking.set(b);
   }
@@ -986,14 +1027,32 @@ export class AdminBookingsComponent implements OnInit {
     }
   }
 
-  updateBookingStatus(newStatus: BookingStatus): void {
+  updateBookingStatus(newStatus: string): void {
     const b = this.selectedBooking();
     if (!b) return;
 
+    const previousStatus = b.status;
+
+    // Optimistic local update
     this.bookings.update(list =>
       list.map(item => item.id === b.id ? { ...item, status: newStatus, isDelayed: false } : item)
     );
     this.selectedBooking.update(item => item ? { ...item, status: newStatus, isDelayed: false } : null);
+
+    // Persist to backend database via PUT /api/bookings/:id
+    this.dataService.updateBooking(b.id, { status: newStatus }).subscribe({
+      next: (res) => {
+        this.toastService.success(`Booking #${b.id} status updated to ${newStatus}`);
+      },
+      error: (err) => {
+        // Rollback on failure
+        this.bookings.update(list =>
+          list.map(item => item.id === b.id ? { ...item, status: previousStatus } : item)
+        );
+        this.selectedBooking.update(item => item ? { ...item, status: previousStatus } : null);
+        this.toastService.error(err?.error?.error || 'Failed to update booking status. Please try again.');
+      }
+    });
   }
 
   openNewEnquiryModal(): void {
@@ -1116,9 +1175,11 @@ export class AdminBookingsComponent implements OnInit {
       error: () => {
         const localBooking: Booking = {
           id: `BK-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+          name: this.newClientName,
           clientName: this.newClientName,
-          clientType: 'customer',
+          mobile: this.newPhone,
           contactPhone: this.newPhone,
+          clientType: 'customer',
           contactEmail: `${this.newClientName.toLowerCase().replace(/\s+/g, '')}@example.com`,
           districtId,
           districtName: this.newDistrict,

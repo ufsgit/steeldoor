@@ -366,6 +366,10 @@ export class DataService {
     return this.http.post<Booking>(this.url('/api/bookings'), payload);
   }
 
+  updateBooking(id: string | number, data: Partial<Booking>): Observable<Booking> {
+    return this.http.put<Booking>(this.url(`/api/bookings/${id}`), data);
+  }
+
   updateBookingStatus(id: string, payload: StatusUpdatePayload): Observable<Booking> {
     return this.http.patch<Booking>(this.url(`/api/bookings/${id}/status`), payload);
   }
