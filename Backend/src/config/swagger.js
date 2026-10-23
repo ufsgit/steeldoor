@@ -14,6 +14,7 @@ export const swaggerDocument = {
   tags: [
     { name: 'Auth', description: 'Mobile Authentication (JWT)' },
     { name: 'Bookings', description: 'Booking Management & Pagination' },
+    { name: 'Status', description: 'Client Status Updates & History (Scheduled, Completed, Cancelled)' },
     { name: 'Dropdowns', description: 'Searchable Dropdown Select Options (Districts, Areas)' },
     { name: 'Uploads', description: 'File & Document Uploads for Bookings' }
   ],
@@ -133,6 +134,85 @@ export const swaggerDocument = {
               limit: { type: 'integer', example: 15 },
               totalPages: { type: 'integer', example: 3 }
             }
+          }
+        }
+      },
+      SaveStatusRequest: {
+        type: 'object',
+        required: ['clientId', 'status'],
+        properties: {
+          clientId: {
+            type: 'integer',
+            example: 1,
+            description: 'ID of the client / lead'
+          },
+          clientName: {
+            type: 'string',
+            example: 'Abhijith',
+            description: 'Name of the client'
+          },
+          status: {
+            type: 'string',
+            enum: ['Scheduled', 'Completed', 'Cancelled'],
+            example: 'Scheduled',
+            description: 'Selected status from frontend'
+          },
+          scheduleDate: {
+            type: 'string',
+            nullable: true,
+            example: '10/24/2024',
+            description: 'Schedule date (accepts 10/24/2024 or YYYY-MM-DD; automatically null for Cancelled)'
+          },
+          notes: {
+            type: 'string',
+            nullable: true,
+            example: 'Client confirmed fitting for tomorrow afternoon.',
+            description: 'Notes entered by user'
+          },
+          createdBy: {
+            type: 'integer',
+            nullable: true,
+            example: 4,
+            description: 'User ID of the updater (auto-extracted from token if authenticated)'
+          },
+          createdByName: {
+            type: 'string',
+            nullable: true,
+            example: 'Rajesh Menon',
+            description: 'Name of the updater'
+          }
+        }
+      },
+      StatusRecord: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer', example: 1 },
+          clientId: { type: 'integer', example: 1 },
+          clientName: { type: 'string', example: 'Abhijith' },
+          status: { type: 'string', example: 'Scheduled' },
+          scheduleDate: { type: 'string', nullable: true, example: '2024-10-24' },
+          notes: { type: 'string', example: 'Client confirmed fitting for tomorrow afternoon.' },
+          createdBy: { type: 'integer', nullable: true, example: 4 },
+          createdByName: { type: 'string', nullable: true, example: 'Rajesh Menon' },
+          createdAt: { type: 'string', example: '2026-10-23T04:29:04.000Z' }
+        }
+      },
+      SaveStatusResponse: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean', example: true },
+          message: { type: 'string', example: 'Status updated to Scheduled successfully' },
+          data: { $ref: '#/components/schemas/StatusRecord' }
+        }
+      },
+      StatusHistoryResponse: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean', example: true },
+          count: { type: 'integer', example: 1 },
+          data: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/StatusRecord' }
           }
         }
       }
@@ -549,6 +629,76 @@ export const swaggerDocument = {
           },
           400: {
             description: 'No files uploaded or invalid file format'
+          }
+        }
+      }
+    },
+    '/api/status': {
+      post: {
+        tags: ['Status'],
+        summary: 'Save Client Status (Stored Procedure: sp_save_client_status)',
+        description: 'Saves the status (Scheduled, Completed, Cancelled), schedule date, and notes using `sp_save_client_status`. When Cancelled is chosen, schedule date is automatically cleared to NULL.',
+        security: [{ BearerAuth: [] }, { CookieAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/SaveStatusRequest' }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: 'Status successfully recorded',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/SaveStatusResponse' }
+              }
+            }
+          },
+          400: {
+            description: 'Validation error (missing clientId or status)',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' }
+              }
+            }
+          }
+        }
+      }
+    },
+    '/api/status/{clientId}': {
+      get: {
+        tags: ['Status'],
+        summary: 'Get Status History (Stored Procedure: sp_get_client_status_history)',
+        description: 'Retrieves all status change records and timeline for a given client ID using `sp_get_client_status_history`.',
+        security: [{ BearerAuth: [] }, { CookieAuth: [] }],
+        parameters: [
+          {
+            name: 'clientId',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer' },
+            description: 'Client ID',
+            example: 1
+          }
+        ],
+        responses: {
+          200: {
+            description: 'History retrieved successfully',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/StatusHistoryResponse' }
+              }
+            }
+          },
+          400: {
+            description: 'Invalid client ID',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' }
+              }
+            }
           }
         }
       }

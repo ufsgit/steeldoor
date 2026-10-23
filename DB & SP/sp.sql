@@ -200,6 +200,26 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_client_status_history`(
+    IN p_client_id INT
+)
+BEGIN
+    SELECT 
+        id,
+        client_id,
+        client_name,
+        status,
+        schedule_date,
+        notes,
+        created_by_name,
+        created_at
+    FROM client_status_logs
+    WHERE client_id = p_client_id
+    ORDER BY created_at DESC;
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_dropdown_data`(
     IN p_type       VARCHAR(20),   -- 'district' OR 'area'
     IN p_parent_id  INT,           -- state_id (for district) OR district_id (for area)
@@ -314,6 +334,87 @@ BEGIN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Invalid p_type. Allowed values are "district" or "area".';
     END IF;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_save_client_status`(
+    IN p_client_id       INT,
+    IN p_client_name     VARCHAR(150),
+    IN p_status          VARCHAR(50),
+    IN p_schedule_date   DATE,
+    IN p_notes           TEXT,
+    IN p_created_by      INT,
+    IN p_created_by_name VARCHAR(100)
+)
+BEGIN
+    DECLARE v_new_id INT;
+    DECLARE v_clean_date DATE;
+
+    -- 1. Validate mandatory fields
+    IF p_client_id IS NULL OR p_client_id <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'client_id is required.';
+    END IF;
+
+    IF p_status IS NULL OR TRIM(p_status) = '' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Status is required.';
+    END IF;
+
+    -- 2. If status is Cancelled, force schedule_date to NULL
+    IF LOWER(TRIM(p_status)) = 'cancelled' THEN
+        SET v_clean_date = NULL;
+    ELSE
+        SET v_clean_date = p_schedule_date;
+    END IF;
+
+    -- 3. Insert the record into client_status_logs
+    INSERT INTO client_status_logs (
+        client_id,
+        client_name,
+        status,
+        schedule_date,
+        notes,
+        created_by,
+        created_by_name
+    ) VALUES (
+        p_client_id,
+        TRIM(p_client_name),
+        TRIM(p_status),
+        v_clean_date,
+        TRIM(p_notes),
+        p_created_by,
+        TRIM(p_created_by_name)
+    );
+
+    SET v_new_id = LAST_INSERT_ID();
+
+    -- 4. (Optional) If you maintain a main `clients` or `leads` table, 
+    -- you can also update its current status here:
+    /*
+    UPDATE clients 
+    SET 
+        current_status = TRIM(p_status),
+        next_schedule_date = v_clean_date,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = p_client_id;
+    */
+
+    -- 5. Return the saved record back to the caller
+    SELECT 
+        id,
+        client_id,
+        client_name,
+        status,
+        schedule_date,
+        notes,
+        created_by,
+        created_by_name,
+        created_at
+    FROM client_status_logs
+    WHERE id = v_new_id;
+
 END$$
 DELIMITER ;
 

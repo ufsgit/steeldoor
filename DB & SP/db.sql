@@ -21,7 +21,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '209751e0-37b8-11f1-bfed-40c2ba987f8c:1-52736,
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '209751e0-37b8-11f1-bfed-40c2ba987f8c:1-52762,
 35f1f18e-371f-11f1-80d5-5cb47e3771c9:1-1565';
 
 --
@@ -40,7 +40,7 @@ CREATE TABLE `areas` (
   PRIMARY KEY (`id`),
   KEY `idx_areas_district` (`district_id`),
   CONSTRAINT `fk_areas_district` FOREIGN KEY (`district_id`) REFERENCES `districts` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -87,7 +87,7 @@ CREATE TABLE `bookings` (
   KEY `idx_bookings_district_id` (`district_id`),
   KEY `idx_bookings_state_id` (`state_id`),
   KEY `idx_bookings_area_id` (`area_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -96,8 +96,43 @@ CREATE TABLE `bookings` (
 
 LOCK TABLES `bookings` WRITE;
 /*!40000 ALTER TABLE `bookings` DISABLE KEYS */;
-INSERT INTO `bookings` VALUES (1,'Anand Varma','+91 98470 11223','Flat 4B, SkyLine Apts, Palarivattom','Urgent fitting required','NEW',2,2,'Elena Vance',1,'Kerala',1,'Ernakulam Hub',4,'Palarivattom','[\"/uploads/site_plan.pdf\"]',1,'2026-10-21 07:14:20','2026-10-21 10:57:37'),(2,'Rahul Krishnan','+91 94471 22334','House 12, MG Road, Ernakulam','Double door fitting required','NEW',2,2,'Elena Vance',1,'Kerala',1,'Ernakulam Hub',1,'Edapally','[\"/uploads/site_plan.pdf\"]',0,'2026-10-21 10:38:24','2026-10-21 10:38:24'),(3,'Rahul Krishnan','+91 94471 22334','House 12, MG Road, Ernakulam','Double door fitting required','NEW',2,2,'Elena Vance',1,'Kerala',1,'Ernakulam Hub',1,'Edapally','[\"/uploads/site_plan.pdf\"]',0,'2026-10-22 05:22:47','2026-10-22 05:22:47'),(4,'Test Lead','9876543210','Kochi Road','Testing API','NEW',NULL,NULL,NULL,1,'Kerala',NULL,NULL,1,'Edapally','[]',0,'2026-10-22 06:39:47','2026-10-22 06:39:47'),(5,'Test','6897638','ALUVA','SRG','NEW',3,4,'Rajesh Menon',1,'Kerala',1,'Ernakulam Hub',3,'Aluva','[]',0,'2026-10-22 06:48:54','2026-10-22 06:48:54'),(6,'testing','79809878098','test','','NEW',3,4,'Rajesh Menon',1,'Kerala',1,'Ernakulam Hub',5,'Fort Kochi','[]',1,'2026-10-22 06:50:38','2026-10-22 08:48:27'),(7,'hlo chalakudy','789098970','44, Chalakudy, Ernakulam Hub, Kerala, Chalakudy, Ernakulam Hub, Kerala','hjj','NEW',3,4,'Rajesh Menon',1,'Kerala',1,'Ernakulam Hub',24,'Chalakudy','[]',0,'2026-10-22 07:06:10','2026-10-22 09:53:51'),(8,'gsd','7980978098','o','','NEW',3,4,'Rajesh Menon',1,'Kerala',1,'Ernakulam Hub',NULL,'','[]',1,'2026-10-22 08:48:53','2026-10-22 08:48:59'),(9,'googke','7980987098','oiuyoipj','','NEW',3,4,'Rajesh Menon',1,'Kerala',1,'Ernakulam',3,'Aluva','[\"/uploads/googleLogo.png\"]',0,'2026-10-22 10:20:43','2026-10-22 10:20:43'),(10,'doc test','7869879809','bn','mn','NEW',3,4,'Rajesh Menon',1,'Kerala',1,'Ernakulam',3,'Aluva','[\"/uploads/googleLogo.png\"]',0,'2026-10-22 11:03:29','2026-10-22 11:03:29');
+INSERT INTO `bookings` VALUES (1,'Anand Varma','+91 98470 11223','Flat 4B, SkyLine Apts, Palarivattom','Urgent fitting required','NEW',2,2,'Elena Vance',1,'Kerala',1,'Ernakulam Hub',4,'Palarivattom','[\"/uploads/site_plan.pdf\"]',1,'2026-10-21 07:14:20','2026-10-21 10:57:37'),(2,'Rahul Krishnan','+91 94471 22334','House 12, MG Road, Ernakulam','Double door fitting required','NEW',2,2,'Elena Vance',1,'Kerala',1,'Ernakulam Hub',1,'Edapally','[\"/uploads/site_plan.pdf\"]',0,'2026-10-21 10:38:24','2026-10-21 10:38:24'),(3,'Rahul Krishnan','+91 94471 22334','House 12, MG Road, Ernakulam','Double door fitting required','NEW',2,2,'Elena Vance',1,'Kerala',1,'Ernakulam Hub',1,'Edapally','[\"/uploads/site_plan.pdf\"]',0,'2026-10-22 05:22:47','2026-10-22 05:22:47'),(4,'Test Lead','9876543210','Kochi Road','Testing API','NEW',NULL,NULL,NULL,1,'Kerala',NULL,NULL,1,'Edapally','[]',0,'2026-10-22 06:39:47','2026-10-22 06:39:47'),(5,'Test','6897638','ALUVA','SRG','NEW',3,4,'Rajesh Menon',1,'Kerala',1,'Ernakulam Hub',3,'Aluva','[]',0,'2026-10-22 06:48:54','2026-10-22 06:48:54'),(6,'testing','79809878098','test','','NEW',3,4,'Rajesh Menon',1,'Kerala',1,'Ernakulam Hub',5,'Fort Kochi','[]',1,'2026-10-22 06:50:38','2026-10-22 08:48:27'),(7,'hlo chalakudy','789098970','44, Chalakudy, Ernakulam Hub, Kerala, Chalakudy, Ernakulam Hub, Kerala','hjj','NEW',3,4,'Rajesh Menon',1,'Kerala',1,'Ernakulam Hub',24,'Chalakudy','[]',0,'2026-10-22 07:06:10','2026-10-22 09:53:51'),(8,'gsd','7980978098','o','','NEW',3,4,'Rajesh Menon',1,'Kerala',1,'Ernakulam Hub',NULL,'','[]',1,'2026-10-22 08:48:53','2026-10-22 08:48:59'),(9,'googke','7980987098','oiuyoipj','','NEW',3,4,'Rajesh Menon',1,'Kerala',1,'Ernakulam',3,'Aluva','[\"/uploads/googleLogo.png\"]',0,'2026-10-22 10:20:43','2026-10-22 10:20:43'),(10,'doc test','7869879809','bn','mn','NEW',3,4,'Rajesh Menon',1,'Kerala',1,'Ernakulam',3,'Aluva','[\"/uploads/googleLogo.png\"]',0,'2026-10-22 11:03:29','2026-10-22 11:03:29'),(11,'doc test','78769870423','sad','aef','NEW',3,4,'Rajesh Menon',1,'Kerala',1,'Ernakulam',NULL,'','[\"/uploads/profile_icon.png\"]',0,'2026-10-22 11:54:33','2026-10-22 11:54:33'),(12,'awef','23452345','we','asef','NEW',3,4,'Rajesh Menon',1,'Kerala',1,'Ernakulam',NULL,'','[\"/uploads/schoolbus.png\"]',1,'2026-10-22 11:55:00','2026-10-22 11:57:22'),(13,'AWFDW','76868990','ADW','','NEW',3,4,'Rajesh Menon',1,'Kerala',1,'Ernakulam',36,'Angamaly','[\"/uploads/profile_.jpeg\"]',0,'2026-10-22 11:56:40','2026-10-22 11:56:40');
 /*!40000 ALTER TABLE `bookings` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `client_status_logs`
+--
+
+DROP TABLE IF EXISTS `client_status_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `client_status_logs` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `client_id` int NOT NULL,
+  `client_name` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` enum('Scheduled','Completed','Cancelled') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `schedule_date` date DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_by_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_client_id` (`client_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `client_status_logs`
+--
+
+LOCK TABLES `client_status_logs` WRITE;
+/*!40000 ALTER TABLE `client_status_logs` DISABLE KEYS */;
+INSERT INTO `client_status_logs` VALUES (6,1,'Abhijith','Scheduled','2024-10-24','Fitting scheduled for tomorrow morning.',NULL,NULL,'2026-10-23 04:41:35','2026-10-23 04:41:35'),(7,3,'Arun','Cancelled',NULL,'Client requested cancellation.',NULL,NULL,'2026-10-23 04:42:35','2026-10-23 04:42:35');
+/*!40000 ALTER TABLE `client_status_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -258,7 +293,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'company_admin','123',1,'company',1,'admin','SteelGuard Executive Board','corporate@steeldoor.com','+91 98000 11223',1,'Kerala',NULL,NULL,NULL,1,0,NULL,'2026-10-20 11:56:10','2026-10-22 04:37:14'),(2,'admin','123',2,'coordinator',1,'admin','Elena Vance (Operations Coordinator)','admin@steeldoor.com','+91 98000 11224',1,'Kerala',NULL,NULL,NULL,1,0,'2026-10-21 06:20:59','2026-10-20 11:56:11','2026-10-22 04:37:14'),(3,'coordinator','123',2,'coordinator',2,'staff','Alex George (Field Coordinator)','coordinator@steeldoor.com','+91 98000 11225',1,'Kerala',NULL,NULL,NULL,1,0,NULL,'2026-10-20 11:56:11','2026-10-22 04:37:14'),(4,'branch_ekm','123',3,'branch_head',2,'staff','Rajesh Menon','rajesh.menon@steeldoor.com','+91 98470 12345',1,'Kerala',1,'Ernakulam Hub',NULL,1,0,'2026-10-22 11:07:12','2026-10-20 11:56:11','2026-10-22 11:07:12'),(5,'branch_tvm','123',3,'branch_head',2,'staff','Suresh Kumar','suresh.kumar@steeldoor.com','+91 94471 23456',1,'Kerala',2,'Trivandrum Hub',NULL,1,0,'2026-10-22 08:30:50','2026-10-20 11:56:11','2026-10-22 08:30:50'),(6,'branch_clt','123',3,'branch_head',2,'staff','Anas Kabeer','anas.kabeer@steeldoor.com','+91 97452 34567',1,'Kerala',3,'Kozhikode Hub',NULL,1,0,NULL,'2026-10-20 11:56:11','2026-10-22 04:37:14'),(7,'branch_tsr','123',3,'branch_head',2,'staff','Mohan Das','mohan.das@steeldoor.com','+91 98463 45678',1,'Kerala',4,'Thrissur Hub',NULL,1,0,NULL,'2026-10-20 11:56:11','2026-10-22 04:37:14'),(8,'branch_knr','123',3,'branch_head',2,'staff','K. V. Pavithran','pavithran.kv@steeldoor.com','+91 94954 56789',1,'Kerala',5,'Kannur Hub',NULL,1,0,NULL,'2026-10-20 11:56:11','2026-10-22 04:37:14'),(9,'user','123',5,'customer',NULL,NULL,'John Mathew','john.mathew@gmail.com','+91 94470 55443',1,'Kerala',NULL,NULL,'42 Orchid Residency, Stadium Link Rd, Kaloor',1,0,NULL,'2026-10-20 11:56:11','2026-10-22 04:37:14'),(10,'apex_dealer','123',4,'dealer',NULL,NULL,'Apex Doors Kochi','sales@apexdoors.com','+91 98952 33441',1,'Kerala',NULL,NULL,'Door No 8/120, Bypass Junction, Edapally',1,0,NULL,'2026-10-20 11:56:11','2026-10-22 04:37:14'),(11,'metro_builders','123',4,'dealer',NULL,NULL,'Metro Infra Ltd','contact@metroinfra.in','+91 98471 88990',1,'Kerala',NULL,NULL,'Plot 12, SmartCity Campus, Kakkanad',1,0,NULL,'2026-10-20 11:56:11','2026-10-22 04:37:14');
+INSERT INTO `users` VALUES (1,'company_admin','123',1,'company',1,'admin','SteelGuard Executive Board','corporate@steeldoor.com','+91 98000 11223',1,'Kerala',NULL,NULL,NULL,1,0,NULL,'2026-10-20 11:56:10','2026-10-22 04:37:14'),(2,'admin','123',2,'coordinator',1,'admin','Elena Vance (Operations Coordinator)','admin@steeldoor.com','+91 98000 11224',1,'Kerala',NULL,NULL,NULL,1,0,'2026-10-21 06:20:59','2026-10-20 11:56:11','2026-10-22 04:37:14'),(3,'coordinator','123',2,'coordinator',2,'staff','Alex George (Field Coordinator)','coordinator@steeldoor.com','+91 98000 11225',1,'Kerala',NULL,NULL,NULL,1,0,'2026-10-23 04:22:13','2026-10-20 11:56:11','2026-10-23 04:22:13'),(4,'branch_ekm','123',3,'branch_head',2,'staff','Rajesh Menon','rajesh.menon@steeldoor.com','+91 98470 12345',1,'Kerala',1,'Ernakulam Hub',NULL,1,0,'2026-10-23 04:55:08','2026-10-20 11:56:11','2026-10-23 04:55:08'),(5,'branch_tvm','123',3,'branch_head',2,'staff','Suresh Kumar','suresh.kumar@steeldoor.com','+91 94471 23456',1,'Kerala',2,'Trivandrum Hub',NULL,1,0,'2026-10-22 08:30:50','2026-10-20 11:56:11','2026-10-22 08:30:50'),(6,'branch_clt','123',3,'branch_head',2,'staff','Anas Kabeer','anas.kabeer@steeldoor.com','+91 97452 34567',1,'Kerala',3,'Kozhikode Hub',NULL,1,0,NULL,'2026-10-20 11:56:11','2026-10-22 04:37:14'),(7,'branch_tsr','123',3,'branch_head',2,'staff','Mohan Das','mohan.das@steeldoor.com','+91 98463 45678',1,'Kerala',4,'Thrissur Hub',NULL,1,0,NULL,'2026-10-20 11:56:11','2026-10-22 04:37:14'),(8,'branch_knr','123',3,'branch_head',2,'staff','K. V. Pavithran','pavithran.kv@steeldoor.com','+91 94954 56789',1,'Kerala',5,'Kannur Hub',NULL,1,0,NULL,'2026-10-20 11:56:11','2026-10-22 04:37:14'),(9,'user','123',5,'customer',NULL,NULL,'John Mathew','john.mathew@gmail.com','+91 94470 55443',1,'Kerala',NULL,NULL,'42 Orchid Residency, Stadium Link Rd, Kaloor',1,0,NULL,'2026-10-20 11:56:11','2026-10-22 04:37:14'),(10,'apex_dealer','123',4,'dealer',NULL,NULL,'Apex Doors Kochi','sales@apexdoors.com','+91 98952 33441',1,'Kerala',NULL,NULL,'Door No 8/120, Bypass Junction, Edapally',1,0,NULL,'2026-10-20 11:56:11','2026-10-22 04:37:14'),(11,'metro_builders','123',4,'dealer',NULL,NULL,'Metro Infra Ltd','contact@metroinfra.in','+91 98471 88990',1,'Kerala',NULL,NULL,'Plot 12, SmartCity Campus, Kakkanad',1,0,NULL,'2026-10-20 11:56:11','2026-10-22 04:37:14');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
@@ -272,4 +307,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-10-22 17:03:04
+-- Dump completed on 2026-10-23 10:35:57
