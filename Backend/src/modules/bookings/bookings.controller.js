@@ -60,7 +60,7 @@ function processIncomingDocuments(rawDocs, reqFiles = []) {
 export class BookingsController {
   /**
    * GET /api/bookings?page=1&limit=15
-   * Role-based access rules:
+   * Takes roleId and loginId directly from the authenticated JWT token (req.user):
    * - Role 1 (Company) & Role 2 (Coordinator): list all clients
    * - Role 3 (Branch Head): display client details by district_id
    * - Role 4 (Dealer) & Role 5 (Customer): take list by login_id
@@ -70,10 +70,19 @@ export class BookingsController {
       const page = req.query.page;
       const limit = req.query.limit;
 
+      // Extract credentials strictly from verified JWT token
       const user = req.user || {};
-      const roleId = req.query.roleId ?? req.query.role_id ?? user.roleId ?? user.dbRoleId ?? null;
-      const loginId = req.query.loginId ?? req.query.login_id ?? user.id ?? null;
-      const districtId = req.query.districtId ?? req.query.district_id ?? user.districtId ?? null;
+      const roleId = user.roleId ?? user.dbRoleId ?? user.role_id ?? (
+        user.role === 'admin' || user.role === 'company' ? 1 :
+        user.role === 'coordinator' ? 2 :
+        user.role === 'branch_head' ? 3 :
+        user.role === 'dealer' || user.role === 'client' ? 4 :
+        user.role === 'customer' || user.role === 'user' ? 5 : null
+      );
+      const loginId = user.id ?? user.userId ?? user.login_id ?? null;
+      const districtId = Number(roleId) === 3
+        ? (user.districtId ?? user.district_id ?? null)
+        : (req.query.districtId ?? req.query.district_id ?? user.districtId ?? null);
 
       const result = await bookingsService.getBookings({
         page,

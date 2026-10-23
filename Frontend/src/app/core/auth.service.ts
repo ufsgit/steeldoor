@@ -36,11 +36,20 @@ export class AuthService {
     }
 
     try {
-      const storedToken = localStorage.getItem('auth_token');
+      let storedToken = localStorage.getItem('auth_token');
       const storedUser = localStorage.getItem('auth_user');
+
+      if (!storedToken && this.document.cookie) {
+        const match = this.document.cookie.match(/(?:^|;\s*)(?:auth_token|auth_session)=([^;]*)/);
+        if (match) {
+          storedToken = decodeURIComponent(match[1]);
+        }
+      }
 
       if (storedToken && storedUser) {
         this.token.set(storedToken);
+        this.currentUser.set(JSON.parse(storedUser));
+      } else if (storedUser) {
         this.currentUser.set(JSON.parse(storedUser));
       } else {
         this.currentUser.set(null);
@@ -72,6 +81,7 @@ export class AuthService {
             localStorage.setItem('auth_token', jwtToken);
             localStorage.setItem('auth_user', JSON.stringify(userObj));
             localStorage.removeItem('logged_out');
+            this.document.cookie = `auth_token=${encodeURIComponent(jwtToken)}; path=/; max-age=604800; SameSite=Lax`;
           } catch (e) {
             console.error('Error saving to localStorage:', e);
           }
