@@ -28,19 +28,20 @@ export class ToastService {
   }
 
   success(message: string, title = 'Success'): void {
-    this.show('success', message, title);
+    this.show('success', message, title, 3500);
   }
 
   error(message: string, title = 'Error'): void {
-    this.show('danger', message, title);
+    // 0 means no auto-dismiss: requires user to click OK or Close button
+    this.show('danger', message, title, 0);
   }
 
   warning(message: string, title = 'Warning'): void {
-    this.show('warning', message, title);
+    this.show('warning', message, title, 4000);
   }
 
   info(message: string, title = 'Information'): void {
-    this.show('info', message, title);
+    this.show('info', message, title, 3500);
   }
 
   dismiss(id: string): void {

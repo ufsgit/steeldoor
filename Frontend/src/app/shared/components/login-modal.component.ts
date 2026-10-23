@@ -5,8 +5,6 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ToastService } from '../toast/toast.service';
 
-export type SimpleLoginRole = 'coordinator' | 'customer' | 'company' | 'dealer';
-
 @Component({
   selector: 'app-login-modal',
   standalone: true,
@@ -36,7 +34,7 @@ export type SimpleLoginRole = 'coordinator' | 'customer' | 'company' | 'dealer';
               </div>
               <div>
                 <h2 class="text-base sm:text-lg font-black text-text leading-tight">Sign In to SteelGuard</h2>
-                <p class="text-xs text-text-muted">Enter credentials or select your role.</p>
+                <p class="text-xs text-text-muted">Enter your registered username and password.</p>
               </div>
             </div>
 
@@ -54,77 +52,6 @@ export type SimpleLoginRole = 'coordinator' | 'customer' | 'company' | 'dealer';
 
           <!-- Body -->
           <div class="p-6 space-y-5">
-            <!-- Simple Role Selector (Admin vs User) -->
-            <div class="space-y-2">
-              <div class="grid grid-cols-2 gap-2 p-1.5 rounded-2xl bg-surface-muted border border-border">
-                <button
-                  type="button"
-                  (click)="selectCategory('admin')"
-                  class="py-2.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  [ngClass]="activeCategory() === 'admin'
-                    ? 'bg-surface text-primary shadow-sm border border-border'
-                    : 'text-text-muted hover:text-text'"
-                >
-                  <svg class="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                  </svg>
-                  <span>Admin</span>
-                </button>
-
-                <button
-                  type="button"
-                  (click)="selectCategory('user')"
-                  class="py-2.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  [ngClass]="activeCategory() === 'user'
-                    ? 'bg-surface text-primary shadow-sm border border-border'
-                    : 'text-text-muted hover:text-text'"
-                >
-                  <svg class="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                  </svg>
-                  <span>User</span>
-                </button>
-              </div>
-
-              <!-- Sub-pills for User: Standard User | Company | Dealer -->
-              @if (activeCategory() === 'user') {
-                <div class="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-background border border-border animate-fadeIn">
-                  <button
-                    type="button"
-                    (click)="selectUserType('customer')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center cursor-pointer"
-                    [ngClass]="activeUserType() === 'customer'
-                      ? 'bg-primary text-text-inverted shadow-soft'
-                      : 'text-text-muted hover:text-text hover:bg-surface'"
-                  >
-                    Customer
-                  </button>
-
-                  <button
-                    type="button"
-                    (click)="selectUserType('company')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center cursor-pointer"
-                    [ngClass]="activeUserType() === 'company'
-                      ? 'bg-primary text-text-inverted shadow-soft'
-                      : 'text-text-muted hover:text-text hover:bg-surface'"
-                  >
-                    Company
-                  </button>
-
-                  <button
-                    type="button"
-                    (click)="selectUserType('dealer')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center cursor-pointer"
-                    [ngClass]="activeUserType() === 'dealer'
-                      ? 'bg-primary text-text-inverted shadow-soft'
-                      : 'text-text-muted hover:text-text hover:bg-surface'"
-                  >
-                    Dealer
-                  </button>
-                </div>
-              }
-            </div>
-
             <!-- Login Form -->
             <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-4">
               <!-- Username Field -->
@@ -139,7 +66,8 @@ export type SimpleLoginRole = 'coordinator' | 'customer' | 'company' | 'dealer';
                   <input
                     type="text"
                     formControlName="username"
-                    placeholder="Enter username"
+                    placeholder="Enter your username"
+                    autocomplete="username"
                     class="w-full text-xs pl-10 pr-3.5 py-3 rounded-xl border border-border bg-background text-text focus:outline-none focus:ring-2 focus:ring-accent transition-all"
                   />
                 </div>
@@ -170,7 +98,8 @@ export type SimpleLoginRole = 'coordinator' | 'customer' | 'company' | 'dealer';
                   <input
                     [type]="showPassword() ? 'text' : 'password'"
                     formControlName="password"
-                    placeholder="Enter password"
+                    placeholder="Enter your password"
+                    autocomplete="current-password"
                     class="w-full text-xs pl-10 pr-3.5 py-3 rounded-xl border border-border bg-background text-text focus:outline-none focus:ring-2 focus:ring-accent transition-all"
                   />
                 </div>
@@ -193,20 +122,6 @@ export type SimpleLoginRole = 'coordinator' | 'customer' | 'company' | 'dealer';
                 }
               </button>
             </form>
-
-            <!-- Bottom Register Link -->
-            <div class="pt-3 border-t border-border/60 text-center">
-              <p class="text-xs text-text-muted">
-                New customer or dealer partner?
-                <a
-                  routerLink="/register"
-                  (click)="close()"
-                  class="text-primary font-bold hover:underline ml-1"
-                >
-                  Self-Register
-                </a>
-              </p>
-            </div>
           </div>
         </div>
       </div>
@@ -222,26 +137,15 @@ export class LoginModalComponent implements OnInit {
   private router = inject(Router);
   private toast = inject(ToastService);
 
-  activeCategory = signal<'admin' | 'user'>('admin');
-  activeUserType = signal<'customer' | 'company' | 'dealer'>('customer');
   isLoading = signal(false);
   showPassword = signal(false);
 
   loginForm!: FormGroup;
 
-  private credentialsMap = {
-    admin: { user: 'admin', pass: '123' },
-    coordinator: { user: 'admin', pass: '123' },
-    user: { user: 'user', pass: '123' },
-    customer: { user: 'user', pass: '123' },
-    company: { user: 'metro_builders', pass: '123' },
-    dealer: { user: 'apex_dealer', pass: '123' }
-  };
-
   ngOnInit(): void {
     this.loginForm = this.fb.group({
-      username: [this.credentialsMap.admin.user, Validators.required],
-      password: [this.credentialsMap.admin.pass, Validators.required]
+      username: ['', Validators.required],
+      password: ['', Validators.required]
     });
   }
 
@@ -253,30 +157,13 @@ export class LoginModalComponent implements OnInit {
     this.showPassword.update(prev => !prev);
   }
 
-  selectCategory(category: 'admin' | 'user'): void {
-    this.activeCategory.set(category);
-    if (category === 'admin') {
-      const creds = this.credentialsMap.admin;
-      this.loginForm.patchValue({ username: creds.user, password: creds.pass });
-    } else {
-      this.selectUserType(this.activeUserType());
-    }
-  }
-
-  selectUserType(userType: 'customer' | 'company' | 'dealer'): void {
-    this.activeCategory.set('user');
-    this.activeUserType.set(userType);
-    const creds = this.credentialsMap[userType];
-    this.loginForm.patchValue({ username: creds.user, password: creds.pass });
-  }
-
   onSubmit(): void {
     if (this.loginForm.invalid) return;
 
     this.isLoading.set(true);
     const { username, password } = this.loginForm.value;
 
-    this.auth.login(username, password).subscribe({
+    this.auth.login(username.trim(), password).subscribe({
       next: res => {
         this.isLoading.set(false);
         this.close();
@@ -286,7 +173,8 @@ export class LoginModalComponent implements OnInit {
       },
       error: err => {
         this.isLoading.set(false);
-        this.toast.error(err?.error?.error || 'Invalid username or password.');
+        const errMsg = err?.error?.error || err?.error?.message || 'Invalid username or password.';
+        this.toast.error(errMsg);
       }
     });
   }
