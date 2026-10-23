@@ -174,10 +174,10 @@ import { SimpleChartComponent, ChartDatum } from '../../../shared/components/sim
                       <div class="font-bold text-text">{{ b.clientName }}</div>
                       <div class="text-[11px] text-text-muted capitalize">{{ b.clientType }}</div>
                     </td>
-                    <td class="py-4 px-4 font-bold text-text">{{ b.doorDetails.doorType }}</td>
+                    <td class="py-4 px-4 font-bold text-text">{{ b.doorDetails?.doorType || 'Standard Steel Door' }}</td>
                     <td class="py-4 px-4 text-center">
                       <span class="inline-block px-2.5 py-1 rounded-md bg-surface-muted border border-border font-black text-xs">
-                        {{ b.doorDetails.quantity }}
+                        {{ b.doorDetails?.quantity || 1 }}
                       </span>
                     </td>
                     <td class="py-4 px-4">
@@ -268,7 +268,8 @@ export class AdminDashboardComponent implements OnInit {
     this.districts.forEach(d => { counts[d.name] = 0; });
 
     this.bookings.forEach(b => {
-      counts[b.districtName] = (counts[b.districtName] || 0) + 1;
+      const distName = b.districtName || 'Unassigned';
+      counts[distName] = (counts[distName] || 0) + 1;
     });
 
     return Object.entries(counts).map(([name, count]) => ({

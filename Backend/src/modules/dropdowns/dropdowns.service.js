@@ -34,7 +34,11 @@ export class DropdownsService {
     const rows = results?.[0] || [];
     return rows.map(r => ({
       id: r.id,
-      name: r.name
+      name: r.name,
+      code: r.code || undefined,
+      stateId: r.stateId || undefined,
+      pincode: r.pincode || undefined,
+      districtId: r.districtId || undefined
     }));
   }
 }

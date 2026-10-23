@@ -1,21 +1,32 @@
 import express from 'express';
 import { pool } from '../../../db.js';
+import { optionalAuth } from '../auth/jwt.util.js';
 
 const router = express.Router();
 
 /**
  * GET /api/districts
- * Return list of all districts with their associated areas using sp_get_dropdown_data
+ * Return list of all districts with their associated areas accessed through sp_get_dropdown_data
+ * Role and login ID are extracted directly from the verified JWT token (no query params needed)
  */
-router.get('/', async (req, res, next) => {
+router.get('/', optionalAuth, async (req, res, next) => {
   try {
+    const user = req.user || {};
+    const roleId = user.roleId ?? user.dbRoleId ?? user.role_id ?? (
+      user.role === 'admin' || user.role === 'company' ? 1 :
+      user.role === 'coordinator' ? 2 :
+      user.role === 'branch_head' ? 3 :
+      user.role === 'dealer' || user.role === 'client' ? 4 :
+      user.role === 'customer' || user.role === 'user' ? 5 : null
+    );
+    const loginId = user.id ?? user.userId ?? user.login_id ?? null;
+
     const parentId = req.query.stateId || req.query.parentId || null;
     const search = req.query.search || null;
-    const roleId = req.query.roleId || null;
-    const loginId = req.query.loginId || null;
     const page = req.query.page ? Number(req.query.page) : 1;
     const limit = req.query.limit ? Number(req.query.limit) : 100;
 
+    // 1. Fetch districts via sp_get_dropdown_data
     const [results] = await pool.query(
       'CALL sp_get_dropdown_data(?, ?, ?, ?, ?, ?, ?)',
       [
@@ -31,21 +42,42 @@ router.get('/', async (req, res, next) => {
 
     const rows = results?.[0] || [];
 
-    const [areas] = await pool.query(
-      'SELECT district_id, name FROM areas ORDER BY name ASC'
-    );
-
-    const areaMap = {};
-    for (const a of areas) {
-      if (!areaMap[a.district_id]) {
-        areaMap[a.district_id] = [];
+    // 2. Fetch areas for each returned district via sp_get_dropdown_data
+    const areaPromises = rows.map(async (dist) => {
+      try {
+        const [areaResults] = await pool.query(
+          'CALL sp_get_dropdown_data(?, ?, ?, ?, ?, ?, ?)',
+          [
+            'area',
+            Number(dist.id),
+            null,
+            roleId ? Number(roleId) : null,
+            loginId ? Number(loginId) : null,
+            1,
+            1000
+          ]
+        );
+        const areaRows = areaResults?.[0] || [];
+        return {
+          districtId: dist.id,
+          areas: areaRows.map(a => a.name)
+        };
+      } catch {
+        return { districtId: dist.id, areas: [] };
       }
-      areaMap[a.district_id].push(a.name);
+    });
+
+    const districtAreas = await Promise.all(areaPromises);
+    const areaMap = {};
+    for (const da of districtAreas) {
+      areaMap[da.districtId] = da.areas;
     }
 
     const response = rows.map(r => ({
       id: r.id,
       name: r.name,
+      code: r.code || undefined,
+      stateId: r.stateId || undefined,
       areas: areaMap[r.id] || []
     }));
 

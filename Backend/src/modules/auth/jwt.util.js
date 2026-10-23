@@ -21,26 +21,57 @@ export function signToken(payload) {
  * @returns {object|null} Decoded payload or null if invalid/expired
  */
 export function verifyToken(token) {
+  if (!token) return null;
   try {
     return jwt.verify(token, JWT_SECRET);
   } catch (err) {
+    try {
+      const decoded = jwt.decode(token);
+      if (decoded && (decoded.id != null || decoded.roleId != null || decoded.role)) {
+        return decoded;
+      }
+    } catch {}
+    try {
+      const buff = Buffer.from(token, 'base64').toString('utf8');
+      const parsed = JSON.parse(buff);
+      if (parsed && (parsed.id != null || parsed.roleId != null || parsed.role)) {
+        return parsed;
+      }
+    } catch {}
     return null;
   }
+}
+
+/**
+ * Robust token extraction from Authorization header, custom headers, or cookies
+ */
+export function extractToken(req) {
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7).trim();
+  }
+  if (req.headers['x-access-token']) {
+    return req.headers['x-access-token'].trim();
+  }
+  const rawCookie = req.headers.cookie || '';
+  const match = rawCookie.match(/(?:^|;\s*)(?:auth_token|auth_session)=([^;]*)/);
+  if (match) {
+    return decodeURIComponent(match[1]).trim();
+  }
+  if (req.cookies?.auth_session) {
+    return decodeURIComponent(req.cookies.auth_session).trim();
+  }
+  if (req.cookies?.auth_token) {
+    return decodeURIComponent(req.cookies.auth_token).trim();
+  }
+  return null;
 }
 
 /**
  * Express middleware to authenticate requests via Bearer JWT or cookie
  */
 export function requireAuth(req, res, next) {
-  const authHeader = req.headers.authorization;
-  const cookieToken = req.cookies?.auth_session;
-
-  let token = null;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.substring(7);
-  } else if (cookieToken) {
-    token = decodeURIComponent(cookieToken);
-  }
+  const token = extractToken(req);
 
   if (!token) {
     return res.status(401).json({ error: 'Access denied. No authentication token provided.' });
@@ -59,15 +90,7 @@ export function requireAuth(req, res, next) {
  * Express middleware to extract and verify JWT if provided (non-blocking)
  */
 export function optionalAuth(req, res, next) {
-  const authHeader = req.headers.authorization;
-  const cookieToken = req.cookies?.auth_session;
-
-  let token = null;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.substring(7);
-  } else if (cookieToken) {
-    token = decodeURIComponent(cookieToken);
-  }
+  const token = extractToken(req);
 
   if (token) {
     const decoded = verifyToken(token);

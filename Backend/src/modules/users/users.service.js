@@ -134,10 +134,10 @@ export class UsersService {
 
     // Check if username already exists
     const [existing] = await pool.query(
-      'SELECT id FROM users WHERE username = ? LIMIT 1',
+      'SELECT id, is_deleted FROM users WHERE username = ? LIMIT 1',
       [username.trim()]
     );
-    if (existing && existing.length > 0) {
+    if (existing && existing.length > 0 && existing[0].is_deleted === 0) {
       throw new Error('User already exists');
     }
 
@@ -168,40 +168,80 @@ export class UsersService {
       }
     }
 
-    const [result] = await pool.query(
-      `INSERT INTO users (
-        username,
-        password,
-        role_id,
-        role,
-        user_type_id,
-        user_type,
-        name,
-        email,
-        phone,
-        state_id,
-        state_name,
-        district_id,
-        district_name,
-        address,
-        is_active,
-        is_deleted
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'Kerala', ?, ?, ?, 1, 0)`,
-      [
-        username.trim(),
-        password,
-        mapped.roleId,
-        mapped.role,
-        userType === 'admin' ? 1 : (mapped.userTypeId || null),
-        userType || mapped.userType || null,
-        name.trim(),
-        email ? email.trim() : null,
-        phone ? phone.trim() : null,
-        resolvedDistrictId,
-        resolvedDistrictName,
-        address ? address.trim() : null
-      ]
-    );
+    let targetUserId;
+    if (existing && existing.length > 0 && existing[0].is_deleted === 1) {
+      targetUserId = existing[0].id;
+      await pool.query(
+        `UPDATE users SET 
+          password = ?,
+          role_id = ?,
+          role = ?,
+          user_type_id = ?,
+          user_type = ?,
+          name = ?,
+          email = ?,
+          phone = ?,
+          state_id = 1,
+          state_name = 'Kerala',
+          district_id = ?,
+          district_name = ?,
+          address = ?,
+          is_active = 1,
+          is_deleted = 0,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?`,
+        [
+          password,
+          mapped.roleId,
+          mapped.role,
+          userType === 'admin' ? 1 : (mapped.userTypeId || null),
+          userType || mapped.userType || null,
+          name.trim(),
+          email ? email.trim() : null,
+          phone ? phone.trim() : null,
+          resolvedDistrictId,
+          resolvedDistrictName,
+          address ? address.trim() : null,
+          targetUserId
+        ]
+      );
+    } else {
+      const [result] = await pool.query(
+        `INSERT INTO users (
+          username,
+          password,
+          role_id,
+          role,
+          user_type_id,
+          user_type,
+          name,
+          email,
+          phone,
+          state_id,
+          state_name,
+          district_id,
+          district_name,
+          address,
+          is_active,
+          is_deleted
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'Kerala', ?, ?, ?, 1, 0)`,
+        [
+          username.trim(),
+          password,
+          mapped.roleId,
+          mapped.role,
+          userType === 'admin' ? 1 : (mapped.userTypeId || null),
+          userType || mapped.userType || null,
+          name.trim(),
+          email ? email.trim() : null,
+          phone ? phone.trim() : null,
+          resolvedDistrictId,
+          resolvedDistrictName,
+          address ? address.trim() : null
+        ]
+      );
+      targetUserId = result.insertId;
+    }
 
     const [createdRows] = await pool.query(
       `SELECT 
@@ -223,7 +263,7 @@ export class UsersService {
         u.created_at AS createdAt
       FROM users u
       WHERE u.id = ?`,
-      [result.insertId]
+      [targetUserId]
     );
 
     return createdRows[0];
@@ -349,7 +389,7 @@ export class UsersService {
   }
 
   /**
-   * Soft delete a user
+   * Soft delete a user (set is_deleted = 1)
    */
   async deleteUser(id) {
     await pool.query(

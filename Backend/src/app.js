@@ -13,6 +13,7 @@ import uploadsRoutes from './modules/uploads/uploads.routes.js';
 import statusRoutes from './modules/status/status.routes.js';
 import usersRoutes from './modules/users/users.routes.js';
 import districtsRoutes from './modules/districts/districts.routes.js';
+import areasRoutes from './modules/areas/areas.routes.js';
 
 dotenv.config();
 
@@ -78,6 +79,7 @@ app.use('/api/status', statusRoutes);
 app.use('/api/client-status', statusRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/districts', districtsRoutes);
+app.use('/api/areas', areasRoutes);
 
 // ---------------- 404 Handler ----------------
 

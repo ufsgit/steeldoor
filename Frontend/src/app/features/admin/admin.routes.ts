@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { AdminLayoutComponent } from '../../layouts/admin-layout.component';
 import { AdminDashboardComponent } from './dashboard/admin-dashboard.component';
-import { AdminBookingsComponent } from './bookings/admin-bookings.component';
+import { AdminBookingsComponent } from './bookings/list/admin-bookings.component';
 import { AdminBookingDetailComponent } from './bookings/booking-detail.component';
 import { BookNowComponent } from '../public/book-now/book-now.component';
 import { AdminBranchHeadsComponent } from './branch-heads/branch-heads.component';
@@ -52,11 +52,7 @@ export const ADMIN_ROUTES: Routes = [
       },
       {
         path: 'bookings/new',
-        component: BookNowComponent,
-        resolve: {
-          districts: districtsResolver,
-          branchHeads: branchHeadsResolver
-        }
+        loadComponent: () => import('./bookings/add/admin-booking-new.component').then(m => m.AdminBookingNewComponent)
       },
       {
         path: 'bookings/:id',
@@ -83,10 +79,7 @@ export const ADMIN_ROUTES: Routes = [
       },
       {
         path: 'areas',
-        component: AdminAreasComponent,
-        resolve: {
-          districts: districtsResolver
-        }
+        component: AdminAreasComponent
       },
       {
         path: 'users',
