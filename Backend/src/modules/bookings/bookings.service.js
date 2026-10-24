@@ -276,6 +276,7 @@ export class BookingsService {
       areaName: b.areaName ?? b.area_name ?? null,
       branchHeadId: b.branchHeadId ?? b.branch_head_id ?? null,
       branchHeadName: b.branchHeadName ?? b.branch_head_name ?? null,
+      scheduledDate: b.scheduledDate ?? b.scheduled_date ?? b.scheduleDate ?? b.schedule_date ?? null,
       documents: docs,
       createdAt: b.createdAt || b.created_at,
       updatedAt: b.updatedAt || b.updated_at

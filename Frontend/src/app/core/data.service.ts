@@ -352,6 +352,7 @@ export class DataService {
       documents: docs,
       status: (b.status as any) || 'Pending',
       branchHeadName: b.branchHeadName || (districtName === 'Trivandrum' ? 'Suresh Kumar' : 'Rajesh Menon'),
+      scheduledDate: b.scheduledDate || b.scheduleDate || b.scheduled_date || b.schedule_date || undefined,
       loginRoleId: b.loginRoleId != null ? Number(b.loginRoleId) : undefined,
       loginId: b.loginId != null ? b.loginId : undefined,
       loginName: b.loginName || undefined,

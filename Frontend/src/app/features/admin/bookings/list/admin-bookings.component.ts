@@ -18,7 +18,7 @@ import { environment } from '../../../../../environments/environment';
   template: `
     <div class="w-full flex-1 flex flex-col bg-white">
       
-      <!-- 1. Google Sheet Status Tabs Bar (Exact Font, Spacing & Styling from Screenshot) -->
+      <!-- 1. Google Sheet Status Tabs Bar (All Orders, NEW, Scheduled, Completed, Cancelled) -->
       <div class="w-full flex items-center gap-7 px-7 sm:px-10 border-b border-gray-200 overflow-x-auto text-[14px] select-none bg-white">
         <!-- All Orders Tab with Google Sheet table icon -->
         <button
@@ -34,26 +34,18 @@ import { environment } from '../../../../../environments/environment';
           <span>All Orders</span>
         </button>
 
+        <!-- NEW -->
         <button
           type="button"
-          id="tab-pending"
-          (click)="setStatus('Pending')"
+          id="tab-new"
+          (click)="setStatus('NEW')"
           class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="selectedStatus() === 'Pending' ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
+          [ngClass]="selectedStatus() === 'NEW' ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
         >
-          Pending
+          NEW
         </button>
 
-        <button
-          type="button"
-          id="tab-accepted"
-          (click)="setStatus('Accepted')"
-          class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="selectedStatus() === 'Accepted' ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
-        >
-          Accepted
-        </button>
-
+        <!-- Scheduled -->
         <button
           type="button"
           id="tab-scheduled"
@@ -64,34 +56,26 @@ import { environment } from '../../../../../environments/environment';
           Scheduled
         </button>
 
+        <!-- Completed -->
         <button
           type="button"
-          id="tab-finished"
-          (click)="setStatus('Finished')"
+          id="tab-completed"
+          (click)="setStatus('Completed')"
           class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="selectedStatus() === 'Finished' ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
+          [ngClass]="selectedStatus() === 'Completed' ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
         >
-          Finished
+          Completed
         </button>
 
+        <!-- Cancelled -->
         <button
           type="button"
-          id="tab-delayed"
-          (click)="setStatus('Delayed')"
+          id="tab-cancelled"
+          (click)="setStatus('Cancelled')"
           class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="selectedStatus() === 'Delayed' ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
+          [ngClass]="selectedStatus() === 'Cancelled' ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
         >
-          Delayed
-        </button>
-
-        <button
-          type="button"
-          id="tab-rejected"
-          (click)="setStatus('Rejected')"
-          class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="selectedStatus() === 'Rejected' ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
-        >
-          Rejected
+          Cancelled
         </button>
       </div>
 
@@ -371,8 +355,8 @@ import { environment } from '../../../../../environments/environment';
 
                   <!-- E · SCHEDULED FITTING -->
                   <td class="py-2.5 px-3.5 whitespace-nowrap border-r border-gray-200" [class.border-b]="!last" [class.border-gray-200]="!last">
-                    @if (b.scheduledDate) {
-                      <span class="text-[14px] text-gray-900 font-medium">{{ formatScheduledDate(b.scheduledDate) }}</span>
+                    @if (b.scheduledDate || $any(b).schedule_date || $any(b).scheduleDate) {
+                      <span class="text-[14px] text-gray-900 font-medium">{{ formatScheduledDate(b.scheduledDate || $any(b).schedule_date || $any(b).scheduleDate) }}</span>
                     } @else {
                       <span class="text-[14px] text-[#94a3b8] italic font-medium">Pending</span>
                     }
@@ -404,6 +388,22 @@ import { environment } from '../../../../../environments/environment';
                       </span>
                     }
 
+                    <!-- Completed / Finished (Soft pale mint rounded rectangle) -->
+                    @if (isStatus(b, 'Completed') || isStatus(b, 'Finished')) {
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#e6f4ea] text-[#137333]">
+                        <span class="w-2 h-2 rounded-full bg-[#137333]"></span>
+                        <span>Completed</span>
+                      </span>
+                    }
+
+                    <!-- Cancelled / Rejected (Soft pale red rounded rectangle) -->
+                    @if (isStatus(b, 'Cancelled') || isStatus(b, 'Rejected')) {
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#fce8e6] text-[#c5221f]">
+                        <span class="w-2 h-2 rounded-full bg-[#d93025]"></span>
+                        <span>Cancelled</span>
+                      </span>
+                    }
+
                     <!-- Accepted (Soft pale blue rounded rectangle) -->
                     @if (isStatus(b, 'Accepted') && !b.isDelayed) {
                       <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#e8f0fe] text-[#1967d2]">
@@ -417,22 +417,6 @@ import { environment } from '../../../../../environments/environment';
                       <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#f3e8fd] text-[#7e22ce]">
                         <span class="w-2 h-2 rounded-full bg-[#9333ea]"></span>
                         <span>Delayed</span>
-                      </span>
-                    }
-
-                    <!-- Finished (Soft pale mint rounded rectangle) -->
-                    @if (isStatus(b, 'Finished')) {
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#e6f4ea] text-[#137333]">
-                        <span class="w-2 h-2 rounded-full bg-[#137333]"></span>
-                        <span>Finished</span>
-                      </span>
-                    }
-
-                    <!-- Rejected (Soft pale red rounded rectangle) -->
-                    @if (isStatus(b, 'Rejected')) {
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#fce8e6] text-[#c5221f]">
-                        <span class="w-2 h-2 rounded-full bg-[#d93025]"></span>
-                        <span>Rejected</span>
                       </span>
                     }
 
@@ -1711,8 +1695,11 @@ export class AdminBookingsComponent implements OnInit {
     if (!booking || !booking.status) return target.toUpperCase() === 'NEW';
     const s = String(booking.status).trim().toLowerCase();
     const t = target.trim().toLowerCase();
-    if (t === 'pending') {
-      return s === 'pending';
+    if (t === 'completed' || t === 'finished') {
+      return s === 'completed' || s === 'finished';
+    }
+    if (t === 'cancelled' || t === 'rejected') {
+      return s === 'cancelled' || s === 'rejected';
     }
     return s === t;
   }
@@ -1720,7 +1707,7 @@ export class AdminBookingsComponent implements OnInit {
   isKnownStatus(booking: Booking): boolean {
     if (!booking || !booking.status) return false;
     const s = String(booking.status).trim().toLowerCase();
-    return ['new', 'pending', 'scheduled', 'accepted', 'finished', 'rejected'].includes(s);
+    return ['new', 'pending', 'scheduled', 'accepted', 'finished', 'completed', 'rejected', 'cancelled'].includes(s);
   }
 
   openBooking(b: Booking): void {
