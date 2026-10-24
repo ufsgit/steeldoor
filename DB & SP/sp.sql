@@ -768,73 +768,64 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_save_client_status`(
     IN p_schedule_date   DATE,
     IN p_notes           TEXT,
     IN p_created_by      INT,
-    IN p_created_by_name VARCHAR(100)
+    IN p_created_by_name VARCHAR(100),
+    IN p_branch_head_id  INT
 )
 BEGIN
     DECLARE v_new_id INT;
     DECLARE v_clean_date DATE;
+    DECLARE v_client_name VARCHAR(150);
+    DECLARE v_created_by_name VARCHAR(100);
+    DECLARE v_branch_head_name VARCHAR(150);
 
-    -- 1. Validate mandatory fields
-    IF p_client_id IS NULL OR p_client_id <= 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'client_id is required.';
+    -- 1. Auto-fetch client_name if omitted
+    SET v_client_name = TRIM(p_client_name);
+    IF v_client_name IS NULL OR v_client_name = '' THEN
+        SELECT name INTO v_client_name FROM bookings WHERE id = p_client_id LIMIT 1;
     END IF;
 
-    IF p_status IS NULL OR TRIM(p_status) = '' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Status is required.';
+    -- 2. Auto-fetch created_by_name (Who submitted the status update)
+    SET v_created_by_name = TRIM(p_created_by_name);
+    IF (v_created_by_name IS NULL OR v_created_by_name = '') AND p_created_by IS NOT NULL THEN
+        SELECT name INTO v_created_by_name FROM users WHERE id = p_created_by LIMIT 1;
+	   END IF;
+
+    -- 3. Auto-resolve Branch Head Name from users table
+    IF p_branch_head_id IS NOT NULL AND p_branch_head_id > 0 THEN
+        SELECT name INTO v_branch_head_name FROM users WHERE id = p_branch_head_id AND role_id = 3 LIMIT 1;
     END IF;
 
-    -- 2. If status is Cancelled, force schedule_date to NULL
+    -- 4. If status is Cancelled, clear schedule_date
     IF LOWER(TRIM(p_status)) = 'cancelled' THEN
         SET v_clean_date = NULL;
     ELSE
         SET v_clean_date = p_schedule_date;
     END IF;
 
-    -- 3. Insert the record into client_status_logs
+    -- 5. Insert audit trail into client_status_logs
     INSERT INTO client_status_logs (
-        client_id,
-        client_name,
-        status,
-        schedule_date,
-        notes,
-        created_by,
-        created_by_name
+        client_id, client_name, status, schedule_date, notes, created_by, created_by_name
     ) VALUES (
-        p_client_id,
-        TRIM(p_client_name),
-        TRIM(p_status),
-        v_clean_date,
-        TRIM(p_notes),
-        p_created_by,
-        TRIM(p_created_by_name)
+        p_client_id, v_client_name, UPPER(TRIM(p_status)), v_clean_date, TRIM(p_notes), p_created_by, v_created_by_name
     );
 
     SET v_new_id = LAST_INSERT_ID();
 
-    -- 4. (Optional) If you maintain a main `clients` or `leads` table, 
-    -- you can also update its current status here:
-    /*
-    UPDATE clients 
+    -- 6. Update BOTH Status AND Branch Head in bookings
+    UPDATE bookings
     SET 
-        current_status = TRIM(p_status),
-        next_schedule_date = v_clean_date,
-        updated_at = CURRENT_TIMESTAMP
+        status           = UPPER(TRIM(p_status)),
+        schedule_date    = v_clean_date,
+        notes            = CASE WHEN p_notes IS NOT NULL AND TRIM(p_notes) != '' THEN TRIM(p_notes) ELSE notes END,
+        created_by       = p_created_by,
+        created_by_name  = v_created_by_name,
+        branch_head_id   = COALESCE(p_branch_head_id, branch_head_id),
+        branch_head_name = COALESCE(v_branch_head_name, branch_head_name),
+        updated_at       = CURRENT_TIMESTAMP
     WHERE id = p_client_id;
-    */
 
-    -- 5. Return the saved record back to the caller
-    SELECT 
-        id,
-        client_id,
-        client_name,
-        status,
-        schedule_date,
-        notes,
-        created_by,
-        created_by_name,
-        created_at
+    -- 7. Return saved log
+    SELECT id, client_id, client_name, status, schedule_date, notes, created_by, created_by_name, created_at
     FROM client_status_logs
     WHERE id = v_new_id;
 
