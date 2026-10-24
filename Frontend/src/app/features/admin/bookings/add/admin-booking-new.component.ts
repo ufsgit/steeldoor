@@ -213,20 +213,30 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
               class="hidden"
               accept="image/*,.pdf,.doc,.docx"
             />
-            <div class="flex flex-col items-center justify-center gap-1.5 cursor-pointer" (click)="fileInput.click()">
-              <div class="w-10 h-10 rounded-full bg-emerald-50 text-[#0f9d58] flex items-center justify-center">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            @if (isUploading()) {
+              <div class="flex flex-col items-center justify-center gap-1.5 py-1">
+                <svg class="animate-spin h-6 w-6 text-[#0f9d58]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                 </svg>
+                <span class="text-xs text-gray-700 font-semibold">Uploading documents...</span>
               </div>
-              <span class="text-xs text-gray-700 font-semibold">Click to select documents or site photos</span>
-              <span class="text-[10px] text-gray-400">Upload door frame pictures or architectural site documents</span>
-            </div>
+            } @else {
+              <div class="flex flex-col items-center justify-center gap-1.5 cursor-pointer" (click)="fileInput.click()">
+                <div class="w-10 h-10 rounded-full bg-emerald-50 text-[#0f9d58] flex items-center justify-center">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <span class="text-xs text-gray-700 font-semibold">Click to select documents or site photos</span>
+                <span class="text-[10px] text-gray-400">Upload door frame pictures or architectural site documents</span>
+              </div>
+            }
           </div>
 
-          @if (documents.length > 0) {
+          @if (documents().length > 0) {
             <div class="flex flex-wrap gap-2 mt-3">
-              @for (doc of documents; track $index) {
+              @for (doc of documents(); track $index) {
                 <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 border border-gray-200 text-xs text-gray-800">
                   <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -305,7 +315,8 @@ export class AdminBookingNewComponent implements OnInit {
   areaName = '';
   branchHeadId: number | null = null;
   branchHeadName = 'Rajesh Menon';
-  documents: string[] = [];
+  documents = signal<string[]>([]);
+  isUploading = signal(false);
 
   isSubmitting = false;
 
@@ -383,25 +394,29 @@ export class AdminBookingNewComponent implements OnInit {
     if (!input.files || input.files.length === 0) return;
 
     const files = Array.from(input.files);
+    this.isUploading.set(true);
+
     this.dataService.uploadDocuments(files).subscribe({
       next: res => {
+        this.isUploading.set(false);
         if (res && res.urls && res.urls.length > 0) {
-          this.documents = [...this.documents, ...res.urls];
+          this.documents.update(prev => [...prev, ...res.urls]);
         } else {
           const fallback = files.map(f => `/uploads/${f.name}`);
-          this.documents = [...this.documents, ...fallback];
+          this.documents.update(prev => [...prev, ...fallback]);
         }
       },
       error: () => {
+        this.isUploading.set(false);
         const fallback = files.map(f => `/uploads/${f.name}`);
-        this.documents = [...this.documents, ...fallback];
+        this.documents.update(prev => [...prev, ...fallback]);
       }
     });
     input.value = '';
   }
 
   removeDoc(index: number): void {
-    this.documents.splice(index, 1);
+    this.documents.update(prev => prev.filter((_, i) => i !== index));
   }
 
   getFilename(url: string): string {
@@ -451,7 +466,7 @@ export class AdminBookingNewComponent implements OnInit {
       branch_head_id: this.branchHeadId,
       branchHeadName: this.branchHeadName || undefined,
       branch_head_name: this.branchHeadName || undefined,
-      documents: this.documents,
+      documents: this.documents(),
 
       // UI compatibility aliases
       clientName: this.name.trim(),

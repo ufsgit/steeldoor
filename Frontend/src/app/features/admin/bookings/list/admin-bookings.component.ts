@@ -9,6 +9,7 @@ import { Booking, District, BookingStatus } from '../../../../core/models';
 import { matchesDistrict } from '../../../../core/role-utils';
 import { DistrictDropdownComponent } from '../../../../shared/components';
 import { ToastService } from '../../../../shared/toast/toast.service';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-admin-bookings',
@@ -565,6 +566,108 @@ import { ToastService } from '../../../../shared/toast/toast.service';
                   </button>
                 </div>
               </div>
+
+              <!-- Documents & Attachments Section -->
+              <div class="pt-3 border-t border-gray-100 space-y-2.5">
+                <div class="flex items-center justify-between">
+                  <label class="font-semibold text-gray-800 text-xs flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                    Documents & Attachments
+                  </label>
+                  <span class="text-[11px] text-gray-500 font-medium">
+                    {{ getBookingDocuments(selectedBooking()).length }} file{{ getBookingDocuments(selectedBooking()).length === 1 ? '' : 's' }}
+                  </span>
+                </div>
+
+                @if (getBookingDocuments(selectedBooking()).length === 0) {
+                  <div class="p-3 text-center rounded-xl bg-gray-50 border border-dashed border-gray-200 text-gray-400 text-xs">
+                    No documents or images attached to this booking.
+                  </div>
+                } @else {
+                  <div class="space-y-3">
+                    @for (doc of getBookingDocuments(selectedBooking()); track $index) {
+                      <div class="bg-gray-50/80 hover:bg-gray-50 border border-gray-200 rounded-xl p-2.5 transition-all space-y-2">
+                        
+                        <!-- If Image: Show inline preview thumbnail -->
+                        @if (isImageFile(doc)) {
+                          <div class="relative group rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
+                            <a [href]="getFullFileUrl(doc)" target="_blank" rel="noopener noreferrer" class="block w-full max-h-56 p-2 flex items-center justify-center cursor-pointer">
+                              <img
+                                [src]="getFullFileUrl(doc)"
+                                [alt]="getDocumentName(doc)"
+                                class="max-w-full max-h-52 object-contain rounded transition-transform duration-200 group-hover:scale-[1.02]"
+                                loading="lazy"
+                              />
+                            </a>
+                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-xs font-medium pointer-events-none">
+                              Click to expand
+                            </div>
+                          </div>
+                        }
+
+                        <!-- File Info Header & Actions -->
+                        <div class="flex items-center justify-between gap-2 pt-0.5">
+                          <div class="flex items-center gap-2 min-w-0">
+                            <!-- File Icon -->
+                            @if (isImageFile(doc)) {
+                              <div class="w-7 h-7 rounded-lg bg-emerald-50 text-[#0f9d58] flex items-center justify-center shrink-0">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                              </div>
+                            } @else {
+                              <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                              </div>
+                            }
+                            <span class="truncate font-medium text-gray-800 text-xs" [title]="doc">
+                              {{ getDocumentName(doc) }}
+                            </span>
+                          </div>
+
+                          <!-- Action Buttons -->
+                          <div class="flex items-center gap-1.5 shrink-0">
+                            <!-- View Button (Only for Images) -->
+                            @if (isImageFile(doc)) {
+                              <a
+                                [href]="getFullFileUrl(doc)"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-700 hover:text-[#0f9d58] hover:border-[#0f9d58]/40 hover:bg-emerald-50/30 transition-colors shadow-2xs"
+                                title="View image in new tab"
+                              >
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                <span>View</span>
+                              </a>
+                            }
+
+                            <!-- Download Button (For all files) -->
+                            <button
+                              type="button"
+                              (click)="downloadFile(doc, $event)"
+                              class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-[#0f9d58] text-white hover:bg-[#0c8248] transition-colors shadow-2xs cursor-pointer"
+                              title="Download file"
+                            >
+                              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                              </svg>
+                              <span>Download</span>
+                            </button>
+                          </div>
+                        </div>
+
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
             </div>
           </div>
         </div>
@@ -714,19 +817,29 @@ import { ToastService } from '../../../../shared/toast/toast.service';
                     class="hidden"
                     accept="image/*,.pdf,.doc,.docx"
                   />
-                  <div class="flex flex-col items-center justify-center gap-1 cursor-pointer" (click)="docFileInput.click()">
-                    <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    <span class="text-xs text-gray-600 font-medium">Click to upload documents or site photos</span>
-                    <span class="text-[10px] text-gray-400">Files will be converted to URLs/JSON array</span>
-                  </div>
+                  @if (isUploadingDocuments()) {
+                    <div class="flex flex-col items-center justify-center gap-1.5 py-1">
+                      <svg class="animate-spin h-5 w-5 text-[#0f9d58]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                      </svg>
+                      <span class="text-xs text-gray-600 font-medium">Uploading documents...</span>
+                    </div>
+                  } @else {
+                    <div class="flex flex-col items-center justify-center gap-1 cursor-pointer" (click)="docFileInput.click()">
+                      <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <span class="text-xs text-gray-600 font-medium">Click to upload documents or site photos</span>
+                      <span class="text-[10px] text-gray-400">PDF, JPG, PNG, DOC</span>
+                    </div>
+                  }
                 </div>
 
                 <!-- Uploaded Document Chips List -->
-                @if (newDocuments.length > 0) {
+                @if (newDocuments().length > 0) {
                   <div class="flex flex-wrap gap-2 mt-2">
-                    @for (doc of newDocuments; track $index) {
+                    @for (doc of newDocuments(); track $index) {
                       <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 border border-gray-200 text-[11px] text-gray-700">
                         <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -830,7 +943,8 @@ export class AdminBookingsComponent implements OnInit {
   newStatus: BookingStatus = 'Pending'; // p_status (VARCHAR 50)
   newDistrict = 'Ernakulam';    // p_district_name (VARCHAR 100)
   newArea = '';                 // p_area_name (VARCHAR 100)
-  newDocuments: string[] = [];  // p_documents (JSON)
+  newDocuments = signal<string[]>([]);  // p_documents (JSON)
+  isUploadingDocuments = signal(false);
   newHead = 'Rajesh Menon';
   isSubmitting = false;
 
@@ -1074,25 +1188,29 @@ export class AdminBookingsComponent implements OnInit {
     if (!input.files || input.files.length === 0) return;
 
     const files = Array.from(input.files);
+    this.isUploadingDocuments.set(true);
+
     this.dataService.uploadDocuments(files).subscribe({
       next: res => {
+        this.isUploadingDocuments.set(false);
         if (res && res.urls && res.urls.length > 0) {
-          this.newDocuments = [...this.newDocuments, ...res.urls];
+          this.newDocuments.update(prev => [...prev, ...res.urls]);
         } else {
           const fallbackUrls = files.map(f => `/uploads/${f.name}`);
-          this.newDocuments = [...this.newDocuments, ...fallbackUrls];
+          this.newDocuments.update(prev => [...prev, ...fallbackUrls]);
         }
       },
       error: () => {
+        this.isUploadingDocuments.set(false);
         const fallbackUrls = files.map(f => `/uploads/${f.name}`);
-        this.newDocuments = [...this.newDocuments, ...fallbackUrls];
+        this.newDocuments.update(prev => [...prev, ...fallbackUrls]);
       }
     });
     input.value = '';
   }
 
   removeDocument(index: number): void {
-    this.newDocuments.splice(index, 1);
+    this.newDocuments.update(prev => prev.filter((_, i) => i !== index));
   }
 
   getDocumentName(docUrl: string): string {
@@ -1105,6 +1223,108 @@ export class AdminBookingsComponent implements OnInit {
     }
   }
 
+  getBookingDocuments(booking: Booking | null): string[] {
+    if (!booking) return [];
+    let docs = booking.documents;
+    if (typeof docs === 'string') {
+      try {
+        docs = JSON.parse(docs);
+      } catch {
+        docs = [docs];
+      }
+    }
+    if (Array.isArray(docs)) {
+      return docs.filter(d => typeof d === 'string' && d.trim().length > 0);
+    }
+    return [];
+  }
+
+  getFullFileUrl(filePath: string): string {
+    if (!filePath) return '';
+    if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+      return filePath;
+    }
+    const cleanPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+    const base = (environment.fileUrl || 'http://localhost:5000').replace(/\/$/, '');
+    return `${base}${cleanPath}`;
+  }
+
+  isImageFile(filePath: string): boolean {
+    if (!filePath) return false;
+    const clean = filePath.split('?')[0].toLowerCase();
+    return /\.(jpg|jpeg|png|gif|webp|svg|bmp|avif)$/.test(clean);
+  }
+
+  isPdfFile(filePath: string): boolean {
+    if (!filePath) return false;
+    const clean = filePath.split('?')[0].toLowerCase();
+    return /\.pdf$/.test(clean);
+  }
+
+  isOfficeDocument(filePath: string): boolean {
+    if (!filePath) return false;
+    const clean = filePath.split('?')[0].toLowerCase();
+    return /\.(doc|docx|xls|xlsx|ppt|pptx)$/.test(clean);
+  }
+
+  openDocumentViewer(filePath: string, event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    const fullUrl = this.getFullFileUrl(filePath);
+    const clean = filePath.split('?')[0].toLowerCase();
+
+    // Browser natively opens images, PDFs, text, and html directly in a new tab:
+    if (this.isImageFile(filePath) || this.isPdfFile(filePath) || /\.(txt|html|svg)$/.test(clean)) {
+      window.open(fullUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    // For Office files (Word .doc, .docx, Excel, PowerPoint):
+    // If running on a public domain (like steeldoorapi.ufstech.in), Office Online Viewer works directly.
+    // If running on localhost/internal network, Microsoft servers cannot reach localhost, so we download and inform the user.
+    const isLocalhost = fullUrl.includes('localhost') || fullUrl.includes('127.0.0.1');
+    if (this.isOfficeDocument(filePath) && !isLocalhost) {
+      const officeViewerUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fullUrl)}`;
+      window.open(officeViewerUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      // Localhost Office doc or browser unsupported doc:
+      // Browsers do not have a built-in DOCX renderer, so open it directly or download it
+      window.open(fullUrl, '_blank', 'noopener,noreferrer');
+      this.toastService.info('Word documents (.docx) cannot be viewed inside local offline servers. Opening / downloading document.');
+    }
+  }
+
+  downloadFile(filePath: string, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    const fullUrl = this.getFullFileUrl(filePath);
+    const filename = this.getDocumentName(filePath) || 'download';
+    
+    // Fetch and download as blob to trigger automatic browser download prompt
+    fetch(fullUrl)
+      .then(res => {
+        if (!res.ok) throw new Error('Network error');
+        return res.blob();
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+      })
+      .catch(() => {
+        // Fallback open in new window/tab
+        window.open(fullUrl, '_blank');
+      });
+  }
+
   submitNewEnquiry(event: Event): void {
     event.preventDefault();
     if (!this.newClientName || !this.newPhone || !this.newAddress) return;
@@ -1115,6 +1335,7 @@ export class AdminBookingsComponent implements OnInit {
 
     const u = this.authService.currentUser();
     const roleId = Number(u?.roleId ?? u?.dbRoleId);
+    const docs = this.newDocuments();
 
     const payload: any = {
       name: this.newClientName,
@@ -1128,7 +1349,7 @@ export class AdminBookingsComponent implements OnInit {
       districtName: this.newDistrict,
       area: this.newArea || 'Edapally',
       areaName: this.newArea || 'Edapally',
-      documents: this.newDocuments,
+      documents: docs,
       clientType: 'customer',
       contactEmail: `${this.newClientName.toLowerCase().replace(/\s+/g, '')}@example.com`,
       pincode: '682024',
@@ -1140,8 +1361,8 @@ export class AdminBookingsComponent implements OnInit {
         doorType: 'Standard Steel Door Installation',
         quantity: 1,
         notes: this.newNotes || '',
-        images: this.newDocuments,
-        documents: this.newDocuments
+        images: docs,
+        documents: docs
       }
     };
 
@@ -1188,13 +1409,13 @@ export class AdminBookingsComponent implements OnInit {
           address: this.newAddress,
           notes: this.newNotes,
           pincode: '682024',
-          documents: this.newDocuments,
+          documents: docs,
           doorDetails: {
             doorType: 'Standard Steel Door Installation',
             quantity: 1,
             notes: this.newNotes || '',
-            images: this.newDocuments,
-            documents: this.newDocuments
+            images: docs,
+            documents: docs
           },
           status: (this.newStatus as any) || 'Pending',
           branchHeadName: this.newHead || 'Rajesh Menon',
@@ -1218,7 +1439,7 @@ export class AdminBookingsComponent implements OnInit {
     this.newNotes = '';
     this.newStatus = 'Pending';
     this.newArea = '';
-    this.newDocuments = [];
+    this.newDocuments.set([]);
   }
 
   onNewDistrictSelected(dist: District | null): void {
