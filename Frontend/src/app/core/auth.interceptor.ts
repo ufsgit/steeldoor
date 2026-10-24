@@ -29,6 +29,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     } catch {}
   }
 
+  if (req.headers.has('X-Skip-Auth')) {
+    const cleanReq = req.clone({
+      headers: req.headers.delete('X-Skip-Auth')
+    });
+    return next(cleanReq);
+  }
+
   if (token) {
     const authReq = req.clone({
       setHeaders: {

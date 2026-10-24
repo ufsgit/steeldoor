@@ -378,6 +378,12 @@ export class DataService {
     return this.http.post<Booking>(this.url('/api/bookings'), payload);
   }
 
+  createPublicBooking(payload: CreateBookingPayload): Observable<Booking> {
+    return this.http.post<Booking>(this.url('/api/bookings'), payload, {
+      headers: { 'X-Skip-Auth': 'true' }
+    });
+  }
+
   updateBooking(id: string | number, data: Partial<Booking>): Observable<Booking> {
     return this.http.put<Booking>(this.url(`/api/bookings/${id}`), data);
   }

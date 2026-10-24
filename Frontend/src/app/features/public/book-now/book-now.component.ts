@@ -357,9 +357,9 @@ export class BookNowComponent implements OnInit {
   address = '';
   notes = '';
   status = 'NEW';
-  loginRoleId: number | null = null;
+  loginRoleId: number | null = 5;
   loginId: number | null = null;
-  loginName: string | null = null;
+  loginName: string | null = 'customer';
   stateId: number | null = 1;
   stateName = 'Kerala';
   districtId: number | null = null;
@@ -374,32 +374,6 @@ export class BookNowComponent implements OnInit {
 
   ngOnInit(): void {
     this.titleService.setTitle('Book Installation & Door Fitting | SteelGuard');
-
-    // Pre-populate user defaults if logged in
-    const u = this.authService.currentUser();
-    if (u) {
-      this.loginId = u.id ? Number(u.id) || null : null;
-      this.loginName = u.name || null;
-      this.loginRoleId = Number(u.roleId ?? u.dbRoleId) || (
-        u.role === 'admin' ? 1 :
-        u.role === 'coordinator' ? 2 :
-        u.role === 'branch_head' ? 3 :
-        (u.role as string) === 'dealer' ? 4 : 5
-      );
-      if (u.role === 'branch_head') {
-        if (u.districtName) {
-          this.districtName = u.districtName.replace(/\s+Hub$/i, '').trim();
-        }
-        if (u.districtId) {
-          this.districtId = Number(u.districtId) || null;
-        }
-        if (u.name) {
-          this.branchHeadName = u.name;
-          this.branchHeadId = this.loginId;
-        }
-      }
-    }
-
     this.loadDistricts();
   }
 
@@ -512,9 +486,9 @@ export class BookNowComponent implements OnInit {
       address: this.address.trim(),
       notes: this.notes.trim() || null,
       status: this.status || 'NEW',
-      loginRoleId: this.loginRoleId,
-      loginId: this.loginId,
-      loginName: this.loginName,
+      loginRoleId: 5,
+      loginId: null,
+      loginName: 'customer',
       stateId: this.stateId,
       stateName: this.stateName,
       districtId: this.districtId,
@@ -534,18 +508,15 @@ export class BookNowComponent implements OnInit {
 
       // UI compatibility aliases
       clientName: this.name.trim(),
-      contactPhone: this.mobile.trim()
+      contactPhone: this.mobile.trim(),
+      clientType: 'customer'
     };
 
-    this.dataService.createBooking(payload).subscribe({
+    this.dataService.createPublicBooking(payload).subscribe({
       next: (res: any) => {
         this.isSubmitting = false;
         this.toast.success('Booking created successfully!');
-        if (this.authService.isAdmin()) {
-          this.router.navigate(['/admin/bookings']);
-        } else {
-          this.submittedBooking.set(res?.data || res || payload);
-        }
+        this.submittedBooking.set(res?.data || res || payload);
       },
       error: err => {
         this.isSubmitting = false;
