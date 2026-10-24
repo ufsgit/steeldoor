@@ -163,25 +163,27 @@ import { environment } from '../../../../../environments/environment';
             ></app-district-dropdown>
           </div>
 
-          <!-- Customers Dropdown by login_role_id (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer) -->
-          <div class="w-40 sm:w-44 h-[36px] relative shrink-0">
-            <select
-              [(ngModel)]="filterCustomerRoleInput"
-              class="w-full h-full text-[13px] px-3 pr-7 rounded-md border border-gray-200 bg-white text-gray-700 focus:outline-none focus:border-[#0f9d58] font-normal appearance-none cursor-pointer"
-            >
-              <option value="">All Customers</option>
-              <option value="1">Company</option>
-              <option value="2">Coordinators</option>
-              <option value="3">Branch Head</option>
-              <option value="4">Dealers</option>
-              <option value="5">Customers</option>
-            </select>
-            <div class="absolute right-2.5 top-2.5 pointer-events-none text-gray-400">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
+          <!-- Customers Dropdown by login_role_id (Only shown for role_id 1: Company / Admin) -->
+          @if (isCompany()) {
+            <div class="w-40 sm:w-44 h-[36px] relative shrink-0">
+              <select
+                [(ngModel)]="filterCustomerRoleInput"
+                class="w-full h-full text-[13px] px-3 pr-7 rounded-md border border-gray-200 bg-white text-gray-700 focus:outline-none focus:border-[#0f9d58] font-normal appearance-none cursor-pointer"
+              >
+                <option value="">All Customers</option>
+                <option value="1">Company</option>
+                <option value="2">Coordinators</option>
+                <option value="3">Branch Head</option>
+                <option value="4">Dealers</option>
+                <option value="5">Customers</option>
+              </select>
+              <div class="absolute right-2.5 top-2.5 pointer-events-none text-gray-400">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
             </div>
-          </div>
+          }
         </div>
 
         <!-- Right Action Buttons: Search, Reset, + New Enquiry -->
