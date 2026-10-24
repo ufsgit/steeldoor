@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -6,13 +6,13 @@ import { Title } from '@angular/platform-browser';
 import { DataService } from '../../../../core/data.service';
 import { AuthService } from '../../../../core/auth.service';
 import { ToastService } from '../../../../shared/toast/toast.service';
-import { DistrictDropdownComponent } from '../../../../shared/components';
+import { DistrictDropdownComponent, DropdownComponent, DropdownOption } from '../../../../shared/components';
 import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../core/models';
 
 @Component({
   selector: 'app-admin-booking-new',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, DistrictDropdownComponent],
+  imports: [CommonModule, FormsModule, RouterModule, DistrictDropdownComponent, DropdownComponent],
   template: `
     <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 animate-fadeIn">
       
@@ -131,30 +131,18 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
                 }
               </label>
 
-              @if (districtAreas().length > 0) {
-                <select
-                  name="areaName"
-                  [(ngModel)]="areaName"
-                  (ngModelChange)="onAreaSelected($event)"
-                  [disabled]="!districtId"
-                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58] cursor-pointer disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed transition-colors"
-                >
-                  <option value="">{{ !districtId ? 'Select District First...' : '-- Select Registered Area --' }}</option>
-                  @for (a of districtAreas(); track a.id) {
-                    <option [value]="a.name">{{ a.name }} {{ a.pincode ? '(' + a.pincode + ')' : '' }}</option>
-                  }
-                </select>
-              } @else {
-                <input
-                  type="text"
-                  name="areaName"
-                  [(ngModel)]="areaName"
-                  required
-                  [disabled]="!districtId"
-                  [placeholder]="!districtId ? 'Select district first...' : 'e.g. Edapally'"
-                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58] disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed transition-colors"
-                />
-              }
+              <app-dropdown
+                [options]="areaOptions()"
+                [(ngModel)]="areaName"
+                name="areaDropdown"
+                placeholder="Select Area"
+                searchPlaceholder="Search area or pincode..."
+                [searchable]="true"
+                [clearable]="false"
+                [disabled]="!districtId"
+                emptyMessage="No areas found for this district"
+                (selectionChange)="onAreaSelected($event)"
+              ></app-dropdown>
             </div>
 
             <!-- Full Address (address) spans all 4 columns -->
@@ -317,6 +305,14 @@ export class AdminBookingNewComponent implements OnInit {
   branchHeadName = 'Rajesh Menon';
   documents = signal<string[]>([]);
   isUploading = signal(false);
+  areaOptions = computed<DropdownOption[]>(() => {
+    return this.districtAreas().map(a => ({
+      label: a.name,
+      value: a.name,
+      subtext: a.pincode ? a.pincode : undefined,
+      raw: a
+    }));
+  });
 
   isSubmitting = false;
 

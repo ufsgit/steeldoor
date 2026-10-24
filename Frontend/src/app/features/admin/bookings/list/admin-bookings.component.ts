@@ -7,14 +7,14 @@ import { DataService } from '../../../../core/data.service';
 import { AuthService } from '../../../../core/auth.service';
 import { Booking, District, BookingStatus } from '../../../../core/models';
 import { matchesDistrict } from '../../../../core/role-utils';
-import { DistrictDropdownComponent } from '../../../../shared/components';
+import { DistrictDropdownComponent, DropdownComponent, DropdownOption } from '../../../../shared/components';
 import { ToastService } from '../../../../shared/toast/toast.service';
 import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-admin-bookings',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, DistrictDropdownComponent],
+  imports: [CommonModule, RouterModule, FormsModule, DistrictDropdownComponent, DropdownComponent],
   template: `
     <div class="w-full flex-1 flex flex-col bg-white">
       
@@ -751,15 +751,16 @@ import { environment } from '../../../../../environments/environment';
                 </div>
                 <div>
                   <label class="block font-medium text-gray-700 mb-1">Area / Location  *</label>
-                  <input
-                    type="text"
-                    name="area"
-                    required
-                    maxlength="100"
+                  <app-dropdown
+                    [options]="newAreaOptions()"
                     [(ngModel)]="newArea"
-                    placeholder="e.g. Edapally"
-                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
-                  />
+                    name="modalArea"
+                    placeholder="Select Area"
+                    searchPlaceholder="Search area or pincode..."
+                    [searchable]="true"
+                    [clearable]="false"
+                    emptyMessage="No areas found for this district"
+                  ></app-dropdown>
                 </div>
               </div>
 
@@ -943,6 +944,15 @@ export class AdminBookingsComponent implements OnInit {
   newStatus: BookingStatus = 'Pending'; // p_status (VARCHAR 50)
   newDistrict = 'Ernakulam';    // p_district_name (VARCHAR 100)
   newArea = '';                 // p_area_name (VARCHAR 100)
+  newDistrictAreas = signal<any[]>([]);
+  newAreaOptions = computed<DropdownOption[]>(() => {
+    return this.newDistrictAreas().map(a => ({
+      label: a.name,
+      value: a.name,
+      subtext: a.pincode ? a.pincode : undefined,
+      raw: a
+    }));
+  });
   newDocuments = signal<string[]>([]);  // p_documents (JSON)
   isUploadingDocuments = signal(false);
   newHead = 'Rajesh Menon';
@@ -1179,6 +1189,10 @@ export class AdminBookingsComponent implements OnInit {
       if (u?.name) {
         this.newHead = u.name;
       }
+    }
+    const targetDist = this.districts.find(d => d.name.toLowerCase() === this.newDistrict.toLowerCase());
+    if (targetDist?.id) {
+      this.loadNewDistrictAreas(targetDist.id);
     }
     this.newEnquiryModalOpen.set(true);
   }
@@ -1454,6 +1468,18 @@ export class AdminBookingsComponent implements OnInit {
     if (branchHeadMap[dist.name]) {
       this.newHead = branchHeadMap[dist.name];
     }
+    this.newArea = '';
+    if (dist.id) {
+      this.loadNewDistrictAreas(dist.id);
+    }
+  }
+
+  loadNewDistrictAreas(districtId: number | string): void {
+    this.dataService.getAreasByDistrict(districtId).subscribe({
+      next: areas => {
+        this.newDistrictAreas.set(areas);
+      }
+    });
   }
 
   prevPage(): void {
