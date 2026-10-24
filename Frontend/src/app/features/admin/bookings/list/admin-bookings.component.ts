@@ -475,48 +475,229 @@ import { environment } from '../../../../../environments/environment';
             <div class="flex items-center justify-between border-b border-gray-100 pb-3">
               <div>
                 <h3 class="text-base font-bold text-gray-900">{{ selectedBooking()?.clientName }}</h3>
-                <p class="text-xs text-gray-500">{{ selectedBooking()?.id }}</p>
+                <p class="text-xs text-gray-500">Booking #{{ selectedBooking()?.id }}</p>
               </div>
-              <button
-                type="button"
-                (click)="selectedBooking.set(null)"
-                class="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 cursor-pointer"
-              >
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              </button>
+              <div class="flex items-center gap-2">
+                @if (!isEditingSelected()) {
+                  <button
+                    type="button"
+                    (click)="startEditingBooking()"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-[#0f9d58] text-white hover:bg-[#0c8248] shadow-sm transition-all cursor-pointer"
+                    title="Edit booking details"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                    <span>Edit Booking</span>
+                  </button>
+                }
+                <button
+                  type="button"
+                  (click)="selectedBooking.set(null)"
+                  class="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 cursor-pointer"
+                  title="Close"
+                >
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
             </div>
 
-            <div class="space-y-3 text-xs">
-              <div class="bg-gray-50 rounded-xl p-3.5 space-y-2">
-                <div class="flex justify-between">
-                  <span class="text-gray-500">Contact Phone:</span>
-                  <span class="font-semibold text-gray-800">{{ selectedBooking()?.contactPhone }}</span>
+            <!-- EDIT MODE FORM -->
+            @if (isEditingSelected()) {
+              <div class="space-y-3.5 text-xs">
+                <div class="p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-[11px] text-amber-800 flex items-center justify-between">
+                  <span class="font-medium">Editing Customer & Booking Info</span>
+                  <span class="text-gray-400 text-[10px]">Changes will persist to database</span>
                 </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-500">Email:</span>
-                  <span class="font-medium text-gray-700">{{ selectedBooking()?.contactEmail || 'N/A' }}</span>
+
+                <div>
+                  <label class="block font-semibold text-gray-700 mb-1">Client / Customer Name *</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="editName"
+                    placeholder="Enter customer name"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
+                  />
                 </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-500">District & Hub:</span>
-                  <span class="font-medium text-gray-800">{{ selectedBooking()?.area }}, {{ selectedBooking()?.districtName }} Hub</span>
+
+                <div>
+                  <label class="block font-semibold text-gray-700 mb-1">Mobile Number *</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="editMobile"
+                    placeholder="Enter mobile number"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
+                  />
                 </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-500">Assigned Head:</span>
-                  <span class="font-medium text-gray-800">{{ selectedBooking()?.branchHeadName || 'Rajesh Menon' }}</span>
+
+                <div>
+                  <label class="block font-semibold text-gray-700 mb-1">Full Address *</label>
+                  <textarea
+                    rows="2"
+                    [(ngModel)]="editAddress"
+                    placeholder="Enter complete address"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
+                  ></textarea>
                 </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-500">Scheduled Date:</span>
-                  <span class="font-medium text-gray-800">
-                    {{ selectedBooking()?.scheduledDate ? formatScheduledDate(selectedBooking()!.scheduledDate!) : 'Pending' }}
-                  </span>
+
+                <div>
+                  <label class="block font-semibold text-gray-700 mb-1">Notes / Instructions</label>
+                  <textarea
+                    rows="2"
+                    [(ngModel)]="editNotes"
+                    placeholder="Fitting notes, measurements, delivery notes..."
+                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
+                  ></textarea>
                 </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-500">Current Status:</span>
-                  <span class="font-semibold text-gray-900">{{ selectedBooking()?.status }}</span>
+
+                <!-- Editable Documents Section with Delete Button & Add New Doc -->
+                <div class="pt-2 border-t border-gray-100 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <label class="font-semibold text-gray-700">Documents & Attachments</label>
+                    <span class="text-[11px] text-gray-400">{{ editDocuments().length }} file(s)</span>
+                  </div>
+
+                  <!-- Upload new doc inside edit -->
+                  <div class="border border-dashed border-gray-300 rounded-lg p-2.5 bg-gray-50 text-center">
+                    <input
+                      type="file"
+                      multiple
+                      #editFileInput
+                      (change)="onEditDocumentsSelected($event)"
+                      class="hidden"
+                      accept="image/*,.pdf,.doc,.docx"
+                    />
+                    @if (isUploadingEditDocs()) {
+                      <div class="flex items-center justify-center gap-1.5 py-1 text-xs text-gray-600">
+                        <svg class="animate-spin h-4 w-4 text-[#0f9d58]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                        <span>Uploading document...</span>
+                      </div>
+                    } @else {
+                      <button
+                        type="button"
+                        (click)="editFileInput.click()"
+                        class="text-xs text-[#0f9d58] font-semibold hover:underline flex items-center justify-center gap-1 mx-auto cursor-pointer"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Upload additional file / photo</span>
+                      </button>
+                    }
+                  </div>
+
+                  <!-- Existing docs with red DELETE button -->
+                  @if (editDocuments().length > 0) {
+                    <div class="space-y-1.5 pt-1">
+                      @for (doc of editDocuments(); track $index) {
+                        <div class="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-200 text-xs">
+                          <div class="flex items-center gap-2 min-w-0 pr-2">
+                            @if (isImageFile(doc)) {
+                              <svg class="w-4 h-4 text-[#0f9d58] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                              </svg>
+                            } @else {
+                              <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                              </svg>
+                            }
+                            <span class="truncate font-medium text-gray-800" [title]="doc">{{ getDocumentName(doc) }}</span>
+                          </div>
+
+                          <!-- Red Delete Document Button -->
+                          <button
+                            type="button"
+                            (click)="removeDocumentFromEdit($index)"
+                            class="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:text-white hover:bg-red-600 border border-red-200 hover:border-red-600 rounded transition-colors cursor-pointer shrink-0"
+                            title="Delete this document"
+                          >
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <!-- Form Save & Cancel Buttons -->
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                  <button
+                    type="button"
+                    (click)="cancelEditingBooking()"
+                    class="px-3.5 py-1.5 rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    (click)="saveEditedBooking()"
+                    [disabled]="isSavingEdit() || !editName.trim() || !editMobile.trim() || !editAddress.trim()"
+                    class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#0f9d58] hover:bg-[#0c8248] disabled:opacity-50 text-white text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                  >
+                    @if (isSavingEdit()) {
+                      <svg class="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                      </svg>
+                      <span>Saving...</span>
+                    } @else {
+                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <span>Update Booking</span>
+                    }
+                  </button>
                 </div>
               </div>
+            } @else {
+              <!-- READONLY VIEW MODE -->
+              <div class="space-y-3 text-xs">
+                <div class="bg-gray-50 rounded-xl p-3.5 space-y-2">
+                  <div class="flex justify-between">
+                    <span class="text-gray-500">Contact Phone:</span>
+                    <span class="font-semibold text-gray-800">{{ selectedBooking()?.contactPhone || selectedBooking()?.mobile }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-500">Address:</span>
+                    <span class="font-medium text-gray-700 max-w-[220px] text-right truncate" [title]="selectedBooking()?.address">{{ selectedBooking()?.address || 'N/A' }}</span>
+                  </div>
+                  @if (selectedBooking()?.notes) {
+                    <div class="flex justify-between">
+                      <span class="text-gray-500">Notes:</span>
+                      <span class="font-medium text-gray-700 max-w-[220px] text-right truncate" [title]="selectedBooking()?.notes">{{ selectedBooking()?.notes }}</span>
+                    </div>
+                  }
+                  <div class="flex justify-between">
+                    <span class="text-gray-500">Email:</span>
+                    <span class="font-medium text-gray-700">{{ selectedBooking()?.contactEmail || 'N/A' }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-500">District & Hub:</span>
+                    <span class="font-medium text-gray-800">{{ selectedBooking()?.area }}, {{ selectedBooking()?.districtName }} Hub</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-500">Assigned Head:</span>
+                    <span class="font-medium text-gray-800">{{ selectedBooking()?.branchHeadName || 'Rajesh Menon' }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-500">Scheduled Date:</span>
+                    <span class="font-medium text-gray-800">
+                      {{ selectedBooking()?.scheduledDate ? formatScheduledDate(selectedBooking()!.scheduledDate!) : 'Pending' }}
+                    </span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-500">Current Status:</span>
+                    <span class="font-semibold text-gray-900">{{ selectedBooking()?.status }}</span>
+                  </div>
+                </div>
 
               <!-- Quick Status Actions -->
               <div class="space-y-1.5 pt-2">
@@ -667,11 +848,26 @@ import { environment } from '../../../../../environments/environment';
                     }
                   </div>
                 }
+
+                <!-- Edit Action at Bottom of Drawer -->
+                <div class="pt-3 border-t border-gray-100 flex items-center justify-end">
+                  <button
+                    type="button"
+                    (click)="startEditingBooking()"
+                    class="w-full inline-flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-bold bg-[#0f9d58] text-white hover:bg-[#0c8248] shadow-sm transition-all cursor-pointer"
+                  >
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                    <span>Edit Booking Details & Documents</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          }
         </div>
-      }
+      </div>
+    }
 
       <!-- New Enquiry Slide-Over Modal -->
       @if (newEnquiryModalOpen()) {
@@ -958,6 +1154,16 @@ export class AdminBookingsComponent implements OnInit {
   newHead = 'Rajesh Menon';
   isSubmitting = false;
 
+  // Selected Booking Edit Mode state
+  isEditingSelected = signal(false);
+  isSavingEdit = signal(false);
+  editName = '';
+  editMobile = '';
+  editAddress = '';
+  editNotes = '';
+  editDocuments = signal<string[]>([]);
+  isUploadingEditDocs = signal(false);
+
   setStatus(status: string): void {
     this.selectedStatus.set(status);
     this.currentPage.set(1);
@@ -1142,6 +1348,98 @@ export class AdminBookingsComponent implements OnInit {
 
   openBooking(b: Booking): void {
     this.selectedBooking.set(b);
+    this.isEditingSelected.set(false);
+  }
+
+  startEditingBooking(): void {
+    const b = this.selectedBooking();
+    if (!b) return;
+    this.editName = b.clientName || b.name || '';
+    this.editMobile = b.contactPhone || b.mobile || '';
+    this.editAddress = b.address || '';
+    this.editNotes = b.notes || '';
+    this.editDocuments.set([...this.getBookingDocuments(b)]);
+    this.isEditingSelected.set(true);
+  }
+
+  cancelEditingBooking(): void {
+    this.isEditingSelected.set(false);
+  }
+
+  removeDocumentFromEdit(index: number): void {
+    this.editDocuments.update(docs => docs.filter((_, i) => i !== index));
+  }
+
+  onEditDocumentsSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const files = Array.from(input.files);
+    this.isUploadingEditDocs.set(true);
+
+    this.dataService.uploadDocuments(files).subscribe({
+      next: res => {
+        this.isUploadingEditDocs.set(false);
+        if (res && res.urls && res.urls.length > 0) {
+          this.editDocuments.update(prev => [...prev, ...res.urls]);
+        } else {
+          const fallbackUrls = files.map(f => `/uploads/${f.name}`);
+          this.editDocuments.update(prev => [...prev, ...fallbackUrls]);
+        }
+      },
+      error: () => {
+        this.isUploadingEditDocs.set(false);
+        const fallbackUrls = files.map(f => `/uploads/${f.name}`);
+        this.editDocuments.update(prev => [...prev, ...fallbackUrls]);
+      }
+    });
+    input.value = '';
+  }
+
+  saveEditedBooking(): void {
+    const b = this.selectedBooking();
+    if (!b) return;
+
+    if (!this.editName.trim() || !this.editMobile.trim() || !this.editAddress.trim()) {
+      this.toastService.error('Name, Mobile Number, and Address are required.');
+      return;
+    }
+
+    this.isSavingEdit.set(true);
+    const updatedDocs = this.editDocuments();
+
+    const updatePayload: any = {
+      name: this.editName.trim(),
+      clientName: this.editName.trim(),
+      mobile: this.editMobile.trim(),
+      contactPhone: this.editMobile.trim(),
+      address: this.editAddress.trim(),
+      notes: this.editNotes.trim() || null,
+      documents: updatedDocs
+    };
+
+    this.dataService.updateBooking(b.id, updatePayload).subscribe({
+      next: (res) => {
+        this.isSavingEdit.set(false);
+        this.isEditingSelected.set(false);
+
+        const updated: Booking = {
+          ...b,
+          ...updatePayload
+        };
+
+        // Update list and selectedBooking
+        this.bookings.update(list =>
+          list.map(item => item.id === b.id ? { ...item, ...updated } : item)
+        );
+        this.selectedBooking.set(updated);
+        this.toastService.success(`Booking #${b.id} updated successfully!`);
+      },
+      error: (err) => {
+        this.isSavingEdit.set(false);
+        this.toastService.error(err?.error?.error || 'Failed to update booking. Please try again.');
+      }
+    });
   }
 
   viewFullDetails(): void {
