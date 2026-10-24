@@ -199,7 +199,19 @@ export class DataService {
     if (isPlatformServer(this.platformId)) {
       return of([]);
     }
-    return this.http.get<BranchHead[]>(this.url('/api/branch-heads')).pipe(
+    return this.http.get<{ success?: boolean; data?: any[] }>(this.url('/api/users?role=branch_head&limit=100')).pipe(
+      map(res => {
+        const users = Array.isArray(res) ? res : (res?.data || []);
+        return users.map((u: any) => ({
+          id: String(u.id),
+          name: u.name,
+          email: u.email || '',
+          phone: u.phone || '',
+          districtId: u.districtId != null ? String(u.districtId) : (u.district_id != null ? String(u.district_id) : ''),
+          districtName: u.districtName || u.district_name || '',
+          active: u.isActive !== undefined ? !!u.isActive : (u.is_active !== undefined ? !!u.is_active : true)
+        } as BranchHead));
+      }),
       catchError(() => of([]))
     );
   }
@@ -372,6 +384,22 @@ export class DataService {
 
   updateBookingStatus(id: string, payload: StatusUpdatePayload): Observable<Booking> {
     return this.http.patch<Booking>(this.url(`/api/bookings/${id}/status`), payload);
+  }
+
+  saveStatus(payload: {
+    clientId: number | string;
+    clientName?: string;
+    status: string;
+    scheduleDate?: string | null;
+    notes?: string | null;
+    createdBy?: number | string | null;
+    createdByName?: string | null;
+    branchHeadId?: number | string | null;
+    branchHeadName?: string | null;
+    districtId?: number | string | null;
+    districtName?: string | null;
+  }): Observable<{ success: boolean; message: string; data: any }> {
+    return this.http.post<{ success: boolean; message: string; data: any }>(this.url('/api/status'), payload);
   }
 
   reassignBooking(id: string, payload: ReassignBookingPayload): Observable<Booking> {

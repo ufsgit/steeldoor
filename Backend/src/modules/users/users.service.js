@@ -168,6 +168,22 @@ export class UsersService {
       }
     }
 
+    // If role is branch_head, ensure no other active (non-deleted) branch head is already assigned to this district
+    if ((mapped.roleId === 3 || mapped.role === 'branch_head') && resolvedDistrictId) {
+      const [duplicateBranchHeads] = await pool.query(
+        `SELECT id, name FROM users 
+         WHERE (role_id = 3 OR role = 'branch_head') 
+           AND district_id = ? 
+           AND is_deleted = 0 
+           AND id != ?
+         LIMIT 1`,
+        [resolvedDistrictId, existing && existing.length > 0 ? existing[0].id : 0]
+      );
+      if (duplicateBranchHeads && duplicateBranchHeads.length > 0) {
+        throw new Error(`District already has an assigned Branch Head (${duplicateBranchHeads[0].name}).`);
+      }
+    }
+
     let targetUserId;
     if (existing && existing.length > 0 && existing[0].is_deleted === 1) {
       targetUserId = existing[0].id;
@@ -291,6 +307,30 @@ export class UsersService {
       const [distRows] = await pool.query('SELECT name FROM districts WHERE id = ?', [resolvedDistrictId]);
       if (distRows && distRows.length > 0) {
         resolvedDistrictName = distRows[0].name ? distRows[0].name.replace(' Hub', '').trim() : null;
+      }
+
+      // Check current or updated role of user
+      let isBranchHead = role ? (role.toLowerCase() === 'branch_head') : false;
+      if (!role) {
+        const [currentUser] = await pool.query('SELECT role, role_id FROM users WHERE id = ?', [id]);
+        if (currentUser && currentUser.length > 0) {
+          isBranchHead = currentUser[0].role_id === 3 || currentUser[0].role === 'branch_head';
+        }
+      }
+
+      if (isBranchHead) {
+        const [duplicateBranchHeads] = await pool.query(
+          `SELECT id, name FROM users 
+           WHERE (role_id = 3 OR role = 'branch_head') 
+             AND district_id = ? 
+             AND is_deleted = 0 
+             AND id != ?
+           LIMIT 1`,
+          [resolvedDistrictId, id]
+        );
+        if (duplicateBranchHeads && duplicateBranchHeads.length > 0) {
+          throw new Error(`District already has an assigned Branch Head (${duplicateBranchHeads[0].name}).`);
+        }
       }
     }
 

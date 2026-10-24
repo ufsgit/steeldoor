@@ -75,9 +75,57 @@ export class StatusService {
     }
 
     const clientName = data.clientName ?? data.client_name ?? null;
-    const status = data.status;
-    if (!status || !String(status).trim()) {
+    let status = String(data.status || '').trim();
+    if (!status) {
       throw new Error('status is required (e.g. Scheduled, Completed, Cancelled).');
+    }
+
+    // Normalize to exact ENUM match: 'Scheduled' | 'Completed' | 'Cancelled'
+    const lower = status.toLowerCase();
+    if (lower === 'scheduled') {
+      status = 'Scheduled';
+    } else if (lower === 'completed' || lower === 'finished') {
+      status = 'Completed';
+    } else if (lower === 'cancelled' || lower === 'rejected') {
+      status = 'Cancelled';
+    } else if (lower === 'new') {
+      // If status is 'NEW', client_status_logs ENUM only allows Scheduled, Completed, Cancelled.
+      // Update bookings directly and return
+      const rawScheduleDate = data.scheduleDate ?? data.schedule_date ?? data.scheduledDate ?? null;
+      const scheduleDate = this.normalizeDate(rawScheduleDate);
+      const notes = data.notes ?? null;
+      const branchHeadId = data.branchHeadId ?? data.branch_head_id ?? data.branchManagerId ?? null;
+      const branchHeadIdNum = branchHeadId ? parseInt(branchHeadId, 10) : null;
+
+      let branchHeadName = null;
+      if (branchHeadIdNum) {
+        const [uRows] = await pool.query('SELECT name FROM users WHERE id = ? LIMIT 1', [branchHeadIdNum]);
+        if (uRows.length > 0) branchHeadName = uRows[0].name;
+      }
+
+      await pool.query(
+        `UPDATE bookings 
+         SET status = 'NEW',
+             schedule_date = ?,
+             notes = COALESCE(?, notes),
+             branch_head_id = COALESCE(?, branch_head_id),
+             branch_head_name = COALESCE(?, branch_head_name),
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [scheduleDate, notes, branchHeadIdNum, branchHeadName, clientId]
+      );
+
+      return {
+        id: clientId,
+        clientId: clientId,
+        clientName: clientName,
+        status: 'NEW',
+        scheduleDate: scheduleDate,
+        notes: notes || '',
+        createdBy: data.createdBy || null,
+        createdByName: data.createdByName || null,
+        createdAt: new Date().toISOString()
+      };
     }
 
     const rawScheduleDate = data.scheduleDate ?? data.schedule_date ?? data.scheduledDate ?? null;

@@ -269,8 +269,8 @@ export interface SystemUser {
       <!-- CREATE / EDIT MODAL -->
       <app-modal
         [isOpen]="modalOpen"
-        [title]="editingUserId ? 'Edit User' : 'Add New User'"
-        (closeModal)="modalOpen = false"
+        [title]="modalTitle"
+        (closeModal)="closeUserModal()"
       >
         <div class="space-y-4">
           <!-- Name -->
@@ -291,7 +291,7 @@ export interface SystemUser {
               <input
                 type="text"
                 [(ngModel)]="formUsername"
-                [disabled]="!!editingUserId"
+                [disabled]="!!editingUserId()"
                 placeholder="e.g. ramesh_m"
                 class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] disabled:bg-gray-100 disabled:text-gray-400"
               />
@@ -299,7 +299,7 @@ export interface SystemUser {
 
             <div class="space-y-1.5">
               <label class="block text-xs font-bold text-gray-700">
-                Password {{ editingUserId ? '(leave blank to keep unchanged)' : '*' }}
+                Password {{ editingUserId() ? '(leave blank to keep unchanged)' : '*' }}
               </label>
               <input
                 type="text"
@@ -334,10 +334,13 @@ export interface SystemUser {
                   class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
                 >
                   <option [ngValue]="null">Select District...</option>
-                  @for (d of districts(); track d.id) {
+                  @for (d of availableDistrictsForBranchHead(); track d.id) {
                     <option [ngValue]="d.id">{{ d.name }}</option>
                   }
                 </select>
+                @if (availableDistrictsForBranchHead().length === 0) {
+                  <p class="text-[11px] text-amber-600 font-medium">All districts already have an assigned Branch Head.</p>
+                }
               </div>
             }
           </div>
@@ -380,7 +383,7 @@ export interface SystemUser {
           <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-200">
             <button
               type="button"
-              (click)="modalOpen = false"
+              (click)="closeUserModal()"
               class="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-semibold cursor-pointer"
             >
               Cancel
@@ -390,7 +393,7 @@ export interface SystemUser {
               (click)="saveUser()"
               class="px-5 py-2 rounded-xl bg-[#0f9d58] hover:bg-[#0b8043] text-white text-xs font-semibold shadow-xs cursor-pointer"
             >
-              {{ editingUserId ? 'Save Changes' : 'Create User' }}
+              {{ editingUserId() ? 'Save Changes' : 'Create User' }}
             </button>
           </div>
         </div>
@@ -476,6 +479,29 @@ export class AdminUsersComponent implements OnInit {
 
   users = signal<SystemUser[]>([]);
   districts = signal<District[]>([]);
+  branchHeadUsers = signal<any[]>([]);
+
+  editingUserId = signal<string | number | null>(null);
+
+  // Only allow districts that are NOT assigned to another non-deleted branch head user
+  availableDistrictsForBranchHead = computed(() => {
+    const allDistricts = this.districts();
+    const currentId = this.editingUserId();
+    const currentUserIdStr = currentId != null ? String(currentId) : null;
+    
+    // Collect all district IDs assigned to active branch head users (excluding deleted and current editing user)
+    const assignedDistrictIds = new Set(
+      this.branchHeadUsers()
+        .filter(u => {
+          const isDeleted = u.isDeleted === 1 || u.is_deleted === 1;
+          const isCurrent = currentUserIdStr && String(u.id) === currentUserIdStr;
+          return !isDeleted && !isCurrent && (u.districtId != null || u.district_id != null);
+        })
+        .map(u => String(u.districtId ?? u.district_id))
+    );
+
+    return allDistricts.filter(d => !assignedDistrictIds.has(String(d.id)));
+  });
 
   activeRoleFilter = signal<string>('all');
   searchQuery = '';
@@ -504,7 +530,7 @@ export class AdminUsersComponent implements OnInit {
 
   // Modal State
   modalOpen = false;
-  editingUserId: string | number | null = null;
+  modalTitle = 'Add New User';
   formName = '';
   formUsername = '';
   formPassword = '';
@@ -546,6 +572,9 @@ export class AdminUsersComponent implements OnInit {
     } else {
       this.loadUsers(1);
     }
+
+    // Preload districts and branch heads for quick availability in the creation modal
+    this.loadDistrictsIfNeeded();
   }
 
   loadUsers(page: number = this.currentPage()): void {
@@ -685,6 +714,15 @@ export class AdminUsersComponent implements OnInit {
         }
       });
     }
+
+    // Always fetch latest branch heads to ensure assigned districts list is up to date
+    this.dataService.getUsers({ role: 'branch_head', limit: 100 }).subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.branchHeadUsers.set(res.data);
+        }
+      }
+    });
   }
 
   onRoleChange(): void {
@@ -696,7 +734,8 @@ export class AdminUsersComponent implements OnInit {
   }
 
   openCreateModal(): void {
-    this.editingUserId = null;
+    this.editingUserId.set(null);
+    this.modalTitle = 'Add New User';
     this.formName = '';
     this.formUsername = '';
     this.formPassword = '';
@@ -709,7 +748,8 @@ export class AdminUsersComponent implements OnInit {
   }
 
   openEditModal(user: SystemUser): void {
-    this.editingUserId = user.id;
+    this.editingUserId.set(user.id);
+    this.modalTitle = 'Edit User';
     this.formName = user.name || '';
     this.formUsername = user.username || '';
     this.formPassword = '';
@@ -732,13 +772,29 @@ export class AdminUsersComponent implements OnInit {
     this.modalOpen = true;
   }
 
+  closeUserModal(): void {
+    this.modalOpen = false;
+    this.editingUserId.set(null);
+    this.modalTitle = 'Add New User';
+    this.formName = '';
+    this.formUsername = '';
+    this.formPassword = '';
+    this.formRole = 'coordinator';
+    this.formDistrictId = null;
+    this.formPhone = '';
+    this.formEmail = '';
+    this.formAddress = '';
+  }
+
   saveUser(): void {
     if (!this.formName.trim()) {
       this.toast.error('Please enter the user full name.');
       return;
     }
 
-    if (!this.editingUserId) {
+    const currentEditingId = this.editingUserId();
+
+    if (!currentEditingId) {
       if (!this.formUsername.trim()) {
         this.toast.error('Please enter a username.');
         return;
@@ -754,6 +810,20 @@ export class AdminUsersComponent implements OnInit {
       return;
     }
 
+    // Double check that the selected district is not already assigned to another active branch head
+    if (this.formRole === 'branch_head' && this.formDistrictId) {
+      const alreadyAssigned = this.branchHeadUsers().some(u => {
+        const isDeleted = u.isDeleted === 1 || u.is_deleted === 1;
+        const isCurrent = currentEditingId != null && String(u.id) === String(currentEditingId);
+        const uDistId = u.districtId ?? u.district_id;
+        return !isDeleted && !isCurrent && String(uDistId) === String(this.formDistrictId);
+      });
+      if (alreadyAssigned) {
+        this.toast.error('Another Branch Head is already assigned to this district. Please choose a different district.');
+        return;
+      }
+    }
+
     const payload: any = {
       name: this.formName.trim(),
       username: this.formUsername.trim(),
@@ -767,11 +837,11 @@ export class AdminUsersComponent implements OnInit {
       payload.password = this.formPassword;
     }
 
-    if (this.editingUserId) {
-      this.dataService.updateUser(this.editingUserId, payload).subscribe({
+    if (currentEditingId) {
+      this.dataService.updateUser(currentEditingId, payload).subscribe({
         next: (updatedUser) => {
           this.toast.success('User updated successfully.');
-          this.modalOpen = false;
+          this.closeUserModal();
           this.loadUsers();
         },
         error: (err) => {
@@ -791,7 +861,7 @@ export class AdminUsersComponent implements OnInit {
       this.dataService.createUser(payload).subscribe({
         next: (newUser) => {
           this.toast.success('User created successfully.');
-          this.modalOpen = false;
+          this.closeUserModal();
           this.loadUsers();
         },
         error: (err) => {

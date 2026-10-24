@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
 import { DataService } from '../../../../core/data.service';
 import { AuthService } from '../../../../core/auth.service';
-import { Booking, District, BookingStatus } from '../../../../core/models';
+import { Booking, District, BookingStatus, BranchHead, User } from '../../../../core/models';
 import { matchesDistrict } from '../../../../core/role-utils';
 import { DistrictDropdownComponent, DropdownComponent, DropdownOption } from '../../../../shared/components';
 import { ToastService } from '../../../../shared/toast/toast.service';
@@ -702,48 +702,42 @@ import { environment } from '../../../../../environments/environment';
               <!-- Quick Status Actions -->
               <div class="space-y-1.5 pt-2">
                 <label class="font-semibold text-gray-700 block">Change Status:</label>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <button
                     type="button"
-                    (click)="updateBookingStatus('NEW')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e6f4ea] text-[#137333] hover:opacity-90 cursor-pointer"
+                    (click)="promptStatusChange('New')"
+                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e6f4ea] text-[#137333] hover:bg-[#c9eed1] transition-colors cursor-pointer text-center"
+                    [class.ring-2]="selectedBooking()?.status?.toLowerCase() === 'new'"
+                    [class.ring-[#0f9d58]]="selectedBooking()?.status?.toLowerCase() === 'new'"
                   >
-                    NEW
+                    New
                   </button>
                   <button
                     type="button"
-                    (click)="updateBookingStatus('Pending')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#fef7e0] text-[#b45309] hover:opacity-90 cursor-pointer"
-                  >
-                    Pending
-                  </button>
-                  <button
-                    type="button"
-                    (click)="updateBookingStatus('Accepted')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e8f0fe] text-[#1967d2] hover:opacity-90 cursor-pointer"
-                  >
-                    Accepted
-                  </button>
-                  <button
-                    type="button"
-                    (click)="updateBookingStatus('Scheduled')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e6f4ea] text-[#137333] hover:opacity-90 cursor-pointer"
+                    (click)="promptStatusChange('Scheduled')"
+                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e8f0fe] text-[#1967d2] hover:bg-[#d2e3fc] transition-colors cursor-pointer text-center"
+                    [class.ring-2]="selectedBooking()?.status?.toLowerCase() === 'scheduled'"
+                    [class.ring-[#1967d2]]="selectedBooking()?.status?.toLowerCase() === 'scheduled'"
                   >
                     Scheduled
                   </button>
                   <button
                     type="button"
-                    (click)="updateBookingStatus('Finished')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e6f4ea] text-[#137333] hover:opacity-90 cursor-pointer"
+                    (click)="promptStatusChange('Completed')"
+                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e6f4ea] text-[#0f9d58] hover:bg-[#c9eed1] transition-colors cursor-pointer text-center"
+                    [class.ring-2]="selectedBooking()?.status?.toLowerCase() === 'completed' || selectedBooking()?.status?.toLowerCase() === 'finished'"
+                    [class.ring-[#0f9d58]]="selectedBooking()?.status?.toLowerCase() === 'completed' || selectedBooking()?.status?.toLowerCase() === 'finished'"
                   >
-                    Finished
+                    Completed
                   </button>
                   <button
                     type="button"
-                    (click)="updateBookingStatus('Rejected')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#fce8e6] text-[#c5221f] hover:opacity-90 cursor-pointer"
+                    (click)="promptStatusChange('Cancelled')"
+                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#fce8e6] text-[#c5221f] hover:bg-[#fbd1cf] transition-colors cursor-pointer text-center"
+                    [class.ring-2]="selectedBooking()?.status?.toLowerCase() === 'cancelled' || selectedBooking()?.status?.toLowerCase() === 'rejected'"
+                    [class.ring-[#c5221f]]="selectedBooking()?.status?.toLowerCase() === 'cancelled' || selectedBooking()?.status?.toLowerCase() === 'rejected'"
                   >
-                    Rejected
+                    Cancelled
                   </button>
                 </div>
               </div>
@@ -1087,6 +1081,167 @@ import { environment } from '../../../../../environments/environment';
         </div>
       }
 
+      <!-- Status Change Confirmation & Date Picker Modal (Elevated z-index to appear directly above drawer) -->
+      @if (pendingStatusChange()) {
+        <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn" (click)="cancelStatusChange()">
+          <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 space-y-4 relative" (click)="$event.stopPropagation()">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-full flex items-center justify-center"
+                  [ngClass]="{
+                    'bg-blue-100 text-blue-700': pendingStatusChange() === 'Scheduled',
+                    'bg-emerald-100 text-[#0f9d58]': pendingStatusChange() === 'Completed',
+                    'bg-rose-100 text-rose-700': pendingStatusChange() === 'Cancelled',
+                    'bg-gray-100 text-gray-700': pendingStatusChange() === 'New'
+                  }"
+                >
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
+                </span>
+                <div>
+                  <h3 class="text-sm font-bold text-gray-900">Confirm Status Change</h3>
+                  <p class="text-[11px] text-gray-500">Booking #{{ selectedBooking()?.id }} · {{ selectedBooking()?.clientName }}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                (click)="cancelStatusChange()"
+                class="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 cursor-pointer"
+              >
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Confirmation Message Body -->
+            <div class="space-y-3.5 text-xs">
+              <div class="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-amber-900 leading-relaxed">
+                Are you sure you want to change the status of this booking to
+                <span class="font-bold uppercase tracking-wider px-1.5 py-0.5 rounded text-[11px]"
+                  [ngClass]="{
+                    'bg-blue-100 text-blue-800': pendingStatusChange() === 'Scheduled',
+                    'bg-emerald-100 text-emerald-800': pendingStatusChange() === 'Completed',
+                    'bg-rose-100 text-rose-800': pendingStatusChange() === 'Cancelled',
+                    'bg-gray-200 text-gray-800': pendingStatusChange() === 'New'
+                  }"
+                >{{ pendingStatusChange() }}</span>?
+              </div>
+
+              <!-- 1. Branch Head & District Details (FIRST) -->
+              <div class="bg-gray-50 border border-gray-200 rounded-xl p-3.5 space-y-3">
+                <div class="font-semibold text-gray-800 flex items-center justify-between pb-1 border-b border-gray-200/70 text-[11px] uppercase tracking-wider">
+                  <span class="flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span>Branch Head & District Details</span>
+                  </span>
+                  <span class="text-gray-400 font-normal normal-case">Change assignment if needed</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <!-- District Selection -->
+                  <div>
+                    <label class="block font-medium text-gray-700 mb-1">District / Hub *</label>
+                    <select
+                      [(ngModel)]="statusDistrictName"
+                      (ngModelChange)="onStatusDistrictChange($event)"
+                      class="w-full px-2.5 py-2 bg-white rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs font-medium text-gray-800"
+                    >
+                      <option value="">Select District</option>
+                      @for (d of districts; track d.id) {
+                        <option [value]="d.name">{{ d.name }} Hub</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Branch Head Display (Disabled Text Field) -->
+                  <div>
+                    <label class="block font-medium text-gray-700 mb-1">Assigned Branch Head</label>
+                    <div class="relative">
+                      <input
+                        type="text"
+                        [value]="statusBranchHeadName || 'No Branch Head assigned'"
+                        disabled
+                        class="w-full px-2.5 py-2 bg-gray-100 rounded-lg border border-gray-300 text-gray-700 text-xs font-semibold cursor-not-allowed select-none"
+                      />
+                      <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-medium">Auto-assigned</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Scheduled Date Picker: Shown when status is 'Scheduled' -->
+              @if (pendingStatusChange() === 'Scheduled') {
+                <div class="bg-blue-50/60 border border-blue-200 rounded-xl p-3.5 space-y-2">
+                  <label class="block font-semibold text-blue-900 text-xs flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span>Pick Scheduled Appointment Date *</span>
+                  </label>
+                  <input
+                    type="date"
+                    [(ngModel)]="statusScheduleDate"
+                    class="w-full px-3 py-2 bg-white rounded-lg border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs font-medium text-gray-800"
+                  />
+                  <p class="text-[11px] text-blue-700">Select the date on which measurement or installation is scheduled.</p>
+                </div>
+              }
+
+              <!-- Optional Notes/Reason -->
+              <div>
+                <label class="block font-semibold text-gray-700 mb-1">
+                  {{ pendingStatusChange() === 'Cancelled' ? 'Cancellation Reason (Optional)' : 'Status Note / Remarks (Optional)' }}
+                </label>
+                <textarea
+                  rows="2"
+                  [(ngModel)]="statusNotes"
+                  placeholder="Add any remarks or details regarding this status update..."
+                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+              <button
+                type="button"
+                (click)="cancelStatusChange()"
+                [disabled]="isSubmittingStatus()"
+                class="px-4 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                (click)="confirmStatusChange()"
+                [disabled]="isSubmittingStatus() || (pendingStatusChange() === 'Scheduled' && !statusScheduleDate)"
+                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                [ngClass]="{
+                  'bg-blue-600 hover:bg-blue-700': pendingStatusChange() === 'Scheduled',
+                  'bg-[#0f9d58] hover:bg-[#0c8248]': pendingStatusChange() === 'Completed' || pendingStatusChange() === 'New',
+                  'bg-rose-600 hover:bg-rose-700': pendingStatusChange() === 'Cancelled'
+                }"
+              >
+                @if (isSubmittingStatus()) {
+                  <svg class="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                  </svg>
+                  <span>Updating...</span>
+                } @else {
+                  <span>Confirm & Update Status</span>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
     </div>
   `
 })
@@ -1096,9 +1251,12 @@ export class AdminBookingsComponent implements OnInit {
   private dataService = inject(DataService);
   private titleService = inject(Title);
   authService = inject(AuthService);
+  toastService = inject(ToastService);
 
   bookings = signal<Booking[]>([]);
   districts: District[] = [];
+  branchHeads: BranchHead[] = [];
+  branchHeadUsers: any[] = [];
 
   isBranchHead = computed(() => {
     const u = this.authService.currentUser();
@@ -1125,8 +1283,6 @@ export class AdminBookingsComponent implements OnInit {
   // Pagination (11 items per page to fill the screen cleanly without vertical overflow)
   currentPage = signal(1);
   pageSize = 11;
-
-  private toastService = inject(ToastService);
 
   // Modals / Drawers
   selectedBooking = signal<Booking | null>(null);
@@ -1163,6 +1319,60 @@ export class AdminBookingsComponent implements OnInit {
   editNotes = '';
   editDocuments = signal<string[]>([]);
   isUploadingEditDocs = signal(false);
+
+  // Status Change Confirmation Modal State
+  pendingStatusChange = signal<string | null>(null);
+  statusDistrictName = '';
+  statusBranchHeadName = '';
+  statusScheduleDate = '';
+  statusNotes = '';
+  isSubmittingStatus = signal(false);
+
+  autoAssignBranchHeadForDistrict(districtName: string): void {
+    if (!districtName) {
+      this.statusBranchHeadName = '';
+      return;
+    }
+    const cleanDist = districtName.replace(/\s+hub$/i, '').trim().toLowerCase();
+    const matchedDistObj = this.districts.find(d => d.name.toLowerCase() === cleanDist);
+    const targetDistrictId = matchedDistObj ? String(matchedDistObj.id) : null;
+
+    // 1. Search the user table for role 'branch_head' (role_id: 3) matching district_id or district_name
+    let matchedUser = this.branchHeadUsers.find(u => {
+      const uDistId = u.districtId != null ? String(u.districtId) : (u.district_id != null ? String(u.district_id) : '');
+      const uDistName = (u.districtName || u.district_name || '').toLowerCase();
+      
+      if (targetDistrictId && uDistId === targetDistrictId) {
+        return true;
+      }
+      return uDistName.includes(cleanDist) || cleanDist.includes(uDistName);
+    });
+
+    // 2. Fallback to branchHeads list if user table query is still populating
+    if (!matchedUser && this.branchHeads.length > 0) {
+      const fallbackHead = this.branchHeads.find(h => {
+        const hDistId = String(h.districtId || '');
+        const hDistName = (h.districtName || '').toLowerCase();
+        if (targetDistrictId && hDistId === targetDistrictId) return true;
+        return hDistName.includes(cleanDist) || cleanDist.includes(hDistName);
+      });
+      if (fallbackHead) {
+        matchedUser = fallbackHead;
+      }
+    }
+
+    if (matchedUser) {
+      this.statusBranchHeadName = matchedUser.name;
+    } else {
+      // Default fallback
+      this.statusBranchHeadName = cleanDist === 'trivandrum' ? 'Suresh Kumar' : 'Rajesh Menon';
+    }
+  }
+
+  onStatusDistrictChange(newDist: string): void {
+    this.statusDistrictName = newDist;
+    this.autoAssignBranchHeadForDistrict(newDist);
+  }
 
   setStatus(status: string): void {
     this.selectedStatus.set(status);
@@ -1282,6 +1492,19 @@ export class AdminBookingsComponent implements OnInit {
     } else {
       this.dataService.getDistricts().subscribe(d => this.districts = d);
     }
+
+    this.dataService.getBranchHeads().subscribe(heads => {
+      this.branchHeads = heads || [];
+    });
+
+    // Load branch head users from the user table to match by district_id
+    this.dataService.getUsers({ role: 'branch_head', limit: 100 }).subscribe(res => {
+      this.branchHeadUsers = res?.data || [];
+      // If modal is open, re-run district match
+      if (this.pendingStatusChange() && this.statusDistrictName) {
+        this.autoAssignBranchHeadForDistrict(this.statusDistrictName);
+      }
+    });
 
     const initialStatus = this.route.snapshot.queryParamMap.get('status');
     if (initialStatus) {
@@ -1449,30 +1672,120 @@ export class AdminBookingsComponent implements OnInit {
     }
   }
 
-  updateBookingStatus(newStatus: string): void {
+  promptStatusChange(newStatus: string): void {
     const b = this.selectedBooking();
     if (!b) return;
 
-    const previousStatus = b.status;
+    this.pendingStatusChange.set(newStatus);
+    
+    // Pre-fill District from booking and auto-assign Branch Head by searching user table
+    this.statusDistrictName = b.districtName ? b.districtName.replace(/\s+hub$/i, '').trim() : '';
+    if (this.statusDistrictName) {
+      this.autoAssignBranchHeadForDistrict(this.statusDistrictName);
+    } else {
+      this.statusBranchHeadName = b.branchHeadName || 'Rajesh Menon';
+    }
 
-    // Optimistic local update
-    this.bookings.update(list =>
-      list.map(item => item.id === b.id ? { ...item, status: newStatus, isDelayed: false } : item)
-    );
-    this.selectedBooking.update(item => item ? { ...item, status: newStatus, isDelayed: false } : null);
+    // If Scheduled, default to today's date formatted as YYYY-MM-DD
+    if (newStatus === 'Scheduled') {
+      const today = new Date().toISOString().slice(0, 10);
+      this.statusScheduleDate = b.scheduledDate ? b.scheduledDate.slice(0, 10) : today;
+    } else {
+      this.statusScheduleDate = '';
+    }
+    this.statusNotes = '';
+  }
 
-    // Persist to backend database via PUT /api/bookings/:id
-    this.dataService.updateBooking(b.id, { status: newStatus }).subscribe({
+  // Alias for backward compatibility if any cached templates call updateBookingStatus
+  updateBookingStatus(newStatus: string): void {
+    this.promptStatusChange(newStatus);
+  }
+
+  cancelStatusChange(): void {
+    this.pendingStatusChange.set(null);
+    this.statusDistrictName = '';
+    this.statusBranchHeadName = '';
+    this.statusScheduleDate = '';
+    this.statusNotes = '';
+  }
+
+  confirmStatusChange(): void {
+    const b = this.selectedBooking();
+    const newStatus = this.pendingStatusChange();
+    if (!b || !newStatus) return;
+
+    if (newStatus === 'Scheduled' && !this.statusScheduleDate) {
+      this.toastService.error('Please select a date for the scheduled appointment.');
+      return;
+    }
+
+    this.isSubmittingStatus.set(true);
+    const user = this.authService.currentUser();
+    const scheduleDate = newStatus === 'Scheduled' ? this.statusScheduleDate : null;
+    const notes = this.statusNotes.trim() || null;
+    const chosenDistrict = this.statusDistrictName.trim() || b.districtName || '';
+    const chosenBranchHead = this.statusBranchHeadName.trim() || b.branchHeadName || 'Rajesh Menon';
+
+    // Find matched branch head ID if available
+    const matchedHead = this.branchHeads.find(h => h.name.toLowerCase() === chosenBranchHead.toLowerCase());
+    const matchedDist = this.districts.find(d => d.name.toLowerCase() === chosenDistrict.toLowerCase());
+
+    const payload = {
+      clientId: b.id,
+      clientName: b.clientName || b.name,
+      status: newStatus,
+      scheduleDate: scheduleDate,
+      notes: notes,
+      createdBy: user?.id ? String(user.id) : null,
+      createdByName: user?.name || null,
+      branchHeadId: matchedHead?.id || b.branchHeadId || null,
+      branchHeadName: chosenBranchHead,
+      districtId: matchedDist?.id || b.districtId || null,
+      districtName: chosenDistrict
+    };
+
+    // Save status using POST /api/status and sync booking details
+    this.dataService.saveStatus(payload).subscribe({
       next: (res) => {
-        this.toastService.success(`Booking #${b.id} status updated to ${newStatus}`);
+        // Also persist updated branchHeadName and districtName to the booking via updateBooking
+        this.dataService.updateBooking(b.id, {
+          status: newStatus,
+          branchHeadName: chosenBranchHead,
+          branchHeadId: matchedHead?.id ? String(matchedHead.id) : b.branchHeadId,
+          districtName: chosenDistrict,
+          districtId: matchedDist?.id ? String(matchedDist.id) : b.districtId,
+          notes: notes || b.notes
+        }).subscribe({
+          next: () => {},
+          error: () => {}
+        });
+
+        this.isSubmittingStatus.set(false);
+        this.cancelStatusChange();
+
+        // Update local state
+        const updatedBooking: Booking = {
+          ...b,
+          status: newStatus,
+          branchHeadName: chosenBranchHead,
+          branchHeadId: matchedHead?.id ? String(matchedHead.id) : b.branchHeadId,
+          districtName: chosenDistrict,
+          districtId: matchedDist?.id ? String(matchedDist.id) : b.districtId,
+          scheduledDate: scheduleDate || b.scheduledDate,
+          notes: notes || b.notes,
+          isDelayed: false
+        };
+
+        this.bookings.update(list =>
+          list.map(item => item.id === b.id ? { ...item, ...updatedBooking } : item)
+        );
+        this.selectedBooking.set(updatedBooking);
+
+        this.toastService.success(res?.message || `Status changed to ${newStatus} successfully!`);
       },
       error: (err) => {
-        // Rollback on failure
-        this.bookings.update(list =>
-          list.map(item => item.id === b.id ? { ...item, status: previousStatus } : item)
-        );
-        this.selectedBooking.update(item => item ? { ...item, status: previousStatus } : null);
-        this.toastService.error(err?.error?.error || 'Failed to update booking status. Please try again.');
+        this.isSubmittingStatus.set(false);
+        this.toastService.error(err?.error?.error || 'Failed to update status. Please try again.');
       }
     });
   }
