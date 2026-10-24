@@ -56,9 +56,14 @@ export function filterBookingsForUser(bookings: Booking[], user: User | null): B
     return [...bookings];
   }
 
-  // 2. Role 3 (Branch Head): display clients details by district_id
+  // 2. Role 3 (Branch Head): display clients details strictly by assigned branch_head_id
   if (roleId === 3 || user.role === 'branch_head') {
-    return bookings.filter(b => matchesDistrict(b.districtId, b.districtName, user.districtId, user.districtName));
+    const headId = String(user.branchHeadId || user.id);
+    return bookings.filter(b => {
+      if (b.branchHeadId != null && String(b.branchHeadId) === headId) return true;
+      if (b.branch_head_id != null && String(b.branch_head_id) === headId) return true;
+      return false;
+    });
   }
 
   // 3. Role 4 (Dealer) & Role 5 (Customer) or other: take list by login_id

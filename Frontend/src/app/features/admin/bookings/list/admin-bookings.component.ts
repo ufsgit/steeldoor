@@ -99,13 +99,13 @@ import { environment } from '../../../../../environments/environment';
       <div class="w-full flex items-center justify-between gap-3 px-7 sm:px-10 py-3.5 border-b border-gray-100 bg-white">
         <!-- Left Filter Controls -->
         <div class="flex items-center gap-2.5 flex-wrap">
-          <!-- Search Input -->
-          <div class="w-[300px] sm:w-[340px] shrink-0">
+          <!-- Search Input (Client Name or Phone/Mobile) -->
+          <div class="w-[280px] sm:w-[320px] shrink-0">
             <input
               type="text"
-              [ngModel]="searchQuery()"
-              (ngModelChange)="searchQuery.set($event); currentPage.set(1)"
-              placeholder="Search sheet (e.g. client, door, hub)..."
+              [(ngModel)]="filterSearchInput"
+              (keydown.enter)="applyFilters()"
+              placeholder="Search client name or ph no..."
               class="w-full h-[36px] text-[13px] px-3.5 rounded-md border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#0f9d58] font-normal"
             />
           </div>
@@ -113,21 +113,24 @@ import { environment } from '../../../../../environments/environment';
           <!-- Date Range Pickers: [dd/mm/yyyy 📅] - [dd/mm/yyyy 📅] -->
           <div class="flex items-center gap-1.5 shrink-0">
             <!-- From Date -->
-            <div class="relative flex items-center justify-between w-[125px] h-[36px] px-3 rounded-md border border-gray-200 bg-white hover:border-gray-300 transition-colors cursor-pointer group">
-              <span class="text-[13px] font-normal select-none pointer-events-none" [ngClass]="dateFrom() ? 'text-gray-800' : 'text-gray-400'">
-                {{ dateFrom() ? formatDateDisplay(dateFrom()) : 'dd/mm/yyyy' }}
+            <div
+              (click)="dateFromInput.showPicker()"
+              class="relative flex items-center justify-between w-[125px] h-[36px] px-3 rounded-md border border-gray-200 bg-white hover:border-gray-300 transition-colors cursor-pointer group"
+            >
+              <span class="text-[13px] font-normal select-none pointer-events-none" [ngClass]="filterDateFromInput ? 'text-gray-800' : 'text-gray-400'">
+                {{ filterDateFromInput ? formatDateDisplay(filterDateFromInput) : 'dd/mm/yyyy' }}
               </span>
               <!-- Clean Outline Calendar Icon -->
-              <svg class="w-3.5 h-3.5 text-gray-500 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg class="w-3.5 h-3.5 text-gray-500 pointer-events-none shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2.5" ry="2.5"></rect>
                 <line x1="16" y1="2" x2="16" y2="6"></line>
                 <line x1="8" y1="2" x2="8" y2="6"></line>
                 <line x1="3" y1="10" x2="21" y2="10"></line>
               </svg>
               <input
+                #dateFromInput
                 type="date"
-                [ngModel]="dateFrom()"
-                (ngModelChange)="dateFrom.set($event); currentPage.set(1)"
+                [(ngModel)]="filterDateFromInput"
                 class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
                 title="Select From Date"
               />
@@ -137,21 +140,24 @@ import { environment } from '../../../../../environments/environment';
             <span class="text-gray-400 font-normal select-none px-0.5">-</span>
 
             <!-- To Date -->
-            <div class="relative flex items-center justify-between w-[125px] h-[36px] px-3 rounded-md border border-gray-200 bg-white hover:border-gray-300 transition-colors cursor-pointer group">
-              <span class="text-[13px] font-normal select-none pointer-events-none" [ngClass]="dateTo() ? 'text-gray-800' : 'text-gray-400'">
-                {{ dateTo() ? formatDateDisplay(dateTo()) : 'dd/mm/yyyy' }}
+            <div
+              (click)="dateToInput.showPicker()"
+              class="relative flex items-center justify-between w-[125px] h-[36px] px-3 rounded-md border border-gray-200 bg-white hover:border-gray-300 transition-colors cursor-pointer group"
+            >
+              <span class="text-[13px] font-normal select-none pointer-events-none" [ngClass]="filterDateToInput ? 'text-gray-800' : 'text-gray-400'">
+                {{ filterDateToInput ? formatDateDisplay(filterDateToInput) : 'dd/mm/yyyy' }}
               </span>
               <!-- Clean Outline Calendar Icon -->
-              <svg class="w-3.5 h-3.5 text-gray-500 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg class="w-3.5 h-3.5 text-gray-500 pointer-events-none shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2.5" ry="2.5"></rect>
                 <line x1="16" y1="2" x2="16" y2="6"></line>
                 <line x1="8" y1="2" x2="8" y2="6"></line>
                 <line x1="3" y1="10" x2="21" y2="10"></line>
               </svg>
               <input
+                #dateToInput
                 type="date"
-                [ngModel]="dateTo()"
-                (ngModelChange)="dateTo.set($event); currentPage.set(1)"
+                [(ngModel)]="filterDateToInput"
                 class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
                 title="Select To Date"
               />
@@ -162,8 +168,7 @@ import { environment } from '../../../../../environments/environment';
           <div class="w-44 sm:w-48 h-[36px] relative shrink-0">
             <app-district-dropdown
               [districts]="availableDistricts()"
-              [ngModel]="selectedDistrict()"
-              (ngModelChange)="selectedDistrict.set($event); currentPage.set(1)"
+              [(ngModel)]="filterDistrictInput"
               valueField="id"
               suffix="Hub"
               [showAllOption]="!isBranchHead()"
@@ -174,17 +179,18 @@ import { environment } from '../../../../../environments/environment';
             ></app-district-dropdown>
           </div>
 
-          <!-- Client Types Dropdown -->
-          <div class="w-36 sm:w-40 h-[36px] relative shrink-0">
+          <!-- Customers Dropdown by login_role_id (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer) -->
+          <div class="w-40 sm:w-44 h-[36px] relative shrink-0">
             <select
-              [ngModel]="selectedClientType()"
-              (ngModelChange)="selectedClientType.set($event); currentPage.set(1)"
+              [(ngModel)]="filterCustomerRoleInput"
               class="w-full h-full text-[13px] px-3 pr-7 rounded-md border border-gray-200 bg-white text-gray-700 focus:outline-none focus:border-[#0f9d58] font-normal appearance-none cursor-pointer"
             >
-              <option value="">All Client Types</option>
-              <option value="dealer">Dealers</option>
-              <option value="customer">Customers</option>
-              <option value="company">Company</option>
+              <option value="">All Customers</option>
+              <option value="1">Company</option>
+              <option value="2">Coordinators</option>
+              <option value="3">Branch Head</option>
+              <option value="4">Dealers</option>
+              <option value="5">Customers</option>
             </select>
             <div class="absolute right-2.5 top-2.5 pointer-events-none text-gray-400">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -194,16 +200,29 @@ import { environment } from '../../../../../environments/environment';
           </div>
         </div>
 
-        <!-- Right Action Buttons -->
-        <div class="flex items-center gap-2.5 shrink-0">
+        <!-- Right Action Buttons: Search, Reset, + New Enquiry -->
+        <div class="flex items-center gap-2 shrink-0">
+          <!-- Reset Button -->
+          <button
+            type="button"
+            (click)="resetFilters()"
+            class="h-[36px] px-3 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 font-medium text-[13px] flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+            title="Reset all filters"
+          >
+            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Reset</span>
+          </button>
+
           <!-- Search Action Button -->
           <button
             type="button"
-            (click)="currentPage.set(1)"
-            class="h-[36px] px-3.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-medium text-[13px] flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+            (click)="applyFilters()"
+            class="h-[36px] px-3.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-[13px] flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
           >
-            <svg class="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
             <span>Search</span>
           </button>
@@ -1132,47 +1151,31 @@ import { environment } from '../../../../../environments/environment';
                 >{{ pendingStatusChange() }}</span>?
               </div>
 
-              <!-- 1. Branch Head & District Details (FIRST) -->
+              <!-- 1. Branch Head Assignment Details -->
               <div class="bg-gray-50 border border-gray-200 rounded-xl p-3.5 space-y-3">
                 <div class="font-semibold text-gray-800 flex items-center justify-between pb-1 border-b border-gray-200/70 text-[11px] uppercase tracking-wider">
                   <span class="flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    <span>Branch Head & District Details</span>
+                    <span>Assigned Branch Head</span>
                   </span>
                   <span class="text-gray-400 font-normal normal-case">Change assignment if needed</span>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <!-- District Selection -->
-                  <div>
-                    <label class="block font-medium text-gray-700 mb-1">District / Hub *</label>
-                    <select
-                      [(ngModel)]="statusDistrictName"
-                      (ngModelChange)="onStatusDistrictChange($event)"
-                      class="w-full px-2.5 py-2 bg-white rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs font-medium text-gray-800"
-                    >
-                      <option value="">Select District</option>
-                      @for (d of districts; track d.id) {
-                        <option [value]="d.name">{{ d.name }} Hub</option>
-                      }
-                    </select>
-                  </div>
-
-                  <!-- Branch Head Display (Disabled Text Field) -->
-                  <div>
-                    <label class="block font-medium text-gray-700 mb-1">Assigned Branch Head</label>
-                    <div class="relative">
-                      <input
-                        type="text"
-                        [value]="statusBranchHeadName || 'No Branch Head assigned'"
-                        disabled
-                        class="w-full px-2.5 py-2 bg-gray-100 rounded-lg border border-gray-300 text-gray-700 text-xs font-semibold cursor-not-allowed select-none"
-                      />
-                      <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-medium">Auto-assigned</span>
-                    </div>
-                  </div>
+                <div>
+                  <label class="block font-medium text-gray-700 mb-1">Select Branch Head *</label>
+                  <select
+                    [(ngModel)]="statusBranchHeadName"
+                    class="w-full px-2.5 py-2 bg-white rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs font-medium text-gray-800"
+                  >
+                    <option value="">Select Branch Head</option>
+                    @for (head of availableBranchHeadOptions(); track head.id) {
+                      <option [value]="head.name">
+                        {{ head.name }}{{ head.districtName ? ' (' + head.districtName + ' Hub)' : '' }}
+                      </option>
+                    }
+                  </select>
                 </div>
               </div>
 
@@ -1281,13 +1284,125 @@ export class AdminBookingsComponent implements OnInit {
     return this.districts;
   });
 
-  // Filter signals
+  availableBranchHeadOptions = computed(() => {
+    const list: Array<{ id: string | number; name: string; districtName?: string }> = [];
+    const seen = new Set<string>();
+
+    for (const u of this.branchHeadUsers) {
+      if (u.name && !seen.has(u.name.toLowerCase())) {
+        seen.add(u.name.toLowerCase());
+        list.push({
+          id: u.id,
+          name: u.name,
+          districtName: (u.districtName || u.district_name || '').replace(/\s+hub$/i, '').trim()
+        });
+      }
+    }
+
+    for (const h of this.branchHeads) {
+      if (h.name && !seen.has(h.name.toLowerCase())) {
+        seen.add(h.name.toLowerCase());
+        list.push({
+          id: h.id,
+          name: h.name,
+          districtName: (h.districtName || '').replace(/\s+hub$/i, '').trim()
+        });
+      }
+    }
+
+    // Default static heads if none loaded yet
+    if (list.length === 0) {
+      return [
+        { id: 4, name: 'Rajesh Menon', districtName: 'Ernakulam' },
+        { id: 5, name: 'Suresh Kumar', districtName: 'Trivandrum' },
+        { id: 6, name: 'Anas Kabeer', districtName: 'Kozhikode' },
+        { id: 10, name: 'K. V. Pavithran', districtName: 'Kannur' }
+      ];
+    }
+
+    return list;
+  });
+
+  // Filter signals (committed filter state applied when Search is clicked or tab changes)
   searchQuery = signal('');
   selectedStatus = signal('');
   selectedDistrict = signal('');
-  selectedClientType = signal('');
+  selectedCustomerRole = signal('');
   dateFrom = signal('');
   dateTo = signal('');
+
+  // Draft filter inputs (bound to the toolbar controls; applied when clicking Search)
+  filterSearchInput = '';
+  filterDistrictInput = '';
+  filterCustomerRoleInput = '';
+  filterDateFromInput = '';
+  filterDateToInput = '';
+
+  isLoading = signal(false);
+
+  // Fetch bookings directly from backend SP with all active filters
+  fetchBookingsFromApi(): void {
+    this.isLoading.set(true);
+    const filterParams: any = {};
+
+    const q = this.searchQuery().trim();
+    if (q) filterParams.search = q;
+
+    const s = this.selectedStatus().trim();
+    if (s) filterParams.status = s;
+
+    const d = this.selectedDistrict();
+    if (d) filterParams.districtId = d;
+
+    const r = this.selectedCustomerRole();
+    if (r) filterParams.filterRole = r;
+
+    const dFrom = this.dateFrom();
+    if (dFrom) filterParams.dateFrom = dFrom;
+
+    const dTo = this.dateTo();
+    if (dTo) filterParams.dateTo = dTo;
+
+    this.dataService.getBookings(filterParams).subscribe({
+      next: (b) => {
+        this.bookings.set(b || []);
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Error fetching bookings from API:', err);
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  // Apply filters from toolbar controls on "Search" button click -> Calls API
+  applyFilters(): void {
+    this.searchQuery.set(this.filterSearchInput.trim());
+    this.selectedDistrict.set(this.filterDistrictInput);
+    this.selectedCustomerRole.set(this.filterCustomerRoleInput);
+    this.dateFrom.set(this.filterDateFromInput);
+    this.dateTo.set(this.filterDateToInput);
+    this.currentPage.set(1);
+    this.fetchBookingsFromApi();
+  }
+
+  // Reset all filters back to defaults -> Calls API
+  resetFilters(): void {
+    this.filterSearchInput = '';
+    this.filterDistrictInput = '';
+    this.filterCustomerRoleInput = '';
+    this.filterDateFromInput = '';
+    this.filterDateToInput = '';
+
+    this.searchQuery.set('');
+    this.selectedDistrict.set('');
+    this.selectedCustomerRole.set('');
+    this.dateFrom.set('');
+    this.dateTo.set('');
+    this.selectedStatus.set('');
+    this.currentPage.set(1);
+    this.fetchBookingsFromApi();
+  }
 
   // Pagination (11 items per page to fill the screen cleanly without vertical overflow)
   currentPage = signal(1);
@@ -1386,6 +1501,7 @@ export class AdminBookingsComponent implements OnInit {
   setStatus(status: string): void {
     this.selectedStatus.set(status);
     this.currentPage.set(1);
+    this.fetchBookingsFromApi();
   }
 
   filteredBookings = computed(() => {
@@ -1401,7 +1517,12 @@ export class AdminBookingsComponent implements OnInit {
     const isRole3 = roleId === 3 || user?.role === 'branch_head';
 
     if (isRole3) {
-      list = list.filter(b => matchesDistrict(b.districtId, b.districtName, user?.districtId, user?.districtName));
+      const headId = String(user?.branchHeadId || user?.id);
+      list = list.filter(b => {
+        if (b.branchHeadId != null && String(b.branchHeadId) === headId) return true;
+        if (b.branch_head_id != null && String(b.branch_head_id) === headId) return true;
+        return false;
+      });
     } else if (!isRole1or2 && user) {
       const targetId = String(user.clientId || user.id);
       list = list.filter(b => {
@@ -1411,7 +1532,7 @@ export class AdminBookingsComponent implements OnInit {
       });
     }
 
-    // Search query
+    // Search query: client name and ph no
     const q = this.searchQuery().trim().toLowerCase();
     if (q) {
       list = list.filter(b => {
@@ -1420,7 +1541,6 @@ export class AdminBookingsComponent implements OnInit {
         const cArea = (b.area || b.areaName || '').toLowerCase();
         const cDist = (b.districtName || '').toLowerCase();
         const cHead = (b.branchHeadName || '').toLowerCase();
-        const cDoor = (b.doorDetails?.doorType || '').toLowerCase();
         const cId = String(b.id || '').toLowerCase();
 
         return (
@@ -1429,7 +1549,6 @@ export class AdminBookingsComponent implements OnInit {
           cArea.includes(q) ||
           cDist.includes(q) ||
           cHead.includes(q) ||
-          cDoor.includes(q) ||
           cId.includes(q)
         );
       });
@@ -1447,28 +1566,54 @@ export class AdminBookingsComponent implements OnInit {
       }
     }
 
-    // District
+    // District Filter (checks districtId or districtName via matchesDistrict)
     const dist = this.selectedDistrict();
     if (dist) {
-      list = list.filter(b => b.districtId === dist || (b.districtName && b.districtName.toLowerCase() === dist.toLowerCase()));
+      const matchedDistObj = this.districts.find(d => String(d.id) === String(dist) || d.name.toLowerCase() === String(dist).toLowerCase());
+      const distName = matchedDistObj ? matchedDistObj.name : String(dist);
+      list = list.filter(b => matchesDistrict(b.districtId, b.districtName, dist, distName));
     }
 
-    // Client Type
-    const clientType = this.selectedClientType();
-    if (clientType) {
-      list = list.filter(b => b.clientType === clientType);
+    // Customer Dropdown Filter by login_role_id
+    // (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer)
+    const filterRole = this.selectedCustomerRole();
+    if (filterRole) {
+      const roleNum = Number(filterRole);
+      list = list.filter(b => {
+        const bRoleId = Number(b.loginRoleId ?? b.login_role_id);
+        if (roleNum === 1) {
+          return bRoleId === 1 || (b.clientType || '').toLowerCase() === 'company';
+        } else if (roleNum === 2) {
+          return bRoleId === 2 || (b.clientType || '').toLowerCase() === 'coordinator';
+        } else if (roleNum === 3) {
+          return bRoleId === 3 || (b.clientType || '').toLowerCase() === 'branch_head';
+        } else if (roleNum === 4) {
+          return bRoleId === 4 || (b.clientType || '').toLowerCase() === 'dealer';
+        } else if (roleNum === 5) {
+          return bRoleId === 5 || (b.clientType || '').toLowerCase() === 'customer';
+        }
+        return bRoleId === roleNum;
+      });
     }
 
-    // Date range
+    // Date range (checks createdAt, created_at, scheduledDate, or schedule_date)
     const dFrom = this.dateFrom();
     if (dFrom) {
-      const fromTime = new Date(dFrom).getTime();
-      list = list.filter(b => b.createdAt ? new Date(b.createdAt).getTime() >= fromTime : true);
+      const fromTime = new Date(`${dFrom}T00:00:00`).getTime();
+      list = list.filter(b => {
+        const rawDate = b.createdAt || b.created_at || b.scheduledDate || (b as any).schedule_date;
+        if (!rawDate) return false;
+        return new Date(rawDate).getTime() >= fromTime;
+      });
     }
     const dTo = this.dateTo();
     if (dTo) {
-      const toTime = new Date(dTo).setHours(23, 59, 59, 999);
-      list = list.filter(b => b.createdAt ? new Date(b.createdAt).getTime() <= toTime : true);
+      const toTime = new Date(`${dTo}T23:59:59.999`).getTime();
+      list = list.filter(b => {
+        const rawDate = b.createdAt || b.created_at || b.scheduledDate || (b as any).schedule_date;
+        if (!rawDate) return false;
+        return new Date(rawDate).getTime() <= toTime;
+      });
     }
 
     return list;
@@ -1692,13 +1837,8 @@ export class AdminBookingsComponent implements OnInit {
 
     this.pendingStatusChange.set(newStatus);
     
-    // Pre-fill District from booking and auto-assign Branch Head by searching user table
-    this.statusDistrictName = b.districtName ? b.districtName.replace(/\s+hub$/i, '').trim() : '';
-    if (this.statusDistrictName) {
-      this.autoAssignBranchHeadForDistrict(this.statusDistrictName);
-    } else {
-      this.statusBranchHeadName = b.branchHeadName || 'Rajesh Menon';
-    }
+    // Pre-fill Branch Head directly from the booking
+    this.statusBranchHeadName = b.branchHeadName || 'Rajesh Menon';
 
     // If Scheduled, default to today's date formatted as YYYY-MM-DD
     if (newStatus === 'Scheduled') {
@@ -1736,13 +1876,16 @@ export class AdminBookingsComponent implements OnInit {
     this.isSubmittingStatus.set(true);
     const user = this.authService.currentUser();
     const scheduleDate = newStatus === 'Scheduled' ? this.statusScheduleDate : null;
-    const notes = this.statusNotes.trim() || null;
-    const chosenDistrict = this.statusDistrictName.trim() || b.districtName || '';
+    const notes = this.statusNotes.trim();
     const chosenBranchHead = this.statusBranchHeadName.trim() || b.branchHeadName || 'Rajesh Menon';
 
-    // Find matched branch head ID if available
-    const matchedHead = this.branchHeads.find(h => h.name.toLowerCase() === chosenBranchHead.toLowerCase());
-    const matchedDist = this.districts.find(d => d.name.toLowerCase() === chosenDistrict.toLowerCase());
+    // Find matched branch head from users or branch heads
+    const matchedHeadUser = this.branchHeadUsers.find(u => u.name?.toLowerCase() === chosenBranchHead.toLowerCase());
+    const matchedHead = this.branchHeads.find(h => h.name?.toLowerCase() === chosenBranchHead.toLowerCase());
+    
+    // Keep the booking's original district unchanged
+    const bookingDistrictId = b.districtId || null;
+    const bookingDistrictName = b.districtName || '';
 
     const payload = {
       clientId: b.id,
@@ -1752,22 +1895,22 @@ export class AdminBookingsComponent implements OnInit {
       notes: notes,
       createdBy: user?.id ? String(user.id) : null,
       createdByName: user?.name || null,
-      branchHeadId: matchedHead?.id || b.branchHeadId || null,
+      branchHeadId: matchedHeadUser?.id || matchedHead?.id || b.branchHeadId || null,
       branchHeadName: chosenBranchHead,
-      districtId: matchedDist?.id || b.districtId || null,
-      districtName: chosenDistrict
+      districtId: bookingDistrictId,
+      districtName: bookingDistrictName
     };
 
     // Save status using POST /api/status and sync booking details
     this.dataService.saveStatus(payload).subscribe({
       next: (res) => {
-        // Also persist updated branchHeadName and districtName to the booking via updateBooking
+        // Also persist updated branchHeadName to the booking via updateBooking, preserving district
         this.dataService.updateBooking(b.id, {
           status: newStatus,
           branchHeadName: chosenBranchHead,
-          branchHeadId: matchedHead?.id ? String(matchedHead.id) : b.branchHeadId,
-          districtName: chosenDistrict,
-          districtId: matchedDist?.id ? String(matchedDist.id) : b.districtId,
+          branchHeadId: matchedHeadUser?.id || matchedHead?.id ? String(matchedHeadUser?.id || matchedHead?.id) : b.branchHeadId,
+          districtName: bookingDistrictName,
+          districtId: bookingDistrictId ? String(bookingDistrictId) : b.districtId,
           notes: notes || b.notes
         }).subscribe({
           next: () => {},
@@ -1777,14 +1920,14 @@ export class AdminBookingsComponent implements OnInit {
         this.isSubmittingStatus.set(false);
         this.cancelStatusChange();
 
-        // Update local state
+        // Update local state preserving district
         const updatedBooking: Booking = {
           ...b,
           status: newStatus,
           branchHeadName: chosenBranchHead,
-          branchHeadId: matchedHead?.id ? String(matchedHead.id) : b.branchHeadId,
-          districtName: chosenDistrict,
-          districtId: matchedDist?.id ? String(matchedDist.id) : b.districtId,
+          branchHeadId: matchedHeadUser?.id || matchedHead?.id ? String(matchedHeadUser?.id || matchedHead?.id) : b.branchHeadId,
+          districtName: bookingDistrictName,
+          districtId: bookingDistrictId ? String(bookingDistrictId) : b.districtId,
           scheduledDate: scheduleDate || b.scheduledDate,
           notes: notes || b.notes,
           isDelayed: false

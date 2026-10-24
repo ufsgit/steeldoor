@@ -90,7 +90,7 @@ export class BookingsController {
    */
   async getAll(req, res, next) {
     try {
-      const { page, limit, status, search } = req.query;
+      const { page, limit, status, search, dateFrom, dateTo, filterRole, role } = req.query;
 
       // Extract credentials strictly from verified JWT token
       const user = req.user || {};
@@ -106,23 +106,19 @@ export class BookingsController {
         ? (user.districtId ?? user.district_id ?? null)
         : (req.query.districtId ?? req.query.district_id ?? user.districtId ?? null);
 
-      if (status || search) {
-        const result = await bookingsService.getCoordinatorBookings({
-          status,
-          districtId,
-          search,
-          page,
-          limit
-        });
-        return res.json(result);
-      }
+      const targetFilterRole = filterRole ?? role ?? null;
 
       const result = await bookingsService.getBookings({
         page,
         limit,
         roleId,
         loginId,
-        districtId
+        districtId,
+        status,
+        search,
+        dateFrom,
+        dateTo,
+        filterRole: targetFilterRole
       });
       return res.json(result);
     } catch (err) {

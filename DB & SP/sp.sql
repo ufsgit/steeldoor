@@ -168,6 +168,165 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_bookings_paginated`(
+    IN p_page        INT,           -- Page number (e.g. 1, 2, 3...)
+    IN p_limit       INT,           -- Number of records per page (default: 15)
+    IN p_role_id     INT,           -- User role_id (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer)
+    IN p_login_id    INT,           -- User login ID
+    IN p_district_id INT,           -- User district ID / filter district ID
+    IN p_status      VARCHAR(50),   -- Filter status ('NEW', 'Pending', 'Scheduled', 'Accepted', 'Finished', 'Delayed', 'Rejected')
+    IN p_search      VARCHAR(150),  -- Search client name or phone/mobile
+    IN p_date_from   DATE,          -- Filter created date from
+    IN p_date_to     DATE,          -- Filter created date to
+    IN p_filter_role INT            -- Filter by customer login_role_id (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer)
+)
+BEGIN
+    DECLARE v_limit INT DEFAULT 15;
+    DECLARE v_page INT DEFAULT 1;
+    DECLARE v_offset INT DEFAULT 0;
+    DECLARE v_district_id INT DEFAULT NULL;
+    DECLARE v_search VARCHAR(160) DEFAULT NULL;
+    DECLARE v_status VARCHAR(50) DEFAULT NULL;
+
+    -- Apply default limit 15 if null or <= 0
+    IF p_limit IS NOT NULL AND p_limit > 0 THEN
+        SET v_limit = p_limit;
+    END IF;
+
+    -- Apply default page 1 if null or <= 0
+    IF p_page IS NOT NULL AND p_page > 0 THEN
+        SET v_page = p_page;
+    END IF;
+
+    SET v_offset = (v_page - 1) * v_limit;
+    SET v_district_id = p_district_id;
+
+    -- If Role 3 (Branch Head) and district_id was not provided, resolve from users table
+    IF p_role_id = 3 AND (v_district_id IS NULL OR v_district_id <= 0) AND p_login_id IS NOT NULL THEN
+        SELECT district_id INTO v_district_id
+        FROM users
+        WHERE id = p_login_id AND is_deleted = 0
+        LIMIT 1;
+    END IF;
+
+    -- Format search term
+    IF p_search IS NOT NULL AND TRIM(p_search) != '' THEN
+        SET v_search = CONCAT('%', TRIM(p_search), '%');
+    END IF;
+
+    -- Clean status filter
+    IF p_status IS NOT NULL AND TRIM(p_status) != '' THEN
+        SET v_status = TRIM(p_status);
+    END IF;
+
+    -- Query 1: Fetch paginated bookings matching role rules & search/filter parameters
+    SELECT 
+        id,
+        name,
+        mobile,
+        address,
+        notes,
+        status,
+        schedule_date,
+        login_role_id,
+        login_id,
+        login_name,
+        state_id,
+        state_name,
+        district_id,
+        district_name,
+        area_id,
+        area_name,
+        branch_head_id,
+        branch_head_name,
+        documents,
+        created_at,
+        updated_at
+    FROM bookings
+    WHERE is_deleted = 0
+      -- Role Scoping
+      AND (
+          -- Role 1 (company) & Role 2 (coordinator): list ALL clients
+          (p_role_id IN (1, 2) OR p_role_id IS NULL)
+          -- Role 3 (branch_head): filter by branch_head_id (fallback to district if branch_head_id is NULL)
+          OR (p_role_id = 3 AND (branch_head_id = p_login_id OR (branch_head_id IS NULL AND district_id = v_district_id)))
+          -- Role 4 (dealer) & Role 5 (customer): take list by login_id
+          OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
+      )
+      -- Optional District Filter
+      AND (
+          v_district_id IS NULL 
+          OR v_district_id <= 0 
+          OR district_id = v_district_id
+          OR (p_role_id = 3) -- branch head scoping already handles district above
+      )
+      -- Search Client Name or Mobile / Phone Number
+      AND (
+          v_search IS NULL 
+          OR name LIKE v_search 
+          OR mobile LIKE v_search
+      )
+      -- Status Filter
+      AND (
+          v_status IS NULL 
+          OR (v_status = 'Pending' AND (status = 'Pending' OR status = 'NEW'))
+          OR (v_status = 'NEW' AND status = 'NEW')
+          OR (v_status != 'Pending' AND v_status != 'NEW' AND status = v_status)
+      )
+      -- Date Range Filter
+      AND (p_date_from IS NULL OR DATE(created_at) >= p_date_from)
+      AND (p_date_to IS NULL OR DATE(created_at) <= p_date_to)
+      -- Customer Dropdown Filter by login_role_id:
+      -- 1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer
+      AND (
+          p_filter_role IS NULL 
+          OR p_filter_role <= 0 
+          OR login_role_id = p_filter_role
+      )
+    ORDER BY created_at DESC
+    LIMIT v_limit OFFSET v_offset;
+
+    -- Query 2: Pagination metadata matching the exact same filters
+    SELECT 
+        COUNT(*) AS total_records,
+        v_page AS current_page,
+        v_limit AS page_size,
+        CEIL(COUNT(*) / v_limit) AS total_pages
+    FROM bookings
+    WHERE is_deleted = 0
+      AND (
+          (p_role_id IN (1, 2) OR p_role_id IS NULL)
+          OR (p_role_id = 3 AND (branch_head_id = p_login_id OR (branch_head_id IS NULL AND district_id = v_district_id)))
+          OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
+      )
+      AND (
+          v_district_id IS NULL 
+          OR v_district_id <= 0 
+          OR district_id = v_district_id
+          OR (p_role_id = 3)
+      )
+      AND (
+          v_search IS NULL 
+          OR name LIKE v_search 
+          OR mobile LIKE v_search
+      )
+      AND (
+          v_status IS NULL 
+          OR (v_status = 'Pending' AND (status = 'Pending' OR status = 'NEW'))
+          OR (v_status = 'NEW' AND status = 'NEW')
+          OR (v_status != 'Pending' AND v_status != 'NEW' AND status = v_status)
+      )
+      AND (p_date_from IS NULL OR DATE(created_at) >= p_date_from)
+      AND (p_date_to IS NULL OR DATE(created_at) <= p_date_to)
+      AND (
+          p_filter_role IS NULL 
+          OR p_filter_role <= 0 
+          OR login_role_id = p_filter_role
+      );
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_bookings_paginated_old`(
     IN p_page        INT,  -- Page number (e.g. 1, 2, 3...)
     IN p_limit       INT,  -- Number of records per page (default: 15)
     IN p_role_id     INT,  -- User role_id (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer)

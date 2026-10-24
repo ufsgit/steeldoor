@@ -140,21 +140,48 @@ export class BookingsService {
 
   /**
    * Get paginated bookings directly using get_bookings_paginated SP
-   * Supports role-based filtering:
+   * Supports role-based filtering, district, status, client name/phone search, date range, and role filter:
    * - Role 1 (Company) & Role 2 (Coordinator): List all clients
-   * - Role 3 (Branch Head): Filter by district_id
+   * - Role 3 (Branch Head): Filter by branch_head_id / district_id
    * - Role 4 (Dealer) & Role 5 (Customer): Filter by login_id
    */
-  async getBookings({ page = 1, limit = 15, roleId = null, loginId = null, districtId = null } = {}) {
+  async getBookings({
+    page = 1,
+    limit = 15,
+    roleId = null,
+    loginId = null,
+    districtId = null,
+    status = null,
+    search = null,
+    dateFrom = null,
+    dateTo = null,
+    filterRole = null
+  } = {}) {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.max(1, parseInt(limit, 10) || 15);
     const roleIdNum = roleId != null && roleId !== '' ? parseInt(roleId, 10) : null;
     const loginIdNum = loginId != null && loginId !== '' ? parseInt(loginId, 10) : null;
     const districtIdNum = districtId != null && districtId !== '' ? parseInt(districtId, 10) : null;
+    const cleanStatus = status ? String(status).trim() : null;
+    const cleanSearch = search ? String(search).trim() : null;
+    const cleanDateFrom = dateFrom ? String(dateFrom).trim() : null;
+    const cleanDateTo = dateTo ? String(dateTo).trim() : null;
+    const filterRoleNum = filterRole != null && filterRole !== '' ? parseInt(filterRole, 10) : null;
 
     const [results] = await pool.query(
-      'CALL get_bookings_paginated(?, ?, ?, ?, ?)',
-      [pageNum, limitNum, roleIdNum, loginIdNum, districtIdNum]
+      'CALL get_bookings_paginated(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        pageNum,
+        limitNum,
+        roleIdNum,
+        loginIdNum,
+        districtIdNum,
+        cleanStatus,
+        cleanSearch,
+        cleanDateFrom,
+        cleanDateTo,
+        filterRoleNum
+      ]
     );
 
     const rows = results?.[0] || [];

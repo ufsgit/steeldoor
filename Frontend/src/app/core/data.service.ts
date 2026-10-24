@@ -304,6 +304,9 @@ export class DataService {
       if (filter.clientId) params = params.set('clientId', filter.clientId);
       if (filter.clientType) params = params.set('clientType', filter.clientType);
       if (filter.search) params = params.set('search', filter.search);
+      if ((filter as any).dateFrom) params = params.set('dateFrom', (filter as any).dateFrom);
+      if ((filter as any).dateTo) params = params.set('dateTo', (filter as any).dateTo);
+      if ((filter as any).filterRole) params = params.set('filterRole', String((filter as any).filterRole));
     }
 
     return this.http.get<any>(this.url('/api/bookings'), { params }).pipe(
