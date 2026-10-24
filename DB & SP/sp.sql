@@ -218,6 +218,8 @@ BEGIN
         district_name,
         area_id,
         area_name,
+		branch_head_id,
+        branch_head_name,
         documents,
         created_at,
         updated_at
