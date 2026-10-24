@@ -21,8 +21,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '209751e0-37b8-11f1-bfed-40c2ba987f8c:1-52954,
-35f1f18e-371f-11f1-80d5-5cb47e3771c9:1-1565';
+-- SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '209751e0-37b8-11f1-bfed-40c2ba987f8c:1-52954,35f1f18e-371f-11f1-80d5-5cb47e3771c9:1-1565';
 
 --
 -- Table structure for table `areas`
