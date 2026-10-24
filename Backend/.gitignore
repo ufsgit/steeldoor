@@ -40,3 +40,7 @@ coverage/
 # Operating System Files
 .DS_Store
 Thumbs.db
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
