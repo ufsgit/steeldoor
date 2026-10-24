@@ -699,48 +699,50 @@ import { environment } from '../../../../../environments/environment';
                   </div>
                 </div>
 
-              <!-- Quick Status Actions -->
-              <div class="space-y-1.5 pt-2">
-                <label class="font-semibold text-gray-700 block">Change Status:</label>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <button
-                    type="button"
-                    (click)="promptStatusChange('New')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e6f4ea] text-[#137333] hover:bg-[#c9eed1] transition-colors cursor-pointer text-center"
-                    [class.ring-2]="selectedBooking()?.status?.toLowerCase() === 'new'"
-                    [class.ring-[#0f9d58]]="selectedBooking()?.status?.toLowerCase() === 'new'"
-                  >
-                    New
-                  </button>
-                  <button
-                    type="button"
-                    (click)="promptStatusChange('Scheduled')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e8f0fe] text-[#1967d2] hover:bg-[#d2e3fc] transition-colors cursor-pointer text-center"
-                    [class.ring-2]="selectedBooking()?.status?.toLowerCase() === 'scheduled'"
-                    [class.ring-[#1967d2]]="selectedBooking()?.status?.toLowerCase() === 'scheduled'"
-                  >
-                    Scheduled
-                  </button>
-                  <button
-                    type="button"
-                    (click)="promptStatusChange('Completed')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e6f4ea] text-[#0f9d58] hover:bg-[#c9eed1] transition-colors cursor-pointer text-center"
-                    [class.ring-2]="selectedBooking()?.status?.toLowerCase() === 'completed' || selectedBooking()?.status?.toLowerCase() === 'finished'"
-                    [class.ring-[#0f9d58]]="selectedBooking()?.status?.toLowerCase() === 'completed' || selectedBooking()?.status?.toLowerCase() === 'finished'"
-                  >
-                    Completed
-                  </button>
-                  <button
-                    type="button"
-                    (click)="promptStatusChange('Cancelled')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#fce8e6] text-[#c5221f] hover:bg-[#fbd1cf] transition-colors cursor-pointer text-center"
-                    [class.ring-2]="selectedBooking()?.status?.toLowerCase() === 'cancelled' || selectedBooking()?.status?.toLowerCase() === 'rejected'"
-                    [class.ring-[#c5221f]]="selectedBooking()?.status?.toLowerCase() === 'cancelled' || selectedBooking()?.status?.toLowerCase() === 'rejected'"
-                  >
-                    Cancelled
-                  </button>
+              <!-- Quick Status Actions (Only Company role_id=1 can change status) -->
+              @if (isCompany()) {
+                <div class="space-y-1.5 pt-2">
+                  <label class="font-semibold text-gray-700 block">Change Status:</label>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button
+                      type="button"
+                      (click)="promptStatusChange('New')"
+                      class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e6f4ea] text-[#137333] hover:bg-[#c9eed1] transition-colors cursor-pointer text-center"
+                      [class.ring-2]="selectedBooking()?.status?.toLowerCase() === 'new'"
+                      [class.ring-[#0f9d58]]="selectedBooking()?.status?.toLowerCase() === 'new'"
+                    >
+                      New
+                    </button>
+                    <button
+                      type="button"
+                      (click)="promptStatusChange('Scheduled')"
+                      class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e8f0fe] text-[#1967d2] hover:bg-[#d2e3fc] transition-colors cursor-pointer text-center"
+                      [class.ring-2]="selectedBooking()?.status?.toLowerCase() === 'scheduled'"
+                      [class.ring-[#1967d2]]="selectedBooking()?.status?.toLowerCase() === 'scheduled'"
+                    >
+                      Scheduled
+                    </button>
+                    <button
+                      type="button"
+                      (click)="promptStatusChange('Completed')"
+                      class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e6f4ea] text-[#0f9d58] hover:bg-[#c9eed1] transition-colors cursor-pointer text-center"
+                      [class.ring-2]="selectedBooking()?.status?.toLowerCase() === 'completed' || selectedBooking()?.status?.toLowerCase() === 'finished'"
+                      [class.ring-[#0f9d58]]="selectedBooking()?.status?.toLowerCase() === 'completed' || selectedBooking()?.status?.toLowerCase() === 'finished'"
+                    >
+                      Completed
+                    </button>
+                    <button
+                      type="button"
+                      (click)="promptStatusChange('Cancelled')"
+                      class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#fce8e6] text-[#c5221f] hover:bg-[#fbd1cf] transition-colors cursor-pointer text-center"
+                      [class.ring-2]="selectedBooking()?.status?.toLowerCase() === 'cancelled' || selectedBooking()?.status?.toLowerCase() === 'rejected'"
+                      [class.ring-[#c5221f]]="selectedBooking()?.status?.toLowerCase() === 'cancelled' || selectedBooking()?.status?.toLowerCase() === 'rejected'"
+                    >
+                      Cancelled
+                    </button>
+                  </div>
                 </div>
-              </div>
+              }
 
               <!-- Documents & Attachments Section -->
               <div class="pt-3 border-t border-gray-100 space-y-2.5">
@@ -1258,6 +1260,13 @@ export class AdminBookingsComponent implements OnInit {
   branchHeads: BranchHead[] = [];
   branchHeadUsers: any[] = [];
 
+  isCompany = computed(() => {
+    const u = this.authService.currentUser();
+    const roleId = Number(u?.roleId ?? u?.dbRoleId);
+    const r = (u?.role || '').toLowerCase();
+    return roleId === 1 || r === 'company' || r === 'admin';
+  });
+
   isBranchHead = computed(() => {
     const u = this.authService.currentUser();
     const roleId = Number(u?.roleId ?? u?.dbRoleId);
@@ -1673,6 +1682,11 @@ export class AdminBookingsComponent implements OnInit {
   }
 
   promptStatusChange(newStatus: string): void {
+    if (!this.isCompany()) {
+      this.toastService.error('Only Company administrators can change booking status.');
+      return;
+    }
+
     const b = this.selectedBooking();
     if (!b) return;
 
