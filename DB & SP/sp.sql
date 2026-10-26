@@ -1,78 +1,30 @@
 DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `create_or_reactivate_area`(
-    IN p_district_id INT,
-    IN p_name VARCHAR(100),
-    IN p_pincode VARCHAR(10)
-)
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_update_coordinator_names`()
 BEGIN
-    DECLARE v_existing_id INT DEFAULT NULL;
-    DECLARE v_is_deleted TINYINT DEFAULT NULL;
-    DECLARE v_clean_name VARCHAR(100);
-    DECLARE v_clean_pincode VARCHAR(10);
+    -- =========================================================================
+    -- 1. UPDATE `users` TABLE (Coordinators with role_id = 2)
+    -- =========================================================================
+    UPDATE users
+    SET name = 'Elena Vance (Coordinator)'
+    WHERE id = 2 OR username = 'admin';
 
-    SET v_clean_name = TRIM(p_name);
-    SET v_clean_pincode = NULLIF(TRIM(p_pincode), '');
+    UPDATE users
+    SET name = 'Alex George (Coordinator)'
+    WHERE id = 3 OR username = 'coordinator';
 
-    IF p_district_id IS NULL OR v_clean_name IS NULL OR v_clean_name = '' THEN
-        SELECT 400 AS status, 'District ID and Area Name are required.' AS message, NULL AS id;
-    ELSE
-        -- Check if area name exists in this district
-        SELECT id, is_deleted
-        INTO v_existing_id, v_is_deleted
-        FROM areas
-        WHERE district_id = p_district_id
-          AND LOWER(name) = LOWER(v_clean_name)
-        LIMIT 1;
+    -- Replace any other "(Operations Coordinator)" or "(Field Coordinator)"
+    UPDATE users
+    SET name = REPLACE(REPLACE(name, '(Operations Coordinator)', '(Coordinator)'), '(Field Coordinator)', '(Coordinator)')
+    WHERE role_id = 2;
 
-        -- Conflict: Already active
-        IF v_existing_id IS NOT NULL AND v_is_deleted = 0 THEN
-            SELECT 409 AS status, 'Area already exists in this district.' AS message, v_existing_id AS id;
-
-        -- Reactivate if soft-deleted
-        ELSEIF v_existing_id IS NOT NULL AND v_is_deleted = 1 THEN
-            UPDATE areas
-            SET is_deleted = 0,
-                name = v_clean_name,
-                pincode = v_clean_pincode
-            WHERE id = v_existing_id;
-
-            SELECT 200 AS status, 'Area reactivated successfully.' AS message, v_existing_id AS id;
-
-            SELECT id, district_id, name, pincode, is_deleted, created_at
-            FROM areas
-            WHERE id = v_existing_id;
-
-        -- Insert new
-        ELSE
-            INSERT INTO areas (district_id, name, pincode, is_deleted)
-            VALUES (p_district_id, v_clean_name, v_clean_pincode, 0);
-
-            SET v_existing_id = LAST_INSERT_ID();
-
-            SELECT 201 AS status, 'Area created successfully.' AS message, v_existing_id AS id;
-
-            SELECT id, district_id, name, pincode, is_deleted, created_at
-            FROM areas
-            WHERE id = v_existing_id;
-        END IF;
-    END IF;
-END$$
-DELIMITER ;
-
-DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `delete_booking`(
-    IN p_id INT
-)
-BEGIN
-    DECLARE v_affected_rows INT DEFAULT 0;
-
-    -- Perform soft delete
+    -- =========================================================================
+    -- 2. UPDATE `bookings` TABLE (login_name & created_by_name)
+    -- =========================================================================
     UPDATE bookings
-    SET 
-        is_deleted = 1,
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = p_id AND is_deleted = 0;
+    SET login_name = 'Elena Vance (Coordinator)'
+    WHERE login_id = 2 OR login_name LIKE '%Elena Vance%';
 
+<<<<<<< Updated upstream
     SET v_affected_rows = ROW_COUNT();
 
     -- Return status of deletion
@@ -602,95 +554,38 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `soft_delete_area`(
 )
 BEGIN
     DECLARE v_affected_rows INT DEFAULT 0;
+=======
+    UPDATE bookings
+    SET login_name = 'Alex George (Coordinator)'
+    WHERE login_id = 3 OR login_name LIKE '%Alex George%';
 
-    UPDATE areas
-    SET is_deleted = 1
-    WHERE id = p_area_id AND is_deleted = 0;
+    UPDATE bookings
+    SET created_by_name = 'Elena Vance (Coordinator)'
+    WHERE created_by = 2 OR created_by_name LIKE '%Elena Vance%';
 
-    SET v_affected_rows = ROW_COUNT();
+    UPDATE bookings
+    SET created_by_name = 'Alex George (Coordinator)'
+    WHERE created_by = 3 OR created_by_name LIKE '%Alex George%';
 
-    IF v_affected_rows > 0 THEN
-        SELECT 200 AS status, 'Area deleted successfully.' AS message;
-    ELSE
-        SELECT 404 AS status, 'Area not found or already deleted.' AS message;
-    END IF;
-END$$
-DELIMITER ;
+    -- =========================================================================
+    -- 3. UPDATE `client_status_logs` TABLE (created_by_name)
+    -- =========================================================================
+    UPDATE client_status_logs
+    SET created_by_name = 'Elena Vance (Coordinator)'
+    WHERE created_by = 2 OR created_by_name LIKE '%Elena Vance%';
+>>>>>>> Stashed changes
 
-DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_branch_heads_dropdown`(
-    IN p_district_id INT,           -- Optional: Filter by specific district (NULL = all branch heads)
-    IN p_search      VARCHAR(100),  -- Optional: Search keyword (matches name, phone, or district)
-    IN p_page        INT,           -- Page number (default: 1)
-    IN p_limit       INT            -- Items per page (default: 50)
-)
-BEGIN
-    DECLARE v_limit INT DEFAULT 50;
-    DECLARE v_page INT DEFAULT 1;
-    DECLARE v_offset INT DEFAULT 0;
-    DECLARE v_search VARCHAR(105) DEFAULT NULL;
+    UPDATE client_status_logs
+    SET created_by_name = 'Alex George (Coordinator)'
+    WHERE created_by = 3 OR created_by_name LIKE '%Alex George%';
 
-    -- 1. Apply defaults for page and limit
-    IF p_limit IS NOT NULL AND p_limit > 0 THEN
-        SET v_limit = p_limit;
-    END IF;
+    -- =========================================================================
+    -- 4. CONFIRM UPDATED COORDINATOR USERS
+    -- =========================================================================
+    SELECT id, username, name, role_id, role 
+    FROM users 
+    WHERE role_id = 2;
 
-    IF p_page IS NOT NULL AND p_page > 0 THEN
-        SET v_page = p_page;
-    END IF;
-
-    SET v_offset = (v_page - 1) * v_limit;
-
-    -- 2. Normalize search
-    IF p_search IS NOT NULL AND TRIM(p_search) != '' THEN
-        SET v_search = TRIM(p_search);
-    END IF;
-
-    -- 3. Return active Branch Heads (role_id = 3)
-    SELECT 
-        u.id,
-        u.name,
-        u.district_id,
-        TRIM(REPLACE(d.name, ' Hub', '')) AS district_name,
-        u.phone,
-        u.email
-    FROM users u
-    LEFT JOIN districts d ON u.district_id = d.id
-    WHERE u.role_id = 3
-      AND u.is_active = 1
-      AND u.is_deleted = 0
-      -- District filter (if provided)
-      AND (p_district_id IS NULL OR u.district_id = p_district_id)
-      -- Search filter
-      AND (
-          v_search IS NULL 
-          OR u.name LIKE CONCAT('%', v_search, '%') 
-          OR d.name LIKE CONCAT('%', v_search, '%')
-          OR u.phone LIKE CONCAT('%', v_search, '%')
-      )
-    ORDER BY u.name ASC
-    LIMIT v_limit OFFSET v_offset;
-
-END$$
-DELIMITER ;
-
-DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_client_status_history`(
-    IN p_client_id INT
-)
-BEGIN
-    SELECT 
-        id,
-        client_id,
-        client_name,
-        status,
-        schedule_date,
-        notes,
-        created_by_name,
-        created_at
-    FROM client_status_logs
-    WHERE client_id = p_client_id
-    ORDER BY created_at DESC;
 END$$
 DELIMITER ;
 
@@ -802,6 +697,7 @@ BEGIN
 
 END$$
 DELIMITER ;
+<<<<<<< Updated upstream
 
 DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_dropdown_data`(
@@ -1253,3 +1149,5 @@ BEGIN
     END IF;
 END$$
 DELIMITER ;
+=======
+>>>>>>> Stashed changes
