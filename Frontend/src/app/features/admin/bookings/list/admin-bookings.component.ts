@@ -1896,33 +1896,22 @@ export class AdminBookingsComponent implements OnInit {
       districtName: bookingDistrictName
     };
 
-    // Save status using POST /api/status and sync booking details
+    // Save status and branch head using POST /api/status
     this.dataService.saveStatus(payload).subscribe({
-      next: (res) => {
-        // Also persist updated branchHeadName to the booking via updateBooking, preserving district
-        this.dataService.updateBooking(b.id, {
-          status: newStatus,
-          branchHeadName: chosenBranchHead,
-          branchHeadId: matchedHeadUser?.id || matchedHead?.id ? String(matchedHeadUser?.id || matchedHead?.id) : b.branchHeadId,
-          districtName: bookingDistrictName,
-          districtId: bookingDistrictId ? String(bookingDistrictId) : b.districtId,
-          notes: notes || b.notes
-        }).subscribe({
-          next: () => { },
-          error: () => { }
-        });
-
+      next: (res: any) => {
         this.isSubmittingStatus.set(false);
         this.cancelStatusChange();
 
-        // Update local state preserving district
+        const returnedData = res?.data || {};
+
+        // Update local state preserving new branch head & assigned head district
         const updatedBooking: Booking = {
           ...b,
           status: newStatus,
-          branchHeadName: chosenBranchHead,
-          branchHeadId: matchedHeadUser?.id || matchedHead?.id ? String(matchedHeadUser?.id || matchedHead?.id) : b.branchHeadId,
-          districtName: bookingDistrictName,
-          districtId: bookingDistrictId ? String(bookingDistrictId) : b.districtId,
+          branchHeadName: returnedData.branchHeadName || chosenBranchHead,
+          branchHeadId: returnedData.branchHeadId ? String(returnedData.branchHeadId) : (matchedHeadUser?.id || matchedHead?.id ? String(matchedHeadUser?.id || matchedHead?.id) : b.branchHeadId),
+          assignedHeadDistrictId: returnedData.assignedHeadDistrictId ?? b.assignedHeadDistrictId,
+          assignedHeadDistrictName: returnedData.assignedHeadDistrictName ?? b.assignedHeadDistrictName,
           scheduledDate: scheduleDate || b.scheduledDate,
           notes: notes || b.notes,
           isDelayed: false

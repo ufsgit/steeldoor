@@ -53,11 +53,19 @@ export class StatusService {
     if (!row) return null;
     return {
       id: row.id,
-      clientId: row.client_id,
-      clientName: row.client_name,
-      status: row.status,
+      clientId: row.client_id ?? row.clientId ?? row.id,
+      clientName: row.client_name ?? row.clientName,
+      status: row.status ?? row.status_label ?? 'New',
+      statusId: row.status_id ?? row.statusId ?? 1,
+      statusCode: row.status_code ?? row.statusCode ?? 'New',
+      statusLabel: row.status_label ?? row.statusLabel ?? row.status ?? 'New',
+      statusColorCode: row.status_color_code ?? row.statusColorCode ?? '#3b82f6',
       scheduleDate: this.formatDateOnly(row.schedule_date),
       notes: row.notes || '',
+      assignedHeadDistrictId: row.assigned_head_district_id ?? null,
+      assignedHeadDistrictName: row.assigned_head_district_name ?? null,
+      branchHeadId: row.branch_head_id ?? null,
+      branchHeadName: row.branch_head_name ?? null,
       createdBy: row.created_by,
       createdByName: row.created_by_name,
       createdAt: row.created_at,
@@ -80,7 +88,7 @@ export class StatusService {
       throw new Error('status is required (e.g. Scheduled, Completed, Cancelled).');
     }
 
-    // Normalize to exact ENUM match: 'Scheduled' | 'Completed' | 'Cancelled'
+    // Normalize status value
     const lower = status.toLowerCase();
     if (lower === 'scheduled') {
       status = 'Scheduled';
@@ -89,43 +97,7 @@ export class StatusService {
     } else if (lower === 'cancelled' || lower === 'rejected') {
       status = 'Cancelled';
     } else if (lower === 'new') {
-      // If status is 'NEW', client_status_logs ENUM only allows Scheduled, Completed, Cancelled.
-      // Update bookings directly and return
-      const rawScheduleDate = data.scheduleDate ?? data.schedule_date ?? data.scheduledDate ?? null;
-      const scheduleDate = this.normalizeDate(rawScheduleDate);
-      const notes = data.notes ?? null;
-      const branchHeadId = data.branchHeadId ?? data.branch_head_id ?? data.branchManagerId ?? null;
-      const branchHeadIdNum = branchHeadId ? parseInt(branchHeadId, 10) : null;
-
-      let branchHeadName = null;
-      if (branchHeadIdNum) {
-        const [uRows] = await pool.query('SELECT name FROM users WHERE id = ? LIMIT 1', [branchHeadIdNum]);
-        if (uRows.length > 0) branchHeadName = uRows[0].name;
-      }
-
-      await pool.query(
-        `UPDATE bookings 
-         SET status = 'NEW',
-             schedule_date = ?,
-             notes = COALESCE(?, notes),
-             branch_head_id = COALESCE(?, branch_head_id),
-             branch_head_name = COALESCE(?, branch_head_name),
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = ?`,
-        [scheduleDate, notes, branchHeadIdNum, branchHeadName, clientId]
-      );
-
-      return {
-        id: clientId,
-        clientId: clientId,
-        clientName: clientName,
-        status: 'NEW',
-        scheduleDate: scheduleDate,
-        notes: notes || '',
-        createdBy: data.createdBy || null,
-        createdByName: data.createdByName || null,
-        createdAt: new Date().toISOString()
-      };
+      status = 'New';
     }
 
     const rawScheduleDate = data.scheduleDate ?? data.schedule_date ?? data.scheduledDate ?? null;
@@ -136,7 +108,7 @@ export class StatusService {
     const branchHeadId = data.branchHeadId ?? data.branch_head_id ?? data.branchManagerId ?? null;
 
     const [results] = await pool.query(
-      `CALL sp_save_client_status(?, ?, ?, ?, ?, ?, ?, ?)`,
+      `CALL update_booking_status_or_branch_head(?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         clientId,
         clientName,

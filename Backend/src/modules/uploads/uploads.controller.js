@@ -15,9 +15,19 @@ export class UploadsController {
       const relativeUrl = `/uploads/${file.filename}`;
 
       // Optional: If bookingId is provided, append directly to bookings table in the database
-      const bookingId = req.body?.bookingId || req.query?.bookingId || req.body?.id;
+      const rawBookingId = req.body?.bookingId 
+        || req.body?.booking_id 
+        || req.body?.clientId 
+        || req.body?.client_id 
+        || req.body?.id 
+        || req.query?.bookingId 
+        || req.query?.booking_id 
+        || req.query?.clientId 
+        || req.query?.id;
+
+      const bookingId = rawBookingId ? parseInt(rawBookingId, 10) : null;
       let updatedDocuments = null;
-      if (bookingId) {
+      if (bookingId && !isNaN(bookingId)) {
         const [rows] = await pool.query('SELECT documents FROM bookings WHERE id = ? AND is_deleted = 0 LIMIT 1', [bookingId]);
         if (rows.length > 0) {
           let docs = [];
@@ -73,9 +83,19 @@ export class UploadsController {
       const newUrls = uploadedList.map(f => f.url);
 
       // If bookingId is passed, update the bookings table directly
-      const bookingId = req.body?.bookingId || req.query?.bookingId || req.body?.id;
+      const rawBookingId = req.body?.bookingId 
+        || req.body?.booking_id 
+        || req.body?.clientId 
+        || req.body?.client_id 
+        || req.body?.id 
+        || req.query?.bookingId 
+        || req.query?.booking_id 
+        || req.query?.clientId 
+        || req.query?.id;
+
+      const bookingId = rawBookingId ? parseInt(rawBookingId, 10) : null;
       let updatedDocuments = null;
-      if (bookingId) {
+      if (bookingId && !isNaN(bookingId)) {
         const [rows] = await pool.query('SELECT documents FROM bookings WHERE id = ? AND is_deleted = 0 LIMIT 1', [bookingId]);
         if (rows.length > 0) {
           let docs = [];
