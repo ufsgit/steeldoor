@@ -116,17 +116,47 @@ import { ModalComponent } from '../../../shared/components/modal.component';
               </span>
             </div>
 
-            <!-- Search Area Input -->
-            <div class="relative w-full sm:w-64">
-              <input
-                type="text"
-                [(ngModel)]="searchQuery"
-                placeholder="Search area or pincode..."
-                class="w-full text-xs pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0f9d58] text-gray-800 placeholder-gray-400"
-              />
-              <svg class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-              </svg>
+            <!-- Search Area Input & Action -->
+            <div class="relative w-full sm:w-72 flex items-center gap-1.5">
+              <div class="relative flex-1">
+                <input
+                  type="text"
+                  [(ngModel)]="searchQuery"
+                  (keyup.enter)="onSearch()"
+                  (input)="onSearchInput()"
+                  placeholder="Search area or pincode..."
+                  class="w-full text-xs pl-8 pr-7 py-1.5 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0f9d58] text-gray-800 placeholder-gray-400"
+                />
+                <button
+                  type="button"
+                  (click)="onSearch()"
+                  class="absolute left-2.5 top-2 text-gray-400 hover:text-[#0f9d58] transition-colors cursor-pointer"
+                  title="Search"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                  </svg>
+                </button>
+                @if (searchQuery.trim()) {
+                  <button
+                    type="button"
+                    (click)="clearSearch()"
+                    class="absolute right-2 top-2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                    title="Clear search"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                }
+              </div>
+              <button
+                type="button"
+                (click)="onSearch()"
+                class="px-3 py-1.5 rounded-lg bg-[#0f9d58] hover:bg-[#0b8043] text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-1 cursor-pointer shrink-0"
+              >
+                <span>Search</span>
+              </button>
             </div>
           </div>
 
@@ -336,15 +366,29 @@ export class AdminAreasComponent implements OnInit {
     return this.districts().find(d => String(d.id) === String(this.selectedDistrictId()));
   });
 
-  filteredAreas = computed(() => {
-    const list = this.areas();
-    const q = this.searchQuery.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter(a =>
-      a.name.toLowerCase().includes(q) ||
-      (a.pincode && a.pincode.toLowerCase().includes(q))
-    );
-  });
+  searchTimeout: any;
+
+  filteredAreas = computed(() => this.areas());
+
+  onSearch(): void {
+    const distId = this.selectedDistrictId();
+    if (!distId) return;
+    this.loadAreas(distId, this.searchQuery);
+  }
+
+  onSearchInput(): void {
+    clearTimeout(this.searchTimeout);
+    this.searchTimeout = setTimeout(() => {
+      this.onSearch();
+    }, 350);
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+    const distId = this.selectedDistrictId();
+    if (!distId) return;
+    this.loadAreas(distId);
+  }
 
   ngOnInit(): void {
     this.titleService.setTitle('Manage Areas & Coverage | SteelGuard');
@@ -416,17 +460,19 @@ export class AdminAreasComponent implements OnInit {
     this.loadAreas(district.id);
   }
 
-  loadAreas(districtId: number | string): void {
+  loadAreas(districtId: number | string, search?: string): void {
     this.loadingAreas.set(true);
-    this.dataService.getAreasByDistrict(districtId).subscribe({
+    this.dataService.getAreasByDistrict(districtId, search).subscribe({
       next: areas => {
         this.areas.set(areas);
-        this.districts.update(list => list.map(d => {
-          if (String(d.id) === String(districtId)) {
-            return { ...d, area_count: areas.length };
-          }
-          return d;
-        }));
+        if (!search || !search.trim()) {
+          this.districts.update(list => list.map(d => {
+            if (String(d.id) === String(districtId)) {
+              return { ...d, area_count: areas.length };
+            }
+            return d;
+          }));
+        }
         this.loadingAreas.set(false);
       },
       error: () => {
