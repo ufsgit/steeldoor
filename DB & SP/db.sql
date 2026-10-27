@@ -59,35 +59,42 @@ CREATE TABLE `bookings` (
   `mobile` varchar(25) NOT NULL,
   `address` text NOT NULL,
   `notes` text,
-  `status` varchar(50) NOT NULL DEFAULT 'NEW',
+  `status_id` int DEFAULT '1',
+  `status_code` varchar(50) DEFAULT 'New',
+  `status_label` varchar(100) DEFAULT 'New',
+  `status_color_code` varchar(20) DEFAULT '#3b82f6',
   `schedule_date` date DEFAULT NULL,
-  `created_by` int DEFAULT NULL,
-  `created_by_name` varchar(100) DEFAULT NULL,
-  `login_role_id` int DEFAULT NULL,
-  `login_id` int DEFAULT NULL,
-  `login_name` varchar(150) DEFAULT NULL,
   `state_id` int DEFAULT NULL,
   `state_name` varchar(100) DEFAULT NULL,
   `district_id` int DEFAULT NULL,
   `district_name` varchar(100) DEFAULT NULL,
   `area_id` int DEFAULT NULL,
   `area_name` varchar(100) DEFAULT NULL,
+  `assigned_head_district_id` int DEFAULT NULL,
+  `assigned_head_district_name` varchar(100) DEFAULT NULL,
   `branch_head_id` int DEFAULT NULL,
   `branch_head_name` varchar(150) DEFAULT NULL,
   `documents` json DEFAULT NULL,
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `login_role_id` int DEFAULT NULL,
+  `login_id` int DEFAULT NULL,
+  `login_name` varchar(150) DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_by_name` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_bookings_status` (`status`),
   KEY `idx_bookings_mobile` (`mobile`),
   KEY `idx_bookings_login_id` (`login_id`),
   KEY `idx_bookings_district_id` (`district_id`),
   KEY `idx_bookings_state_id` (`state_id`),
   KEY `idx_bookings_area_id` (`area_id`),
   KEY `idx_bookings_branch_head_id` (`branch_head_id`),
-  KEY `idx_bookings_schedule_date` (`schedule_date`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  KEY `idx_bookings_schedule_date` (`schedule_date`),
+  KEY `idx_bookings_assigned_head_district_id` (`assigned_head_district_id`),
+  KEY `idx_bookings_status_id` (`status_id`),
+  KEY `idx_bookings_status_code` (`status_code`)
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -96,7 +103,7 @@ CREATE TABLE `bookings` (
 
 LOCK TABLES `bookings` WRITE;
 /*!40000 ALTER TABLE `bookings` DISABLE KEYS */;
-INSERT INTO `bookings` VALUES (1,'Arun','7980989098','Flat 302, Green Valley Apartments, Kakkanad, Kochi, Kerala – 682030','','NEW',NULL,NULL,NULL,2,3,'Alex George (Coordinator)',1,'Kerala',1,'Ernakulam',5,'Fort Kochi',4,'Rajesh Menon','[]',0,'2026-10-24 12:30:47','2026-10-24 12:30:47'),(2,'Arjun Menon','6980979809','14, Rose Garden Street, Edappally, Kochi, Kerala – 682024','','NEW',NULL,NULL,NULL,2,3,'Alex George (Coordinator)',1,'Kerala',1,'Ernakulam',1,'Edapally',4,'Rajesh Menon','[]',0,'2026-10-24 12:31:56','2026-10-24 12:31:56'),(3,'Akhil Das','6879809798','House 24, Rose Villa, Kazhakkoottam, TVM, Kerala – 695582','','NEW',NULL,NULL,NULL,3,5,'Suresh Kumar',1,'Kerala',2,'Trivandrum',11,'Kazhakkoottam',5,'Suresh Kumar','[\"/uploads/1792845206690-door.jpg\"]',0,'2026-10-24 12:33:30','2026-10-24 12:33:30'),(5,'Ananya Thomas','9087909809','Flat 302, Silver Heights, Pattom, TVM, Kerala – 695004','','NEW',NULL,NULL,NULL,3,5,'Suresh Kumar',1,'Kerala',2,'Trivandrum',12,'Pattom',5,'Suresh Kumar','[\"/uploads/1792845388188-door__1_.jpg\"]',0,'2026-10-24 12:36:30','2026-10-24 12:36:30'),(6,'Diya Mathew','8098909878','House 12, Green Valley Lane, West Hill, Kozhikode, Kerala – 673005','','NEW',NULL,NULL,NULL,3,6,'Anas Kabeer',1,'Kerala',3,'Kozhikode',19,'Medical College',6,'Anas Kabeer','[]',0,'2026-10-24 12:37:52','2026-10-24 12:37:52'),(7,'Rahul Nair','9089878908','Flat 204, Sunrise Residency, Mavoor Road, Kozhikode, Kerala – 673004','','NEW',NULL,NULL,NULL,3,6,'Anas Kabeer',1,'Kerala',3,'Kozhikode',18,'Chevayur',6,'Anas Kabeer','[\"/uploads/1792845533064-door_2_.jpg\"]',0,'2026-10-24 12:38:55','2026-10-24 12:38:55'),(8,'Arjun Menon','6879879809','House 18, Rose Garden Lane, Ayyanthole, Thrissur, Kerala – 680003','','NEW',NULL,NULL,NULL,3,7,'Mohan Das',1,'Kerala',4,'Thrissur',22,'Ayyanthole',7,'Mohan Das','[]',0,'2026-10-24 12:39:55','2026-10-24 12:39:55'),(9,'Druvan customer','8986086817','Druvan house','Notes By Druvan','NEW',NULL,NULL,NULL,5,NULL,'customer',1,'Kerala',1,'Ernakulam',38,'Muvattupuzha',4,'Rajesh Menon','[\"/uploads/1792845625918-shopping__2_.webp\", \"/uploads/1792845625919-shopping__1_.webp\"]',0,'2026-10-24 12:40:29','2026-10-24 12:40:29'),(10,'Meera Suresh','6879089098','Flat 302, Green Meadows Residency, Punkunnam, Thrissur, Kerala – 680002','','NEW',NULL,NULL,NULL,3,7,'Mohan Das',1,'Kerala',4,'Thrissur',21,'Punkunnam',7,'Mohan Das','[\"/uploads/1792845677326-door_3_.jpg\"]',0,'2026-10-24 12:41:19','2026-10-24 12:41:19'),(11,'Vivek','8776086807','Vivek House','Vivek Notes','NEW',NULL,NULL,NULL,4,10,'Apex Doors Kochi',1,'Kerala',5,'Kannur',27,'South Bazar',8,'K. V. Pavithran','[\"/uploads/1792845703196-shopping.webp\"]',0,'2026-10-24 12:41:44','2026-10-24 12:41:44'),(12,'Ridhul','98675367835','Ridhul Address','Ridhul Notes','NEW',NULL,NULL,NULL,4,10,'Apex Doors Kochi',1,'Kerala',4,'Thrissur',23,'Ollur',7,'Mohan Das','[\"/uploads/1792845763031-shopping__1_.webp\"]',0,'2026-10-24 12:42:44','2026-10-24 12:42:44'),(13,'Vishnu Raj','9089089098','House 14, Palm Grove Lane, Thana, , Kerala – 670012','','NEW',NULL,NULL,NULL,3,8,'K. V. Pavithran',1,'Kerala',5,'Kannur',26,'Payyambalam',8,'K. V. Pavithran','[]',0,'2026-10-24 12:43:14','2026-10-24 12:43:14'),(14,'Jeevan','56875235465','Jeevan Address','Jeevan Notes','NEW',NULL,NULL,NULL,4,11,'Metro Infra Ltd',1,'Kerala',2,'Trivandrum',9,'Kowdiar',5,'Suresh Kumar','[\"/uploads/1792845837004-shopping.webp\"]',0,'2026-10-24 12:43:58','2026-10-24 12:43:58'),(15,'Midhun','8965412357','Midhun Address','Midhun Notes','NEW',NULL,NULL,NULL,4,11,'Metro Infra Ltd',1,'Kerala',5,'Kannur',27,'South Bazar',8,'K. V. Pavithran','[\"/uploads/1792845897172-shopping.webp\"]',0,'2026-10-24 12:44:58','2026-10-24 12:44:58');
+INSERT INTO `bookings` VALUES (1,'Arun','7980989098','Flat 302, Green Valley Apartments, Kakkanad, Kochi, Kerala – 682030','',1,'New','New','#3b82f6',NULL,1,'Kerala',1,'Ernakulam',5,'Fort Kochi',NULL,NULL,4,'Rajesh Menon','[]',0,2,3,'Alex George (Coordinator)',NULL,NULL,'2026-10-24 12:30:47','2026-10-27 07:40:08'),(2,'Arjun Menon','6980979809','14, Rose Garden Street, Edappally, Kochi, Kerala – 682024','',1,'New','New','#3b82f6','2024-10-24',1,'Kerala',1,'Ernakulam',1,'Edapally',NULL,NULL,4,'Rajesh Menon','[]',0,2,3,'Alex George (Coordinator)',4,'Rajesh Menon','2026-10-24 12:31:56','2026-10-27 07:40:08'),(3,'Akhil Das','6879809798','House 24, Rose Villa, Kazhakkoottam, TVM, Kerala – 695582','',1,'New','New','#3b82f6',NULL,1,'Kerala',2,'Trivandrum',11,'Kazhakkoottam',NULL,NULL,5,'Suresh Kumar','[\"/uploads/1792845206690-door.jpg\"]',0,3,5,'Suresh Kumar',NULL,NULL,'2026-10-24 12:33:30','2026-10-27 07:40:08'),(5,'Ananya Thomas','9087909809','Flat 302, Silver Heights, Pattom, TVM, Kerala – 695004','',1,'New','New','#3b82f6',NULL,1,'Kerala',2,'Trivandrum',12,'Pattom',NULL,NULL,5,'Suresh Kumar','[\"/uploads/1792845388188-door__1_.jpg\"]',0,3,5,'Suresh Kumar',NULL,NULL,'2026-10-24 12:36:30','2026-10-27 07:40:08'),(6,'Diya Mathew','8098909878','House 12, Green Valley Lane, West Hill, Kozhikode, Kerala – 673005','',1,'New','New','#3b82f6',NULL,1,'Kerala',3,'Kozhikode',19,'Medical College',NULL,NULL,6,'Anas Kabeer','[]',0,3,6,'Anas Kabeer',NULL,NULL,'2026-10-24 12:37:52','2026-10-27 07:40:08'),(7,'Rahul Nair','9089878908','Flat 204, Sunrise Residency, Mavoor Road, Kozhikode, Kerala – 673004','',1,'New','New','#3b82f6',NULL,1,'Kerala',3,'Kozhikode',18,'Chevayur',NULL,NULL,6,'Anas Kabeer','[\"/uploads/1792845533064-door_2_.jpg\"]',0,3,6,'Anas Kabeer',NULL,NULL,'2026-10-24 12:38:55','2026-10-27 07:40:08'),(8,'Arjun Menon','6879879809','House 18, Rose Garden Lane, Ayyanthole, Thrissur, Kerala – 680003','',1,'New','New','#3b82f6',NULL,1,'Kerala',4,'Thrissur',22,'Ayyanthole',NULL,NULL,7,'Mohan Das','[]',0,3,7,'Mohan Das',NULL,NULL,'2026-10-24 12:39:55','2026-10-27 07:40:08'),(9,'Druvan customer','8986086817','Druvan house','Notes By Druvan',1,'New','New','#3b82f6','2024-10-24',1,'Kerala',1,'Ernakulam',38,'Muvattupuzha',NULL,NULL,4,'Rajesh Menon','[\"/uploads/1792845625918-shopping__2_.webp\", \"/uploads/1792845625919-shopping__1_.webp\"]',0,5,NULL,'customer',4,'Rajesh Menon','2026-10-24 12:40:29','2026-10-27 07:40:08'),(10,'Meera Suresh','6879089098','Flat 302, Green Meadows Residency, Punkunnam, Thrissur, Kerala – 680002','',1,'New','New','#3b82f6',NULL,1,'Kerala',4,'Thrissur',21,'Punkunnam',NULL,NULL,7,'Mohan Das','[\"/uploads/1792845677326-door_3_.jpg\"]',0,3,7,'Mohan Das',NULL,NULL,'2026-10-24 12:41:19','2026-10-27 07:40:08'),(11,'Vivek','8776086807','Vivek House','Vivek Notes',1,'New','New','#3b82f6',NULL,1,'Kerala',5,'Kannur',27,'South Bazar',NULL,NULL,8,'K. V. Pavithran','[\"/uploads/1792845703196-shopping.webp\"]',0,4,10,'Apex Doors Kochi',NULL,NULL,'2026-10-24 12:41:44','2026-10-27 07:40:08'),(12,'Ridhul','98675367835','Ridhul Address','Ridhul Notes',1,'New','New','#3b82f6',NULL,1,'Kerala',4,'Thrissur',23,'Ollur',NULL,NULL,7,'Mohan Das','[\"/uploads/1792845763031-shopping__1_.webp\"]',0,4,10,'Apex Doors Kochi',NULL,NULL,'2026-10-24 12:42:44','2026-10-27 07:40:08'),(13,'Vishnu Raj','9089089098','House 14, Palm Grove Lane, Thana, , Kerala – 670012','',1,'New','New','#3b82f6',NULL,1,'Kerala',5,'Kannur',26,'Payyambalam',NULL,NULL,8,'K. V. Pavithran','[]',0,3,8,'K. V. Pavithran',NULL,NULL,'2026-10-24 12:43:14','2026-10-27 07:40:08'),(14,'Jeevan','56875235465','Jeevan Address','Jeevan Notes',2,'Scheduled','Scheduled','#7c3aed','2024-10-24',1,'Kerala',2,'Trivandrum',9,'Kowdiar',NULL,NULL,5,'Suresh Kumar','[\"/uploads/1792845837004-shopping.webp\"]',0,4,11,'Metro Infra Ltd',5,'Suresh Kumar','2026-10-24 12:43:58','2026-10-27 10:54:53'),(15,'Midhun','8965412357','Midhun Address','Midhun Notes',1,'New','New','#3b82f6',NULL,1,'Kerala',5,'Kannur',27,'South Bazar',5,'Kannur',8,'K. V. Pavithran','[\"/uploads/1793095720595-shopping.webp\"]',0,4,11,'Metro Infra Ltd',NULL,NULL,'2026-10-24 12:44:58','2026-10-27 10:08:40'),(16,'test 01','56857554452','123','qwe',2,'Scheduled','Scheduled','#7c3aed','2026-10-29',1,'Kerala',4,'Thrissur',24,'Chalakudy',5,'Kannur',8,'K. V. Pavithran','[]',0,1,1,'SteelGuard Executive Board',1,'SteelGuard Executive Board','2026-10-27 09:33:15','2026-10-27 10:55:00'),(17,'test','2345678901','dd, Kazhakkoottam, Trivandrum, Kerala','tvm to kzkd',2,'Scheduled','Scheduled','#7c3aed','2024-10-23',1,'Kerala',2,'Trivandrum',11,'Kazhakkoottam',3,'Kozhikode',6,'Anas Kabeer','[\"/uploads/1793096766952-door_2_.jpg\"]',0,3,5,'Suresh Kumar',3,'Alex George (Coordinator)','2026-10-27 09:34:56','2026-10-27 10:56:26'),(18,'test 02','test 02','test 02','ekm to thr',2,'Scheduled','Scheduled','#7c3aed','2026-10-29',1,'Kerala',1,'Ernakulam',1,'Edapally',4,'Thrissur',7,'Mohan Das','[]',0,1,1,'SteelGuard Executive Board',1,'SteelGuard Executive Board','2026-10-27 10:57:38','2026-10-27 10:58:11');
 /*!40000 ALTER TABLE `bookings` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -111,7 +118,7 @@ CREATE TABLE `client_status_logs` (
   `id` int NOT NULL AUTO_INCREMENT,
   `client_id` int NOT NULL,
   `client_name` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` enum('Scheduled','Completed','Cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `schedule_date` date DEFAULT NULL,
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_by` int DEFAULT NULL,
@@ -122,7 +129,7 @@ CREATE TABLE `client_status_logs` (
   KEY `idx_client_id` (`client_id`),
   KEY `idx_status` (`status`),
   KEY `idx_created_at` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -131,6 +138,7 @@ CREATE TABLE `client_status_logs` (
 
 LOCK TABLES `client_status_logs` WRITE;
 /*!40000 ALTER TABLE `client_status_logs` DISABLE KEYS */;
+INSERT INTO `client_status_logs` VALUES (1,9,'Druvan customer','Scheduled','2024-10-24','Notes By Druvan',4,'Rajesh Menon','2026-10-27 06:38:15','2026-10-27 06:38:15'),(2,2,'Arjun Menon','Scheduled','2024-10-24','',4,'Rajesh Menon','2026-10-27 06:38:35','2026-10-27 06:38:35'),(3,2,'Arjun Menon','Scheduled','2024-10-23','',4,'Rajesh Menon','2026-10-27 08:46:36','2026-10-27 08:46:36'),(4,17,'test','Scheduled','2024-10-24','dd',5,'Suresh Kumar','2026-10-27 10:04:17','2026-10-27 10:04:17'),(5,16,'test 01','New',NULL,'123',1,'SteelGuard Executive Board','2026-10-27 10:42:03','2026-10-27 10:42:03'),(6,16,'test 01','New',NULL,'234',1,'SteelGuard Executive Board','2026-10-27 10:42:24','2026-10-27 10:42:24'),(7,16,'test 01','Scheduled','2026-10-30','444',1,'SteelGuard Executive Board','2026-10-27 10:43:08','2026-10-27 10:43:08'),(8,16,'test 01','Scheduled','2026-10-29','test tri to ekm',1,'SteelGuard Executive Board','2026-10-27 10:44:59','2026-10-27 10:44:59'),(9,16,'test 01','Scheduled','2026-10-30','ekm to tri',1,'SteelGuard Executive Board','2026-10-27 10:49:49','2026-10-27 10:49:49'),(10,17,'test','New','2024-10-24','dd',5,'Suresh Kumar','2026-10-27 10:50:27','2026-10-27 10:50:27'),(11,17,'test','Scheduled','2024-10-24','dd',5,'Suresh Kumar','2026-10-27 10:50:34','2026-10-27 10:50:34'),(12,16,'test 01','Scheduled','2026-10-30','ek to tri',1,'SteelGuard Executive Board','2026-10-27 10:50:58','2026-10-27 10:50:58'),(13,16,'test 01','Scheduled','2026-10-30','tri to kozh',1,'SteelGuard Executive Board','2026-10-27 10:51:46','2026-10-27 10:51:46'),(14,14,'Jeevan','Scheduled','2024-10-24','Jeevan Notes',5,'Suresh Kumar','2026-10-27 10:54:53','2026-10-27 10:54:53'),(15,16,'test 01','Scheduled','2026-10-29','qwe',1,'SteelGuard Executive Board','2026-10-27 10:55:00','2026-10-27 10:55:00'),(16,17,'test','Scheduled','2024-10-23','tvm to kzkd',3,'Alex George (Coordinator)','2026-10-27 10:56:26','2026-10-27 10:56:26'),(17,18,'test 02','Scheduled','2026-10-29','ekm to thr',1,'SteelGuard Executive Board','2026-10-27 10:58:11','2026-10-27 10:58:11');
 /*!40000 ALTER TABLE `client_status_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -190,6 +198,37 @@ LOCK TABLES `states` WRITE;
 /*!40000 ALTER TABLE `states` DISABLE KEYS */;
 INSERT INTO `states` VALUES (1,'Kerala','KL','2026-10-20 11:56:10');
 /*!40000 ALTER TABLE `states` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `status_options`
+--
+
+DROP TABLE IF EXISTS `status_options`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `status_options` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `code` varchar(50) NOT NULL,
+  `label` varchar(100) NOT NULL,
+  `color_code` varchar(20) DEFAULT NULL,
+  `sort_order` int NOT NULL DEFAULT '0',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_status_code` (`code`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `status_options`
+--
+
+LOCK TABLES `status_options` WRITE;
+/*!40000 ALTER TABLE `status_options` DISABLE KEYS */;
+INSERT INTO `status_options` VALUES (1,'New','New','#3b82f6',1,1,'2026-10-27 06:52:44','2026-10-27 07:34:55'),(2,'Scheduled','Scheduled','#7c3aed',2,1,'2026-10-27 06:52:44','2026-10-27 06:52:44'),(3,'Completed','Completed','#10b981',3,1,'2026-10-27 06:52:44','2026-10-27 06:52:44'),(4,'Cancelled','Cancelled','#ef4444',4,1,'2026-10-27 06:52:44','2026-10-27 07:23:17');
+/*!40000 ALTER TABLE `status_options` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -292,7 +331,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'company_admin','123',1,'company',1,'admin','SteelGuard Executive Board','corporate@steeldoor.com','+91 98000 11223',1,'Kerala',NULL,NULL,NULL,1,0,'2026-10-24 12:47:24','2026-10-20 11:56:10','2026-10-24 12:47:24'),(2,'admin','123',2,'coordinator',1,'admin','Elena Vance (Coordinator)','admin@steeldoor.com','+91 98000 11224',1,'Kerala',NULL,NULL,NULL,1,0,'2026-10-21 06:20:59','2026-10-20 11:56:11','2026-10-24 12:14:09'),(3,'coordinator','123',2,'coordinator',2,'staff','Alex George (Coordinator)','coordinator@steeldoor.com','+91 98000 11225',1,'Kerala',NULL,NULL,NULL,1,0,'2026-10-24 12:26:53','2026-10-20 11:56:11','2026-10-24 12:26:53'),(4,'branch_ekm','123',3,'branch_head',2,'staff','Rajesh Menon','rajesh.menon@steeldoor.com','+91 98470 12345',1,'Kerala',1,'Ernakulam Hub',NULL,1,0,'2026-10-24 12:36:42','2026-10-20 11:56:11','2026-10-24 12:36:42'),(5,'branch_tvm','123',3,'branch_head',2,'staff','Suresh Kumar','suresh.kumar@steeldoor.com','+91 94471 23456',1,'Kerala',2,'Trivandrum Hub',NULL,1,0,'2026-10-24 12:32:15','2026-10-20 11:56:11','2026-10-24 12:32:15'),(6,'branch_clt','123',3,'branch_head',2,'staff','Anas Kabeer','anas.kabeer@steeldoor.com','+91 97452 34567',1,'Kerala',3,'Kozhikode Hub',NULL,1,0,'2026-10-24 12:43:56','2026-10-20 11:56:11','2026-10-24 12:43:56'),(7,'branch_tsr','123',3,'branch_head',2,'staff','Mohan Das','mohan.das@steeldoor.com','+91 98463 45678',1,'Kerala',4,'Thrissur Hub',NULL,1,0,'2026-10-24 12:44:10','2026-10-20 11:56:11','2026-10-24 12:44:10'),(8,'branch_knr','123',3,'branch_head',2,'staff','K. V. Pavithran','pavithran.kv@steeldoor.com','+91 94954 56789',1,'Kerala',5,'Kannur Hub',NULL,1,0,'2026-10-24 12:44:33','2026-10-20 11:56:11','2026-10-24 12:44:33'),(10,'apex_dealer','123',4,'dealer',NULL,NULL,'Apex Doors Kochi','sales@apexdoors.com','+91 98952 33441',1,'Kerala',NULL,NULL,'Door No 8/120, Bypass Junction, Edapally',1,0,'2026-10-24 12:40:47','2026-10-20 11:56:11','2026-10-24 12:40:47'),(11,'metro_builders','123',4,'dealer',NULL,NULL,'Metro Infra Ltd','contact@metroinfra.in','+91 98471 88990',1,'Kerala',NULL,NULL,'Plot 12, SmartCity Campus, Kakkanad',1,0,'2026-10-24 12:43:10','2026-10-20 11:56:11','2026-10-24 12:43:10');
+INSERT INTO `users` VALUES (1,'company_admin','123',1,'company',1,'admin','SteelGuard Executive Board','corporate@steeldoor.com','+91 98000 11223',1,'Kerala',NULL,NULL,NULL,1,0,'2026-10-27 07:09:00','2026-10-20 11:56:10','2026-10-27 07:09:00'),(2,'admin','123',2,'coordinator',1,'admin','Elena Vance (Coordinator)','admin@steeldoor.com','+91 98000 11224',1,'Kerala',NULL,NULL,NULL,1,0,'2026-10-21 06:20:59','2026-10-20 11:56:11','2026-10-24 12:14:09'),(3,'coordinator','123',2,'coordinator',2,'staff','Alex George (Coordinator)','coordinator@steeldoor.com','+91 98000 11225',1,'Kerala',NULL,NULL,NULL,1,0,'2026-10-27 10:56:09','2026-10-20 11:56:11','2026-10-27 10:56:09'),(4,'branch_ekm','123',3,'branch_head',2,'staff','Rajesh Menon','rajesh.menon@steeldoor.com','+91 98470 12345',1,'Kerala',1,'Ernakulam Hub',NULL,1,0,'2026-10-27 07:06:26','2026-10-20 11:56:11','2026-10-27 07:06:26'),(5,'branch_tvm','123',3,'branch_head',2,'staff','Suresh Kumar','suresh.kumar@steeldoor.com','+91 94471 23456',1,'Kerala',2,'Trivandrum Hub',NULL,1,0,'2026-10-27 09:49:20','2026-10-20 11:56:11','2026-10-27 09:49:20'),(6,'branch_clt','123',3,'branch_head',2,'staff','Anas Kabeer','anas.kabeer@steeldoor.com','+91 97452 34567',1,'Kerala',3,'Kozhikode Hub',NULL,1,0,'2026-10-24 12:43:56','2026-10-20 11:56:11','2026-10-24 12:43:56'),(7,'branch_tsr','123',3,'branch_head',2,'staff','Mohan Das','mohan.das@steeldoor.com','+91 98463 45678',1,'Kerala',4,'Thrissur Hub',NULL,1,0,'2026-10-24 12:44:10','2026-10-20 11:56:11','2026-10-24 12:44:10'),(8,'branch_knr','123',3,'branch_head',2,'staff','K. V. Pavithran','pavithran.kv@steeldoor.com','+91 94954 56789',1,'Kerala',5,'Kannur Hub',NULL,1,0,'2026-10-24 12:44:33','2026-10-20 11:56:11','2026-10-24 12:44:33'),(10,'apex_dealer','123',4,'dealer',NULL,NULL,'Apex Doors Kochi','sales@apexdoors.com','+91 98952 33441',1,'Kerala',NULL,NULL,'Door No 8/120, Bypass Junction, Edapally',1,0,'2026-10-24 12:40:47','2026-10-20 11:56:11','2026-10-24 12:40:47'),(11,'metro_builders','123',4,'dealer',NULL,NULL,'Metro Infra Ltd','contact@metroinfra.in','+91 98471 88990',1,'Kerala',NULL,NULL,'Plot 12, SmartCity Campus, Kakkanad',1,0,'2026-10-24 12:43:10','2026-10-20 11:56:11','2026-10-24 12:43:10');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -305,4 +344,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-10-24 18:20:38
+-- Dump completed on 2026-10-27 16:50:16

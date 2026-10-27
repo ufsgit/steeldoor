@@ -173,7 +173,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `get_bookings_paginated`(
     IN p_role_id     INT,           -- User role_id (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer)
     IN p_login_id    INT,           -- User login ID
     IN p_district_id INT,           -- User district ID / filter district ID
-    IN p_status      VARCHAR(50),   -- Filter status ('NEW', 'Pending', 'Scheduled', 'Accepted', 'Finished', 'Delayed', 'Rejected')
+    IN p_status_id   INT,           -- Filter by status_id (e.g. 1: New, 2: Scheduled, etc.)
     IN p_search      VARCHAR(150),  -- Search client name or phone/mobile
     IN p_date_from   DATE,          -- Filter created date from
     IN p_date_to     DATE,          -- Filter created date to
@@ -185,7 +185,7 @@ BEGIN
     DECLARE v_offset INT DEFAULT 0;
     DECLARE v_district_id INT DEFAULT NULL;
     DECLARE v_search VARCHAR(160) DEFAULT NULL;
-    DECLARE v_status VARCHAR(50) DEFAULT NULL;
+
 
     -- Apply default limit 15 if null or <= 0
     IF p_limit IS NOT NULL AND p_limit > 0 THEN
@@ -213,11 +213,6 @@ BEGIN
         SET v_search = CONCAT('%', TRIM(p_search), '%');
     END IF;
 
-    -- Clean status filter
-    IF p_status IS NOT NULL AND TRIM(p_status) != '' THEN
-        SET v_status = TRIM(p_status);
-    END IF;
-
     -- Query 1: Fetch paginated bookings matching role rules & search/filter parameters
     SELECT 
         id,
@@ -225,7 +220,10 @@ BEGIN
         mobile,
         address,
         notes,
-        status,
+        status_id,
+        status_code,
+        status_label,
+        status_color_code,
         schedule_date,
         login_role_id,
         login_id,
@@ -236,6 +234,8 @@ BEGIN
         district_name,
         area_id,
         area_name,
+		assigned_head_district_id,
+        assigned_head_district_name,
         branch_head_id,
         branch_head_name,
         documents,
@@ -247,8 +247,10 @@ BEGIN
       AND (
           -- Role 1 (company) & Role 2 (coordinator): list ALL clients
           (p_role_id IN (1, 2) OR p_role_id IS NULL)
-          -- Role 3 (branch_head): filter by branch_head_id (fallback to district if branch_head_id is NULL)
-          OR (p_role_id = 3 AND (branch_head_id = p_login_id OR (branch_head_id IS NULL AND district_id = v_district_id)))
+          
+          -- Role 3 (branch_head): filter strictly by assigned_head_district_id
+          OR (p_role_id = 3 AND assigned_head_district_id = v_district_id)
+
           -- Role 4 (dealer) & Role 5 (customer): take list by login_id
           OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
       )
@@ -265,12 +267,11 @@ BEGIN
           OR name LIKE v_search 
           OR mobile LIKE v_search
       )
-      -- Status Filter
+		-- Status Filter by status_id
       AND (
-          v_status IS NULL 
-          OR (v_status = 'Pending' AND (status = 'Pending' OR status = 'NEW'))
-          OR (v_status = 'NEW' AND status = 'NEW')
-          OR (v_status != 'Pending' AND v_status != 'NEW' AND status = v_status)
+          p_status_id IS NULL 
+          OR p_status_id <= 0 
+          OR status_id = p_status_id
       )
       -- Date Range Filter
       AND (p_date_from IS NULL OR DATE(created_at) >= p_date_from)
@@ -295,7 +296,7 @@ BEGIN
     WHERE is_deleted = 0
       AND (
           (p_role_id IN (1, 2) OR p_role_id IS NULL)
-          OR (p_role_id = 3 AND (branch_head_id = p_login_id OR (branch_head_id IS NULL AND district_id = v_district_id)))
+          OR (p_role_id = 3 AND (branch_head_id = p_login_id OR (branch_head_id IS NULL AND assigned_head_district_id = v_district_id)))
           OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
       )
       AND (
@@ -310,10 +311,9 @@ BEGIN
           OR mobile LIKE v_search
       )
       AND (
-          v_status IS NULL 
-          OR (v_status = 'Pending' AND (status = 'Pending' OR status = 'NEW'))
-          OR (v_status = 'NEW' AND status = 'NEW')
-          OR (v_status != 'Pending' AND v_status != 'NEW' AND status = v_status)
+          p_status_id IS NULL 
+          OR p_status_id <= 0 
+          OR status_id = p_status_id
       )
       AND (p_date_from IS NULL OR DATE(created_at) >= p_date_from)
       AND (p_date_to IS NULL OR DATE(created_at) <= p_date_to)
@@ -326,33 +326,46 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `get_bookings_paginated_old`(
-    IN p_page        INT,  -- Page number (e.g. 1, 2, 3...)
-    IN p_limit       INT,  -- Number of records per page (default: 15)
-    IN p_role_id     INT,  -- User role_id (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer)
-    IN p_login_id    INT,  -- User login ID
-    IN p_district_id INT   -- User district ID (for role 3 branch_head)
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_dashboard_metrics`(
+    IN p_period      VARCHAR(20),  -- Filter: 'all', 'this_month', 'last_30_days' (default: 'this_month')
+    IN p_role_id     INT,          -- Optional Role ID: 1 (Company), 2 (Coordinator), 3 (Branch Head), 4 (Dealer), 5 (Customer)
+    IN p_login_id    INT,          -- Optional Login User ID
+    IN p_district_id INT,          -- Optional District ID filter
+    IN p_date_from   DATE,         -- Optional Custom Start Date
+    IN p_date_to     DATE          -- Optional Custom End Date
 )
 BEGIN
-    DECLARE v_limit INT DEFAULT 15;
-    DECLARE v_page INT DEFAULT 1;
-    DECLARE v_offset INT DEFAULT 0;
-    DECLARE v_district_id INT DEFAULT NULL;
+    DECLARE v_from_date   DATE DEFAULT NULL;
+    DECLARE v_to_date     DATE DEFAULT NULL;
+    DECLARE v_district_id INT DEFAULT p_district_id;
+    DECLARE v_period      VARCHAR(20) DEFAULT 'this_month';
 
-    -- Apply default limit 15 if null or <= 0
-    IF p_limit IS NOT NULL AND p_limit > 0 THEN
-        SET v_limit = p_limit;
+    -- 1. Standardize period preset
+    IF p_period IS NOT NULL AND TRIM(p_period) != '' THEN
+        SET v_period = LOWER(TRIM(p_period));
     END IF;
 
-    -- Apply default page 1 if null or <= 0
-    IF p_page IS NOT NULL AND p_page > 0 THEN
-        SET v_page = p_page;
+    -- 2. Calculate Date Windows
+    IF v_period = 'this_month' THEN
+        SET v_from_date = DATE_FORMAT(CURRENT_DATE, '%Y-%m-01');
+        SET v_to_date   = LAST_DAY(CURRENT_DATE);
+    ELSEIF v_period = 'last_30_days' THEN
+        SET v_from_date = DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY);
+        SET v_to_date   = CURRENT_DATE;
+    ELSEIF v_period = 'all' THEN
+        SET v_from_date = NULL;
+        SET v_to_date   = NULL;
     END IF;
 
-    SET v_offset = (v_page - 1) * v_limit;
-    SET v_district_id = p_district_id;
+    -- Custom explicit date arguments override preset
+    IF p_date_from IS NOT NULL THEN
+        SET v_from_date = p_date_from;
+    END IF;
+    IF p_date_to IS NOT NULL THEN
+        SET v_to_date = p_date_to;
+    END IF;
 
-    -- If Role 3 (Branch Head) and district_id was not provided, resolve from users table
+    -- 3. Auto-resolve Branch Head (Role 3) district if not supplied
     IF p_role_id = 3 AND (v_district_id IS NULL OR v_district_id <= 0) AND p_login_id IS NOT NULL THEN
         SELECT district_id INTO v_district_id
         FROM users
@@ -360,54 +373,61 @@ BEGIN
         LIMIT 1;
     END IF;
 
-    -- Query 1: Fetch paginated bookings matching role rules
+    -- 4. Calculate all 4 Fitmate Dashboard Metric Cards in a single query
     SELECT 
-        id,
-        name,
-        mobile,
-        address,
-        notes,
-        status,
-        login_role_id,
-        login_id,
-        login_name,
-        state_id,
-        state_name,
-        district_id,
-        district_name,
-        area_id,
-        area_name,
-		branch_head_id,
-        branch_head_name,
-        documents,
-        created_at,
-        updated_at
+        -- Card 1: New Booking
+        COUNT(CASE WHEN UPPER(TRIM(status)) = 'NEW' THEN 1 END) AS new_bookings,
+
+        -- Card 2: Pending
+        COUNT(CASE WHEN UPPER(TRIM(status)) = 'PENDING' THEN 1 END) AS pending_bookings,
+
+        -- Card 3: Completed
+        COUNT(CASE WHEN UPPER(TRIM(status)) IN ('COMPLETED', 'FINISHED') THEN 1 END) AS completed_bookings,
+
+        -- Card 4: Scheduled
+        COUNT(CASE WHEN UPPER(TRIM(status)) IN ('SCHEDULED', 'ACCEPTED') THEN 1 END) AS scheduled_bookings,
+
+        -- Aggregate total
+        COUNT(*) AS total_bookings,
+
+        -- Metadata returned for UI display
+        v_period    AS active_period,
+        v_from_date AS date_from,
+        v_to_date   AS date_to
     FROM bookings
     WHERE is_deleted = 0
+      -- Role Scoping
       AND (
-          -- Role 1 (company) & Role 2 (coordinator): list ALL clients
-          (p_role_id IN (1, 2) OR p_role_id IS NULL)
-          -- Role 3 (branch_head): display client details by district_id
-          OR (p_role_id = 3 AND district_id = v_district_id)
-          -- Role 4 (dealer) & Role 5 (customer): take list by login_id
+          p_role_id IS NULL OR p_role_id IN (1, 2)
+          OR (p_role_id = 3 AND (branch_head_id = p_login_id OR (branch_head_id IS NULL AND district_id = v_district_id)))
           OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
       )
-    ORDER BY created_at DESC
-    LIMIT v_limit OFFSET v_offset;
-
-    -- Query 2: Pagination metadata matching the exact same role filter
-    SELECT 
-        COUNT(*) AS total_records,
-        v_page AS current_page,
-        v_limit AS page_size,
-        CEIL(COUNT(*) / v_limit) AS total_pages
-    FROM bookings
-    WHERE is_deleted = 0
+      -- Optional District Filter
       AND (
-          (p_role_id IN (1, 2) OR p_role_id IS NULL)
-          OR (p_role_id = 3 AND district_id = v_district_id)
-          OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
-      );
+          v_district_id IS NULL OR v_district_id <= 0 
+          OR district_id = v_district_id 
+          OR p_role_id = 3
+      )
+      -- Date Filter
+      AND (v_from_date IS NULL OR DATE(created_at) >= v_from_date)
+      AND (v_to_date IS NULL OR DATE(created_at) <= v_to_date);
+
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_status_options`()
+BEGIN
+    SELECT 
+        id,
+        code,
+        label,
+        color_code AS colorCode,
+        sort_order AS sortOrder,
+        is_active AS isActive
+    FROM status_options
+    WHERE is_active = 1
+    ORDER BY sort_order ASC, id ASC;
 END$$
 DELIMITER ;
 
@@ -468,7 +488,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `save_booking`(
     IN p_mobile           VARCHAR(25),
     IN p_address          TEXT,
     IN p_notes            TEXT,
-    IN p_status           VARCHAR(50),
     IN p_login_role_id    INT,
     IN p_login_id         INT,
     IN p_login_name       VARCHAR(150),
@@ -484,7 +503,12 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `save_booking`(
 )
 BEGIN
     DECLARE v_booking_id INT;
-    DECLARE v_status VARCHAR(50) DEFAULT 'NEW';
+    
+    DECLARE v_status_id INT DEFAULT 1;
+    DECLARE v_status_code VARCHAR(50) DEFAULT 'New';
+    DECLARE v_status_label VARCHAR(100) DEFAULT 'New';
+    DECLARE v_status_color_code VARCHAR(20) DEFAULT '#3b82f6';
+
     DECLARE v_state_name VARCHAR(100);
     DECLARE v_district_name VARCHAR(100);
     DECLARE v_area_name VARCHAR(100);
@@ -532,25 +556,30 @@ BEGIN
     -- MODE 1: CREATE (When p_id is NULL or <= 0)
     -- =========================================================================
     IF p_id IS NULL OR p_id <= 0 THEN
-        IF p_status IS NOT NULL AND TRIM(p_status) != '' THEN
-            SET v_status = UPPER(TRIM(p_status));
-        END IF;
+        -- Optionally resolve from status_options table if available
+        SELECT id, code, label, color_code 
+        INTO v_status_id, v_status_code, v_status_label, v_status_color_code
+        FROM status_options 
+        WHERE id = 1 LIMIT 1;
 
         INSERT INTO bookings (
-            name, mobile, address, notes, status,
+            name, mobile, address, notes,
+            status_id, status_code, status_label, status_color_code,
             login_role_id, login_id, login_name,
             state_id, state_name, district_id, district_name,
-            area_id, area_name, branch_head_id, branch_head_name,
+            area_id, area_name, assigned_head_district_id, assigned_head_district_name, branch_head_id, branch_head_name,
             documents
         ) VALUES (
-            p_name, p_mobile, p_address, p_notes, v_status,
+            p_name, p_mobile, p_address, p_notes,
+            v_status_id, v_status_code, v_status_label, v_status_color_code,
             p_login_role_id, p_login_id, p_login_name,
             p_state_id, v_state_name, p_district_id, v_district_name,
-            p_area_id, v_area_name, v_branch_head_id, v_branch_head_name,
+            p_area_id, v_area_name, p_district_id, v_district_name, v_branch_head_id, v_branch_head_name,
             p_documents
         );
 
         SET v_booking_id = LAST_INSERT_ID();
+
 
     -- =========================================================================
     -- MODE 2: UPDATE (When p_id > 0)
@@ -562,7 +591,6 @@ BEGIN
             mobile           = COALESCE(p_mobile, mobile),
             address          = COALESCE(p_address, address),
             notes            = COALESCE(p_notes, notes),
-            status           = COALESCE(UPPER(TRIM(p_status)), status),
             login_role_id    = COALESCE(p_login_role_id, login_role_id),
             login_id         = COALESCE(p_login_id, login_id),
             login_name       = COALESCE(p_login_name, login_name),
@@ -572,6 +600,8 @@ BEGIN
             district_name    = COALESCE(v_district_name, district_name),
             area_id          = COALESCE(p_area_id, area_id),
             area_name        = COALESCE(v_area_name, area_name),
+            assigned_head_district_id = COALESCE(p_district_id, district_id),
+            assigned_head_district_name = COALESCE(v_district_name, district_name),
             branch_head_id   = COALESCE(v_branch_head_id, branch_head_id),
             branch_head_name = COALESCE(v_branch_head_name, branch_head_name),
             documents        = COALESCE(p_documents, documents),
@@ -585,10 +615,12 @@ BEGIN
     -- RETURN THE SAVED / UPDATED RECORD
     -- =========================================================================
     SELECT 
-        id, name, mobile, address, notes, status,
+		id, name, mobile, address, notes,
+        status_id, status_code, status_label, status_color_code, schedule_date,
         login_role_id, login_id, login_name,
         state_id, state_name, district_id, district_name,
-        area_id, area_name, branch_head_id, branch_head_name,
+		area_id, area_name, assigned_head_district_id, 
+		assigned_head_district_name, branch_head_id, branch_head_name,
         documents, is_deleted, created_at, updated_at
     FROM bookings
     WHERE id = v_booking_id AND is_deleted = 0;
@@ -691,115 +723,6 @@ BEGIN
     FROM client_status_logs
     WHERE client_id = p_client_id
     ORDER BY created_at DESC;
-END$$
-DELIMITER ;
-
-DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_coordinator_bookings`(
-    IN p_status       VARCHAR(50),
-    IN p_district_id  INT,
-    IN p_search       VARCHAR(100),
-    IN p_page         INT,
-    IN p_limit        INT
-)
-BEGIN
-    DECLARE v_limit INT DEFAULT 15;
-    DECLARE v_page INT DEFAULT 1;
-    DECLARE v_offset INT DEFAULT 0;
-    DECLARE v_search VARCHAR(105) DEFAULT NULL;
-    DECLARE v_status VARCHAR(50) DEFAULT NULL;
-
-    IF p_limit IS NOT NULL AND p_limit > 0 THEN
-        SET v_limit = p_limit;
-    END IF;
-
-    IF p_page IS NOT NULL AND p_page > 0 THEN
-        SET v_page = p_page;
-    END IF;
-
-    SET v_offset = (v_page - 1) * v_limit;
-
-    IF p_search IS NOT NULL AND TRIM(p_search) != '' THEN
-        SET v_search = TRIM(p_search);
-    END IF;
-
-    IF p_status IS NOT NULL AND TRIM(p_status) != '' THEN
-        SET v_status = UPPER(TRIM(p_status));
-    END IF;
-
-    SELECT 
-        b.id,
-        b.name,
-        b.mobile,
-        b.address,
-        b.notes,
-        b.status,
-        b.schedule_date,
-        b.created_by,
-        b.created_by_name,
-        b.login_role_id,
-        b.login_id,
-        b.login_name,
-        b.state_id,
-        b.state_name,
-        b.district_id,
-        b.district_name,
-        b.area_id,
-        b.area_name,
-        b.branch_head_id,
-        b.branch_head_name,
-        b.documents,
-        b.created_at,
-        b.updated_at
-    FROM bookings b
-    WHERE b.is_deleted = 0
-      AND (
-          v_status IS NULL 
-          OR v_status = 'ALL' 
-          OR b.status = v_status
-          OR (v_status = 'UNREAD' AND b.status = 'NEW')
-          OR (v_status = 'PENDING' AND b.status = 'SCHEDULED')
-      )
-      AND (p_district_id IS NULL OR b.district_id = p_district_id)
-      AND (
-          v_search IS NULL
-          OR b.name LIKE CONCAT('%', v_search, '%')
-          OR b.mobile LIKE CONCAT('%', v_search, '%')
-          OR b.address LIKE CONCAT('%', v_search, '%')
-          OR b.area_name LIKE CONCAT('%', v_search, '%')
-          OR b.district_name LIKE CONCAT('%', v_search, '%')
-          OR b.branch_head_name LIKE CONCAT('%', v_search, '%')
-          OR b.created_by_name LIKE CONCAT('%', v_search, '%')
-      )
-    ORDER BY b.created_at DESC
-    LIMIT v_limit OFFSET v_offset;
-
-    SELECT 
-        COUNT(*) AS total_records,
-        v_page AS current_page,
-        v_limit AS page_size,
-        CEIL(COUNT(*) / v_limit) AS total_pages
-    FROM bookings b
-    WHERE b.is_deleted = 0
-      AND (
-          v_status IS NULL 
-          OR v_status = 'ALL' 
-          OR b.status = v_status
-          OR (v_status = 'UNREAD' AND b.status = 'NEW')
-          OR (v_status = 'PENDING' AND b.status = 'SCHEDULED')
-      )
-      AND (p_district_id IS NULL OR b.district_id = p_district_id)
-      AND (
-          v_search IS NULL
-          OR b.name LIKE CONCAT('%', v_search, '%')
-          OR b.mobile LIKE CONCAT('%', v_search, '%')
-          OR b.address LIKE CONCAT('%', v_search, '%')
-          OR b.area_name LIKE CONCAT('%', v_search, '%')
-          OR b.district_name LIKE CONCAT('%', v_search, '%')
-          OR b.branch_head_name LIKE CONCAT('%', v_search, '%')
-          OR b.created_by_name LIKE CONCAT('%', v_search, '%')
-      );
-
 END$$
 DELIMITER ;
 
@@ -922,6 +845,22 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_status_options`()
+BEGIN
+    SELECT 
+        id,
+        code,
+        label,
+        color_code AS colorCode,
+        sort_order AS sortOrder,
+        is_active AS isActive
+    FROM status_options
+    WHERE is_active = 1
+    ORDER BY sort_order ASC, id ASC;
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_save_client_status`(
     IN p_client_id       INT,
     IN p_client_name     VARCHAR(150),
@@ -994,147 +933,6 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_seed_ernakulam_areas`()
-BEGIN
-    -- Insert 17 additional authentic Ernakulam areas (skips if already added)
-    INSERT INTO areas (district_id, name, pincode)
-    SELECT * FROM (
-        SELECT 1 AS district_id, 'Kadavanthra' AS name, '682020' AS pincode UNION ALL
-        SELECT 1, 'Panampilly Nagar', '682036' UNION ALL
-        SELECT 1, 'Marine Drive', '682031' UNION ALL
-        SELECT 1, 'Ravipuram', '682016' UNION ALL
-        SELECT 1, 'Thrikkakara', '682021' UNION ALL
-        SELECT 1, 'Kalamassery', '683104' UNION ALL
-        SELECT 1, 'Angamaly', '683572' UNION ALL
-        SELECT 1, 'Perumbavoor', '683542' UNION ALL
-        SELECT 1, 'Muvattupuzha', '686661' UNION ALL
-        SELECT 1, 'Kothamangalam', '686691' UNION ALL
-        SELECT 1, 'North Paravur', '683513' UNION ALL
-        SELECT 1, 'Mattancherry', '682002' UNION ALL
-        SELECT 1, 'Thevara', '682013' UNION ALL
-        SELECT 1, 'Maradu', '682304' UNION ALL
-        SELECT 1, 'Cherai', '683514' UNION ALL
-        SELECT 1, 'Piravom', '686664' UNION ALL
-        SELECT 1, 'Kolenchery', '682311'
-    ) AS new_areas
-    WHERE NOT EXISTS (
-        SELECT 1 FROM areas WHERE district_id = 1 AND name = new_areas.name
-    );
-
-    -- Return all 25 areas for Ernakulam (district_id = 1)
-    SELECT id, district_id, name, pincode, created_at
-    FROM areas
-    WHERE district_id = 1
-    ORDER BY id ASC;
-END$$
-DELIMITER ;
-
-DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_set_booking_branch_head`(
-    IN p_booking_id       INT,
-    IN p_branch_head_id   INT,
-    IN p_branch_head_name VARCHAR(150)
-)
-BEGIN
-    DECLARE v_branch_head_name VARCHAR(150);
-
-    -- 1. Validate booking_id
-    IF p_booking_id IS NULL OR p_booking_id <= 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'booking_id is required.';
-    END IF;
-
-    SET v_branch_head_name = TRIM(p_branch_head_name);
-
-    -- 2. If branch_head_name is omitted or blank, auto-resolve from users table (role_id = 3: branch_head)
-    IF (v_branch_head_name IS NULL OR v_branch_head_name = '') AND p_branch_head_id IS NOT NULL THEN
-        SELECT name INTO v_branch_head_name 
-        FROM users 
-        WHERE id = p_branch_head_id AND role_id = 3 AND is_deleted = 0 
-        LIMIT 1;
-    END IF;
-
-    -- 3. Update the booking with the branch head details
-    UPDATE bookings
-    SET 
-        branch_head_id   = p_branch_head_id,
-        branch_head_name = v_branch_head_name,
-        updated_at       = CURRENT_TIMESTAMP
-    WHERE id = p_booking_id AND is_deleted = 0;
-
-    -- 4. Return the updated booking record
-    SELECT 
-        id, name, mobile, address, notes, status,
-        login_role_id, login_id, login_name,
-        state_id, state_name, district_id, district_name,
-        area_id, area_name, branch_head_id, branch_head_name,
-        documents, is_deleted, created_at, updated_at
-    FROM bookings
-    WHERE id = p_booking_id AND is_deleted = 0;
-
-END$$
-DELIMITER ;
-
-DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_update_coordinator_names`()
-BEGIN
-    -- =========================================================================
-    -- 1. UPDATE `users` TABLE (Coordinators with role_id = 2)
-    -- =========================================================================
-    UPDATE users
-    SET name = 'Elena Vance (Coordinator)'
-    WHERE id = 2 OR username = 'admin';
-
-    UPDATE users
-    SET name = 'Alex George (Coordinator)'
-    WHERE id = 3 OR username = 'coordinator';
-
-    -- Replace any other "(Operations Coordinator)" or "(Field Coordinator)"
-    UPDATE users
-    SET name = REPLACE(REPLACE(name, '(Operations Coordinator)', '(Coordinator)'), '(Field Coordinator)', '(Coordinator)')
-    WHERE role_id = 2;
-
-    -- =========================================================================
-    -- 2. UPDATE `bookings` TABLE (login_name & created_by_name)
-    -- =========================================================================
-    UPDATE bookings
-    SET login_name = 'Elena Vance (Coordinator)'
-    WHERE login_id = 2 OR login_name LIKE '%Elena Vance%';
-
-    UPDATE bookings
-    SET login_name = 'Alex George (Coordinator)'
-    WHERE login_id = 3 OR login_name LIKE '%Alex George%';
-
-    UPDATE bookings
-    SET created_by_name = 'Elena Vance (Coordinator)'
-    WHERE created_by = 2 OR created_by_name LIKE '%Elena Vance%';
-
-    UPDATE bookings
-    SET created_by_name = 'Alex George (Coordinator)'
-    WHERE created_by = 3 OR created_by_name LIKE '%Alex George%';
-
-    -- =========================================================================
-    -- 3. UPDATE `client_status_logs` TABLE (created_by_name)
-    -- =========================================================================
-    UPDATE client_status_logs
-    SET created_by_name = 'Elena Vance (Coordinator)'
-    WHERE created_by = 2 OR created_by_name LIKE '%Elena Vance%';
-
-    UPDATE client_status_logs
-    SET created_by_name = 'Alex George (Coordinator)'
-    WHERE created_by = 3 OR created_by_name LIKE '%Alex George%';
-
-    -- =========================================================================
-    -- 4. CONFIRM UPDATED COORDINATOR USERS
-    -- =========================================================================
-    SELECT id, username, name, role_id, role 
-    FROM users 
-    WHERE role_id = 2;
-
-END$$
-DELIMITER ;
-
-DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `update_area`(
     IN p_area_id INT,
     IN p_district_id INT,
@@ -1186,6 +984,111 @@ BEGIN
             WHERE id = p_area_id;
         END IF;
     END IF;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `update_booking_status_or_branch_head`(
+    IN p_client_id       INT,
+    IN p_client_name     VARCHAR(150),
+    IN p_status_input    VARCHAR(50),   -- status_id ('1','2','3') or name ('New','Scheduled','Completed','Cancelled')
+    IN p_schedule_date   DATE,
+    IN p_notes           TEXT,
+    IN p_created_by      INT,
+    IN p_created_by_name VARCHAR(100),
+    IN p_branch_head_id  INT
+)
+BEGIN
+    DECLARE v_new_id INT;
+    DECLARE v_clean_date DATE;
+    DECLARE v_client_name VARCHAR(150);
+    DECLARE v_created_by_name VARCHAR(100);
+    DECLARE v_branch_head_name VARCHAR(150);
+    DECLARE v_branch_head_district_id INT;
+    DECLARE v_branch_head_district_name VARCHAR(100);
+    DECLARE v_status_id INT DEFAULT 1;
+    DECLARE v_status_code VARCHAR(50) DEFAULT 'New';
+    DECLARE v_status_label VARCHAR(100) DEFAULT 'New';
+    DECLARE v_status_color_code VARCHAR(20) DEFAULT '#3b82f6';
+    -- 1. Auto-fetch client_name if omitted
+    SET v_client_name = TRIM(p_client_name);
+    IF v_client_name IS NULL OR v_client_name = '' THEN
+        SELECT name INTO v_client_name FROM bookings WHERE id = p_client_id LIMIT 1;
+    END IF;
+    -- 2. Auto-fetch created_by_name
+    SET v_created_by_name = TRIM(p_created_by_name);
+    IF (v_created_by_name IS NULL OR v_created_by_name = '') AND p_created_by IS NOT NULL THEN
+        SELECT name INTO v_created_by_name FROM users WHERE id = p_created_by LIMIT 1;
+    END IF;
+    -- 3. Lookup Selected Branch Head AND their assigned District directly from users table
+    IF p_branch_head_id IS NOT NULL AND p_branch_head_id > 0 THEN
+        SELECT u.name, u.district_id, COALESCE(d.name, u.district_name)
+        INTO v_branch_head_name, v_branch_head_district_id, v_branch_head_district_name
+        FROM users u
+        LEFT JOIN districts d ON d.id = u.district_id
+        WHERE u.id = p_branch_head_id AND u.role_id = 3 AND u.is_deleted = 0
+        LIMIT 1;
+    END IF;
+    -- 4. Resolve status details from status_options table (by id, code, or label)
+    IF p_status_input IS NOT NULL AND TRIM(p_status_input) != '' THEN
+        SELECT id, code, label, color_code
+        INTO v_status_id, v_status_code, v_status_label, v_status_color_code
+        FROM status_options
+        WHERE id = p_status_input
+           OR LOWER(code) = LOWER(TRIM(p_status_input))
+           OR LOWER(label) = LOWER(TRIM(p_status_input))
+        LIMIT 1;
+    END IF;
+    -- 5. If Cancelled, clear schedule_date
+    IF LOWER(v_status_code) = 'cancelled' THEN
+        SET v_clean_date = NULL;
+    ELSE
+        SET v_clean_date = p_schedule_date;
+    END IF;
+    -- 6. Insert audit trail into client_status_logs
+    INSERT INTO client_status_logs (
+        client_id, client_name, status, schedule_date, notes, created_by, created_by_name
+    ) VALUES (
+        p_client_id, v_client_name, v_status_label, v_clean_date, TRIM(p_notes), p_created_by, v_created_by_name
+    );
+    SET v_new_id = LAST_INSERT_ID();
+    -- 7. Update bookings table with new status and selected branch head + their assigned district
+    UPDATE bookings
+    SET 
+        status_id                   = v_status_id,
+        status_code                 = v_status_code,
+        status_label                = v_status_label,
+        status_color_code           = v_status_color_code,
+        schedule_date               = v_clean_date,
+        notes                       = CASE WHEN p_notes IS NOT NULL AND TRIM(p_notes) != '' THEN TRIM(p_notes) ELSE notes END,
+        branch_head_id              = COALESCE(p_branch_head_id, branch_head_id),
+        branch_head_name            = COALESCE(v_branch_head_name, branch_head_name),
+        assigned_head_district_id   = CASE WHEN p_branch_head_id IS NOT NULL AND p_branch_head_id > 0 THEN v_branch_head_district_id ELSE assigned_head_district_id END,
+        assigned_head_district_name = CASE WHEN p_branch_head_id IS NOT NULL AND p_branch_head_id > 0 THEN v_branch_head_district_name ELSE assigned_head_district_name END,
+        created_by                  = COALESCE(p_created_by, created_by),
+        created_by_name             = COALESCE(v_created_by_name, created_by_name),
+        updated_at                  = CURRENT_TIMESTAMP
+    WHERE id = p_client_id AND is_deleted = 0;
+    -- 8. Return updated booking record
+    SELECT 
+        b.id,
+        b.id AS client_id,
+        b.name AS client_name,
+        b.status_id,
+        b.status_code,
+        b.status_label AS status,
+        b.status_color_code,
+        b.schedule_date,
+        b.notes,
+        b.assigned_head_district_id,
+        b.assigned_head_district_name,
+        b.branch_head_id,
+        b.branch_head_name,
+        b.created_by,
+        b.created_by_name,
+        b.updated_at
+    FROM bookings b
+    WHERE b.id = p_client_id;
 END$$
 DELIMITER ;
 
@@ -1251,97 +1154,5 @@ BEGIN
         LEFT JOIN districts d ON u.district_id = d.id
         WHERE u.id = v_user_id;
     END IF;
-END$$
-DELIMITER ;
-
-DELIMITER $$
-DROP PROCEDURE IF EXISTS `sp_get_dashboard_metrics`$$
-DROP PROCEDURE IF EXISTS `get_dashboard_metrics`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `get_dashboard_metrics`(
-    IN p_period      VARCHAR(20),  -- Filter: 'all', 'this_month', 'last_30_days' (default: 'this_month')
-    IN p_role_id     INT,          -- Optional Role ID: 1 (Company), 2 (Coordinator), 3 (Branch Head), 4 (Dealer), 5 (Customer)
-    IN p_login_id    INT,          -- Optional Login User ID
-    IN p_district_id INT,          -- Optional District ID filter
-    IN p_date_from   DATE,         -- Optional Custom Start Date
-    IN p_date_to     DATE          -- Optional Custom End Date
-)
-BEGIN
-    DECLARE v_from_date   DATE DEFAULT NULL;
-    DECLARE v_to_date     DATE DEFAULT NULL;
-    DECLARE v_district_id INT DEFAULT p_district_id;
-    DECLARE v_period      VARCHAR(20) DEFAULT 'this_month';
-
-    -- 1. Standardize period preset
-    IF p_period IS NOT NULL AND TRIM(p_period) != '' THEN
-        SET v_period = LOWER(TRIM(p_period));
-    END IF;
-
-    -- 2. Calculate Date Windows
-    IF v_period = 'this_month' THEN
-        SET v_from_date = DATE_FORMAT(CURRENT_DATE, '%Y-%m-01');
-        SET v_to_date   = LAST_DAY(CURRENT_DATE);
-    ELSEIF v_period = 'last_30_days' THEN
-        SET v_from_date = DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY);
-        SET v_to_date   = CURRENT_DATE;
-    ELSEIF v_period = 'all' THEN
-        SET v_from_date = NULL;
-        SET v_to_date   = NULL;
-    END IF;
-
-    -- Custom explicit date arguments override preset
-    IF p_date_from IS NOT NULL THEN
-        SET v_from_date = p_date_from;
-    END IF;
-    IF p_date_to IS NOT NULL THEN
-        SET v_to_date = p_date_to;
-    END IF;
-
-    -- 3. Auto-resolve Branch Head (Role 3) district if not supplied
-    IF p_role_id = 3 AND (v_district_id IS NULL OR v_district_id <= 0) AND p_login_id IS NOT NULL THEN
-        SELECT district_id INTO v_district_id
-        FROM users
-        WHERE id = p_login_id AND is_deleted = 0
-        LIMIT 1;
-    END IF;
-
-    -- 4. Calculate all 4 Fitmate Dashboard Metric Cards in a single query
-    SELECT 
-        -- Card 1: New Booking
-        COUNT(CASE WHEN UPPER(TRIM(status)) = 'NEW' THEN 1 END) AS new_bookings,
-
-        -- Card 2: Pending
-        COUNT(CASE WHEN UPPER(TRIM(status)) = 'PENDING' THEN 1 END) AS pending_bookings,
-
-        -- Card 3: Completed
-        COUNT(CASE WHEN UPPER(TRIM(status)) IN ('COMPLETED', 'FINISHED') THEN 1 END) AS completed_bookings,
-
-        -- Card 4: Scheduled
-        COUNT(CASE WHEN UPPER(TRIM(status)) IN ('SCHEDULED', 'ACCEPTED') THEN 1 END) AS scheduled_bookings,
-
-        -- Aggregate total
-        COUNT(*) AS total_bookings,
-
-        -- Metadata returned for UI display
-        v_period    AS active_period,
-        v_from_date AS date_from,
-        v_to_date   AS date_to
-    FROM bookings
-    WHERE is_deleted = 0
-      -- Role Scoping
-      AND (
-          p_role_id IS NULL OR p_role_id IN (1, 2)
-          OR (p_role_id = 3 AND (branch_head_id = p_login_id OR (branch_head_id IS NULL AND district_id = v_district_id)))
-          OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
-      )
-      -- Optional District Filter
-      AND (
-          v_district_id IS NULL OR v_district_id <= 0 
-          OR district_id = v_district_id 
-          OR p_role_id = 3
-      )
-      -- Date Filter
-      AND (v_from_date IS NULL OR DATE(created_at) >= v_from_date)
-      AND (v_to_date IS NULL OR DATE(created_at) <= v_to_date);
-
 END$$
 DELIMITER ;
