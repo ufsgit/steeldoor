@@ -22,32 +22,11 @@ const app = express();
 
 // ---------------- Global Middleware ----------------
 
-const defaultOrigins = [
-  'https://steeldoor.ufstech.in',
-  'https://steeldoorapi.ufstech.in',
-  'http://localhost:4200',
-  'http://localhost:1025',
-  'http://localhost:5000'
-];
-
-const envOrigins = (process.env.CORS_ORIGIN || '')
-  .split(',')
-  .map(s => s.trim())
-  .filter(Boolean);
-
-const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
-
+// Allow any origin dynamically (supports credentials: true without wildcard collision)
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-      return callback(null, true);
-    }
-    // Also allow any subdomains of ufstech.in
-    if (/^https?:\/\/([a-zA-Z0-9-]+\.)*ufstech\.in(:[0-9]+)?$/.test(origin)) {
-      return callback(null, true);
-    }
-    return callback(null, true); // Permissive fallback to prevent breaking API calls
+    // Reflect request origin or allow if none (mobile/curl)
+    callback(null, origin || true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

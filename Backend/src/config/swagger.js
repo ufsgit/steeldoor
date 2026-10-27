@@ -19,8 +19,12 @@ export const swaggerDocument = {
       description: 'Local Server (PORT 1025)'
     },
     {
-      url: 'https://steeldoorapi.ufstech.in',
+      url: 'https://steeldoorapi.ufstech.co.in',
       description: 'Live Production API'
+    },
+    {
+      url: 'https://steeldoorapi.ufstech.in',
+      description: 'Legacy Live API'
     }
   ],
   tags: [
