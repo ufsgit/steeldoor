@@ -7,12 +7,20 @@ export const swaggerDocument = {
   },
   servers: [
     {
-      url: 'https://steeldoorapi.ufstech.in',
-      description: 'Live Production API'
+      url: '/',
+      description: 'Current Server (Auto / Relative)'
+    },
+    {
+      url: 'http://localhost:5000',
+      description: 'Local Server (PORT 5000)'
     },
     {
       url: 'http://localhost:1025',
       description: 'Local Server (PORT 1025)'
+    },
+    {
+      url: 'https://steeldoorapi.ufstech.in',
+      description: 'Live Production API'
     }
   ],
   tags: [
@@ -104,21 +112,32 @@ export const swaggerDocument = {
           mobile: { type: 'string', example: '+91 98470 11223' },
           address: { type: 'string', example: 'Flat 4B, SkyLine Apts, Palarivattom' },
           notes: { type: 'string', nullable: true, example: 'Urgent fitting required' },
-          status: { type: 'string', example: 'NEW' },
-          loginRoleId: { type: 'integer', nullable: true, example: 2 },
-          loginId: { type: 'integer', nullable: true, example: 2 },
-          loginName: { type: 'string', nullable: true, example: 'Elena Vance' },
+          statusId: { type: 'integer', example: 1 },
+          statusCode: { type: 'string', example: 'New' },
+          statusLabel: { type: 'string', example: 'New' },
+          statusColorCode: { type: 'string', example: '#3b82f6' },
+          status: { type: 'string', example: 'New' },
+          scheduleDate: { type: 'string', format: 'date', nullable: true, example: '2026-10-30' },
           stateId: { type: 'integer', nullable: true, example: 1 },
           stateName: { type: 'string', nullable: true, example: 'Kerala' },
           districtId: { type: 'integer', nullable: true, example: 1 },
           districtName: { type: 'string', nullable: true, example: 'Ernakulam Hub' },
           areaId: { type: 'integer', nullable: true, example: 4 },
           areaName: { type: 'string', nullable: true, example: 'Palarivattom' },
+          assignedHeadDistrictId: { type: 'integer', nullable: true, example: 1 },
+          assignedHeadDistrictName: { type: 'string', nullable: true, example: 'Ernakulam Hub' },
+          branchHeadId: { type: 'integer', nullable: true, example: 3 },
+          branchHeadName: { type: 'string', nullable: true, example: 'John Branch Head' },
           documents: {
             type: 'array',
             items: { type: 'string' },
             example: ['/uploads/site_plan.pdf']
           },
+          loginRoleId: { type: 'integer', nullable: true, example: 2 },
+          loginId: { type: 'integer', nullable: true, example: 2 },
+          loginName: { type: 'string', nullable: true, example: 'Elena Vance' },
+          createdBy: { type: 'integer', nullable: true, example: 2 },
+          createdByName: { type: 'string', nullable: true, example: 'Elena Vance' },
           createdAt: { type: 'string', example: '2026-10-21T14:00:00.000Z' },
           updatedAt: { type: 'string', example: '2026-10-21T14:00:00.000Z' }
         }
@@ -333,64 +352,7 @@ export const swaggerDocument = {
         }
       }
     },
-    '/api/bookings/coordinator': {
-      get: {
-        tags: ['Bookings'],
-        summary: 'Coordinator Bookings List (Stored Procedure: sp_get_coordinator_bookings)',
-        description: 'Retrieves bookings for the Coordinator screen with status filtering tabs (ALL, UNREAD [NEW], PENDING [SCHEDULED]), district filter, search keyword, and pagination.',
-        security: [{ BearerAuth: [] }, { CookieAuth: [] }],
-        parameters: [
-          {
-            name: 'status',
-            in: 'query',
-            required: false,
-            schema: { type: 'string', enum: ['ALL', 'UNREAD', 'PENDING', 'NEW', 'SCHEDULED', 'COMPLETED', 'CANCELLED'] },
-            description: 'Filter by status tab: ALL, UNREAD (status=NEW), PENDING (status=SCHEDULED)',
-            example: 'ALL'
-          },
-          {
-            name: 'districtId',
-            in: 'query',
-            required: false,
-            schema: { type: 'integer' },
-            description: 'Filter by district ID (from Coordinator District dropdown, e.g. 1 for Ernakulam)',
-            example: 1
-          },
-          {
-            name: 'search',
-            in: 'query',
-            required: false,
-            schema: { type: 'string' },
-            description: 'Search by client name, mobile, address, area, or assigned branch head',
-            example: 'Rahul'
-          },
-          {
-            name: 'page',
-            in: 'query',
-            required: false,
-            schema: { type: 'integer', default: 1 },
-            description: 'Page number'
-          },
-          {
-            name: 'limit',
-            in: 'query',
-            required: false,
-            schema: { type: 'integer', default: 15 },
-            description: 'Number of records per page'
-          }
-        ],
-        responses: {
-          200: {
-            description: 'Coordinator bookings retrieved successfully',
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/PaginatedBookingsResponse' }
-              }
-            }
-          }
-        }
-      }
-    },
+
     '/api/bookings': {
       get: {
         tags: ['Bookings'],
@@ -431,6 +393,42 @@ export const swaggerDocument = {
             required: false,
             schema: { type: 'integer' },
             description: 'District ID (used when roleId is 3 to list clients by district id)'
+          },
+          {
+            name: 'statusId',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer' },
+            description: 'Filter by Status ID (e.g. 1: New, 2: Scheduled, 3: Completed, 4: Cancelled)',
+            example: 1
+          },
+          {
+            name: 'search',
+            in: 'query',
+            required: false,
+            schema: { type: 'string' },
+            description: 'Search client name or mobile phone number'
+          },
+          {
+            name: 'dateFrom',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', format: 'date' },
+            description: 'Filter bookings created on or after this date (YYYY-MM-DD)'
+          },
+          {
+            name: 'dateTo',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', format: 'date' },
+            description: 'Filter bookings created on or before this date (YYYY-MM-DD)'
+          },
+          {
+            name: 'filterRole',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer' },
+            description: 'Filter by creator role ID (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer)'
           }
         ],
         responses: {
@@ -786,6 +784,50 @@ export const swaggerDocument = {
       }
     },
     '/api/status': {
+      get: {
+        tags: ['Status'],
+        summary: 'Get Status Options (Stored Procedure: get_status_options)',
+        description: 'Retrieves all available status options ordered by sort_order using `get_status_options`.',
+        security: [{ BearerAuth: [] }, { CookieAuth: [] }],
+        responses: {
+          200: {
+            description: 'Status options retrieved successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    count: { type: 'integer', example: 4 },
+                    data: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'integer', example: 1 },
+                          code: { type: 'string', example: 'NEW' },
+                          label: { type: 'string', example: 'New' },
+                          colorCode: { type: 'string', example: '#3b82f6' },
+                          sortOrder: { type: 'integer', example: 1 },
+                          isActive: { type: 'integer', example: 1 }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          400: {
+            description: 'Database or server error',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' }
+              }
+            }
+          }
+        }
+      },
       post: {
         tags: ['Status'],
         summary: 'Save Client Status (Stored Procedure: sp_save_client_status)',
@@ -810,42 +852,6 @@ export const swaggerDocument = {
           },
           400: {
             description: 'Validation error (missing clientId or status)',
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/ErrorResponse' }
-              }
-            }
-          }
-        }
-      }
-    },
-    '/api/status/{clientId}': {
-      get: {
-        tags: ['Status'],
-        summary: 'Get Status History (Stored Procedure: sp_get_client_status_history)',
-        description: 'Retrieves all status change records and timeline for a given client ID using `sp_get_client_status_history`.',
-        security: [{ BearerAuth: [] }, { CookieAuth: [] }],
-        parameters: [
-          {
-            name: 'clientId',
-            in: 'path',
-            required: true,
-            schema: { type: 'integer' },
-            description: 'Client ID',
-            example: 1
-          }
-        ],
-        responses: {
-          200: {
-            description: 'History retrieved successfully',
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/StatusHistoryResponse' }
-              }
-            }
-          },
-          400: {
-            description: 'Invalid client ID',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' }

@@ -8,7 +8,7 @@ const router = Router();
 router.post('/', optionalAuth, (req, res, next) => statusController.save(req, res, next));
 router.post('/save', optionalAuth, (req, res, next) => statusController.save(req, res, next));
 
-// GET /api/status/:clientId or /api/client-status/:clientId
-router.get('/:clientId', optionalAuth, (req, res, next) => statusController.getHistory(req, res, next));
+// GET /api/status
+router.get('/', optionalAuth, (req, res, next) => statusController.getStatusOptions(req, res, next));
 
 export default router;

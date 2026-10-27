@@ -98,6 +98,15 @@ export interface DoorDetails {
   documents?: string[];
 }
 
+export interface StatusOption {
+  id: number;
+  code: string;
+  label: string;
+  colorCode?: string | null;
+  sortOrder?: number;
+  isActive?: number;
+}
+
 export interface Booking {
   id: number | string;
   name: string;
@@ -105,6 +114,10 @@ export interface Booking {
   address: string;
   notes?: string | null;
   status: string;
+  statusId?: number | null;
+  statusCode?: string | null;
+  statusLabel?: string | null;
+  statusColorCode?: string | null;
   login_role_id?: number | null;
   loginRoleId?: number | null;
   login_id?: number | null;
@@ -124,11 +137,19 @@ export interface Booking {
   area_name?: string | null;
   areaName?: string;
   area?: string;
+  assigned_head_district_id?: number | null;
+  assignedHeadDistrictId?: number | string | null;
+  assigned_head_district_name?: string | null;
+  assignedHeadDistrictName?: string | null;
   branch_head_id?: number | null;
   branchHeadId?: string;
   branch_head_name?: string | null;
   branchHeadName?: string;
   documents?: string[] | any;
+  created_by?: number | null;
+  createdBy?: number | string | null;
+  created_by_name?: string | null;
+  createdByName?: string | null;
   is_deleted?: number;
   created_at?: string;
   createdAt?: string;
@@ -210,11 +231,15 @@ export interface SiteContent {
 
 export interface BookingFilters {
   status?: string;
+  statusId?: number | string;
   districtId?: string;
   branchHeadId?: string;
   clientId?: string;
   clientType?: string;
   search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  filterRole?: number | string;
 }
 
 export interface CreateBookingPayload {

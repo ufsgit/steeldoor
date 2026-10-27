@@ -154,17 +154,19 @@ export class StatusService {
   }
 
   /**
-   * Fetch all status history records for a client using sp_get_client_status_history
+   * Fetch status options ordered by sort_order using get_status_options
    */
-  async getStatusHistory(clientId) {
-    const cid = parseInt(clientId, 10);
-    if (!cid || isNaN(cid)) {
-      throw new Error('Invalid client ID.');
-    }
-
-    const [results] = await pool.query(`CALL sp_get_client_status_history(?)`, [cid]);
+  async getStatusOptions() {
+    const [results] = await pool.query(`CALL get_status_options()`);
     const rows = results?.[0] || [];
-    return rows.map(r => this.formatStatusRecord(r));
+    return rows.map(r => ({
+      id: r.id,
+      code: r.code,
+      label: r.label,
+      colorCode: r.colorCode ?? r.color_code ?? null,
+      sortOrder: r.sortOrder ?? r.sort_order ?? 0,
+      isActive: r.isActive ?? r.is_active ?? 1
+    }));
   }
 }
 

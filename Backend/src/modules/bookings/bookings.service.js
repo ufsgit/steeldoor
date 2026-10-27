@@ -26,14 +26,13 @@ export class BookingsService {
     const docsJson = typeof documents === 'string' ? documents : JSON.stringify(documents);
 
     const [results] = await pool.query(
-      `CALL save_booking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `CALL save_booking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         null, // p_id: NULL for CREATE
         name,
         mobile,
         address,
         notes,
-        status || 'NEW',
         loginRoleId,
         loginId,
         loginName,
@@ -66,7 +65,6 @@ export class BookingsService {
     const mobile = data.mobile ?? null;
     const address = data.address ?? null;
     const notes = data.notes ?? null;
-    const status = data.status ?? null;
     const loginRoleId = data.loginRoleId ?? data.login_role_id ?? null;
     const loginId = data.loginId ?? data.login_id ?? null;
     const loginName = data.loginName ?? data.login_name ?? null;
@@ -86,14 +84,13 @@ export class BookingsService {
     }
 
     const [results] = await pool.query(
-      `CALL save_booking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `CALL save_booking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         bookingId, // p_id: valid ID for UPDATE
         name,
         mobile,
         address,
         notes,
-        status,
         loginRoleId,
         loginId,
         loginName,
@@ -151,7 +148,7 @@ export class BookingsService {
     roleId = null,
     loginId = null,
     districtId = null,
-    status = null,
+    statusId = null,
     search = null,
     dateFrom = null,
     dateTo = null,
@@ -162,7 +159,9 @@ export class BookingsService {
     const roleIdNum = roleId != null && roleId !== '' ? parseInt(roleId, 10) : null;
     const loginIdNum = loginId != null && loginId !== '' ? parseInt(loginId, 10) : null;
     const districtIdNum = districtId != null && districtId !== '' ? parseInt(districtId, 10) : null;
-    const cleanStatus = status ? String(status).trim() : null;
+    const statusIdNum = statusId != null && statusId !== '' && !isNaN(parseInt(statusId, 10))
+      ? parseInt(statusId, 10)
+      : null;
     const cleanSearch = search ? String(search).trim() : null;
     const cleanDateFrom = dateFrom ? String(dateFrom).trim() : null;
     const cleanDateTo = dateTo ? String(dateTo).trim() : null;
@@ -176,45 +175,12 @@ export class BookingsService {
         roleIdNum,
         loginIdNum,
         districtIdNum,
-        cleanStatus,
+        statusIdNum,
         cleanSearch,
         cleanDateFrom,
         cleanDateTo,
         filterRoleNum
       ]
-    );
-
-    const rows = results?.[0] || [];
-    const meta = results?.[1]?.[0] || {};
-
-    const formattedRows = rows.map(b => this.formatBookingRecord(b));
-    const total = Number(meta.total_records ?? formattedRows.length);
-
-    return {
-      data: formattedRows,
-      pagination: {
-        total,
-        page: Number(meta.current_page ?? pageNum),
-        limit: Number(meta.page_size ?? limitNum),
-        totalPages: Number(meta.total_pages ?? Math.ceil(total / limitNum) ?? 1)
-      }
-    };
-  }
-
-  /**
-   * Get Coordinator bookings with status tabs (ALL, UNREAD, PENDING), district filter, and search
-   * Uses stored procedure sp_get_coordinator_bookings
-   */
-  async getCoordinatorBookings({ status = null, districtId = null, search = null, page = 1, limit = 15 } = {}) {
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.max(1, parseInt(limit, 10) || 15);
-    const districtIdNum = districtId != null && districtId !== '' ? parseInt(districtId, 10) : null;
-    const cleanStatus = status ? String(status).trim() : null;
-    const cleanSearch = search ? String(search).trim() : null;
-
-    const [results] = await pool.query(
-      'CALL sp_get_coordinator_bookings(?, ?, ?, ?, ?)',
-      [cleanStatus, districtIdNum, cleanSearch, pageNum, limitNum]
     );
 
     const rows = results?.[0] || [];
@@ -253,6 +219,9 @@ export class BookingsService {
       }
     }
 
+    const statusCode = b.statusCode || b.status_code || b.status || 'New';
+    const statusLabel = b.statusLabel || b.status_label || statusCode;
+
     return {
       id: b.id,
       name: b.name,
@@ -263,7 +232,11 @@ export class BookingsService {
       clientType: 'customer',
       address: b.address,
       notes: b.notes || null,
-      status: b.status || 'Pending',
+      statusId: b.statusId ?? b.status_id ?? 1,
+      statusCode: statusCode,
+      statusLabel: statusLabel,
+      statusColorCode: b.statusColorCode || b.status_color_code || '#3b82f6',
+      status: statusCode, // Backward compatibility for UI
       loginRoleId: b.loginRoleId ?? b.login_role_id ?? null,
       loginId: b.loginId ?? b.login_id ?? null,
       loginName: b.loginName ?? b.login_name ?? null,
@@ -271,6 +244,8 @@ export class BookingsService {
       stateName: b.stateName ?? b.state_name ?? null,
       districtId: b.districtId ?? b.district_id ?? null,
       districtName: b.districtName ?? b.district_name ?? null,
+      assignedHeadDistrictId: b.assignedHeadDistrictId ?? b.assigned_head_district_id ?? null,
+      assignedHeadDistrictName: b.assignedHeadDistrictName ?? b.assigned_head_district_name ?? null,
       area: b.areaName ?? b.area_name ?? '',
       areaId: b.areaId ?? b.area_id ?? null,
       areaName: b.areaName ?? b.area_name ?? null,
@@ -278,6 +253,8 @@ export class BookingsService {
       branchHeadName: b.branchHeadName ?? b.branch_head_name ?? null,
       scheduledDate: b.scheduledDate ?? b.scheduled_date ?? b.scheduleDate ?? b.schedule_date ?? null,
       documents: docs,
+      createdBy: b.createdBy ?? b.created_by ?? null,
+      createdByName: b.createdByName ?? b.created_by_name ?? null,
       createdAt: b.createdAt || b.created_at,
       updatedAt: b.updatedAt || b.updated_at
     };

@@ -21,6 +21,7 @@ import {
   ServiceItem,
   SiteContent,
   State,
+  StatusOption,
   StatusUpdatePayload,
   TestimonialItem
 } from './models';
@@ -298,7 +299,9 @@ export class DataService {
       .set('limit', '100');
 
     if (filter) {
-      if (filter.status) params = params.set('status', filter.status);
+      if (filter.statusId != null && filter.statusId !== '') {
+        params = params.set('statusId', String(filter.statusId));
+      }
       if (filter.districtId) params = params.set('districtId', filter.districtId);
       if (filter.branchHeadId) params = params.set('branchHeadId', filter.branchHeadId);
       if (filter.clientId) params = params.set('clientId', filter.clientId);
@@ -332,6 +335,8 @@ export class DataService {
     const contactPhone = b.contactPhone || b.mobile || '';
     const districtName = b.districtName || 'Ernakulam';
     const areaName = b.areaName || b.area || '';
+    const statusCode = b.statusCode || b.status_code || b.status || 'New';
+    const statusLabel = b.statusLabel || b.status_label || statusCode;
 
     return {
       id: String(b.id || `BK-${Date.now()}`),
@@ -350,12 +355,19 @@ export class DataService {
       notes: b.notes || '',
       pincode: b.pincode || '',
       documents: docs,
-      status: (b.status as any) || 'Pending',
+      statusId: b.statusId != null ? Number(b.statusId) : (b.status_id != null ? Number(b.status_id) : 1),
+      statusCode,
+      statusLabel,
+      statusColorCode: b.statusColorCode || b.status_color_code || '#3b82f6',
+      status: (statusCode as any) || 'New',
       branchHeadName: b.branchHeadName || (districtName === 'Trivandrum' ? 'Suresh Kumar' : 'Rajesh Menon'),
+      branchHeadId: b.branchHeadId != null ? String(b.branchHeadId) : undefined,
       scheduledDate: b.scheduledDate || b.scheduleDate || b.scheduled_date || b.schedule_date || undefined,
       loginRoleId: b.loginRoleId != null ? Number(b.loginRoleId) : undefined,
       loginId: b.loginId != null ? b.loginId : undefined,
       loginName: b.loginName || undefined,
+      createdBy: b.createdBy != null ? b.createdBy : b.created_by,
+      createdByName: b.createdByName || b.created_by_name,
       doorDetails: b.doorDetails || {
         doorType: 'Standard Steel Door Installation',
         quantity: 1,
@@ -363,10 +375,22 @@ export class DataService {
         documents: docs,
         images: docs
       },
-      createdAt: b.createdAt || new Date().toISOString(),
-      updatedAt: b.updatedAt || new Date().toISOString(),
+      createdAt: b.createdAt || b.created_at || new Date().toISOString(),
+      updatedAt: b.updatedAt || b.updated_at || new Date().toISOString(),
       history: b.history || []
     };
+  }
+
+  // ---------------- Status Options (GET /api/status) ----------------
+
+  getStatusOptions(): Observable<StatusOption[]> {
+    if (isPlatformServer(this.platformId)) {
+      return of([]);
+    }
+    return this.http.get<{ success: boolean; count: number; data: StatusOption[] }>(this.url('/api/status')).pipe(
+      map(res => res?.data || []),
+      catchError(() => of([]))
+    );
   }
 
   getBookingById(id: string): Observable<Booking> {

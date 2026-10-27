@@ -37,16 +37,15 @@ export class StatusController {
   }
 
   /**
-   * GET /api/status/:clientId or GET /api/client-status/:clientId
+   * GET /api/status
    */
-  async getHistory(req, res, next) {
+  async getStatusOptions(req, res, next) {
     try {
-      const { clientId } = req.params;
-      const history = await statusService.getStatusHistory(clientId);
+      const options = await statusService.getStatusOptions();
       return res.json({
         success: true,
-        count: history.length,
-        data: history
+        count: options.length,
+        data: options
       });
     } catch (err) {
       if (err.sqlMessage || err.message) {

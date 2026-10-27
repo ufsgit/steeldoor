@@ -38,9 +38,6 @@ const handleBookingUploads = (req, res, next) => {
 // GET /api/bookings - List paginated bookings (Default 15 records per page, role-based filtering)
 router.get('/', optionalAuth, (req, res, next) => bookingsController.getAll(req, res, next));
 
-// GET /api/bookings/coordinator - Coordinator bookings list with UI tabs (All, Unread, Pending), district filter, and search
-router.get('/coordinator', optionalAuth, (req, res, next) => bookingsController.getCoordinatorBookings(req, res, next));
-
 // POST /api/bookings - Create new booking with optional file upload
 router.post('/', optionalAuth, handleBookingUploads, (req, res, next) => bookingsController.create(req, res, next));
 

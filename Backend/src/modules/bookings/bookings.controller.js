@@ -90,7 +90,7 @@ export class BookingsController {
    */
   async getAll(req, res, next) {
     try {
-      const { page, limit, status, search, dateFrom, dateTo, filterRole, role } = req.query;
+      const { page, limit, statusId, search, dateFrom, dateTo, filterRole, role } = req.query;
 
       // Extract credentials strictly from verified JWT token
       const user = req.user || {};
@@ -114,7 +114,7 @@ export class BookingsController {
         roleId,
         loginId,
         districtId,
-        status,
+        statusId,
         search,
         dateFrom,
         dateTo,
