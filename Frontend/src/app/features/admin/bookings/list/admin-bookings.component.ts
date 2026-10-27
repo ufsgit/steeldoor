@@ -1451,7 +1451,7 @@ export class AdminBookingsComponent implements OnInit {
     let matchedUser = this.branchHeadUsers.find(u => {
       const uDistId = u.districtId != null ? String(u.districtId) : (u.district_id != null ? String(u.district_id) : '');
       const uDistName = (u.districtName || u.district_name || '').toLowerCase();
-      
+
       if (targetDistrictId && uDistId === targetDistrictId) {
         return true;
       }
@@ -1741,22 +1741,28 @@ export class AdminBookingsComponent implements OnInit {
     if (!input.files || input.files.length === 0) return;
 
     const files = Array.from(input.files);
+    const b = this.selectedBooking();
     this.isUploadingEditDocs.set(true);
 
-    this.dataService.uploadDocuments(files).subscribe({
+    // Single API call: uploads files and updates bookings.documents in the database
+    this.dataService.uploadDocuments(files, b?.id).subscribe({
       next: res => {
         this.isUploadingEditDocs.set(false);
-        if (res && res.urls && res.urls.length > 0) {
-          this.editDocuments.update(prev => [...prev, ...res.urls]);
-        } else {
-          const fallbackUrls = files.map(f => `/uploads/${f.name}`);
-          this.editDocuments.update(prev => [...prev, ...fallbackUrls]);
+        const updatedDocs = res?.documents || (
+          res?.urls ? [...this.editDocuments(), ...res.urls] : [...this.editDocuments(), ...files.map(f => `/uploads/${f.name}`)]
+        );
+        this.editDocuments.set(updatedDocs);
+
+        if (b && b.id) {
+          this.bookings.update(list =>
+            list.map(item => item.id === b.id ? { ...item, documents: updatedDocs } : item)
+          );
+          this.selectedBooking.update(curr => curr ? { ...curr, documents: updatedDocs } : curr);
         }
       },
       error: () => {
         this.isUploadingEditDocs.set(false);
-        const fallbackUrls = files.map(f => `/uploads/${f.name}`);
-        this.editDocuments.update(prev => [...prev, ...fallbackUrls]);
+        this.toastService.error('Failed to upload document.');
       }
     });
     input.value = '';
@@ -1825,7 +1831,7 @@ export class AdminBookingsComponent implements OnInit {
     if (!b) return;
 
     this.pendingStatusChange.set(newStatus);
-    
+
     // Pre-fill Branch Head directly from the booking
     this.statusBranchHeadName = b.branchHeadName || 'Rajesh Menon';
 
@@ -1871,7 +1877,7 @@ export class AdminBookingsComponent implements OnInit {
     // Find matched branch head from users or branch heads
     const matchedHeadUser = this.branchHeadUsers.find(u => u.name?.toLowerCase() === chosenBranchHead.toLowerCase());
     const matchedHead = this.branchHeads.find(h => h.name?.toLowerCase() === chosenBranchHead.toLowerCase());
-    
+
     // Keep the booking's original district unchanged
     const bookingDistrictId = b.districtId || null;
     const bookingDistrictName = b.districtName || '';
@@ -1902,8 +1908,8 @@ export class AdminBookingsComponent implements OnInit {
           districtId: bookingDistrictId ? String(bookingDistrictId) : b.districtId,
           notes: notes || b.notes
         }).subscribe({
-          next: () => {},
-          error: () => {}
+          next: () => { },
+          error: () => { }
         });
 
         this.isSubmittingStatus.set(false);
@@ -2073,7 +2079,7 @@ export class AdminBookingsComponent implements OnInit {
     }
     const fullUrl = this.getFullFileUrl(filePath);
     const filename = this.getDocumentName(filePath) || 'download';
-    
+
     // Fetch and download as blob to trigger automatic browser download prompt
     fetch(fullUrl)
       .then(res => {

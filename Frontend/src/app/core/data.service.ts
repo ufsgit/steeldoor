@@ -181,17 +181,20 @@ export class DataService {
     return this.http.post<{ url: string; filename: string }>(this.url('/api/uploads/single'), formData);
   }
 
-  uploadMultiple(files: File[]): Observable<{ count: number; files: Array<{ url: string; filename: string }>; urls: string[] }> {
+  uploadMultiple(files: File[], bookingId?: string | number): Observable<{ count: number; files: Array<{ url: string; filename: string }>; urls: string[]; documents?: string[] }> {
     const formData = new FormData();
     files.forEach(f => formData.append('files', f));
-    return this.http.post<{ count: number; files: Array<{ url: string; filename: string }>; urls: string[] }>(
+    if (bookingId) {
+      formData.append('bookingId', String(bookingId));
+    }
+    return this.http.post<{ count: number; files: Array<{ url: string; filename: string }>; urls: string[]; documents?: string[] }>(
       this.url('/api/uploads/multiple'),
       formData
     );
   }
 
-  uploadDocuments(files: File[]): Observable<{ count: number; files: Array<{ url: string; filename: string }>; urls: string[] }> {
-    return this.uploadMultiple(files);
+  uploadDocuments(files: File[], bookingId?: string | number): Observable<{ count: number; files: Array<{ url: string; filename: string }>; urls: string[]; documents?: string[] }> {
+    return this.uploadMultiple(files, bookingId);
   }
 
   // ---------------- Branch Heads ----------------
