@@ -376,16 +376,16 @@ BEGIN
     -- 4. Calculate all 4 Fitmate Dashboard Metric Cards in a single query
     SELECT 
         -- Card 1: New Booking
-        COUNT(CASE WHEN UPPER(TRIM(status)) = 'NEW' THEN 1 END) AS new_bookings,
+        COUNT(CASE WHEN UPPER(TRIM(status_code)) = 'NEW' THEN 1 END) AS new_bookings,
 
         -- Card 2: Pending
-        COUNT(CASE WHEN UPPER(TRIM(status)) = 'PENDING' THEN 1 END) AS pending_bookings,
+        COUNT(CASE WHEN UPPER(TRIM(status_code)) = 'PENDING' THEN 1 END) AS pending_bookings,
 
         -- Card 3: Completed
-        COUNT(CASE WHEN UPPER(TRIM(status)) IN ('COMPLETED', 'FINISHED') THEN 1 END) AS completed_bookings,
+        COUNT(CASE WHEN UPPER(TRIM(status_code)) IN ('COMPLETED', 'FINISHED') THEN 1 END) AS completed_bookings,
 
         -- Card 4: Scheduled
-        COUNT(CASE WHEN UPPER(TRIM(status)) IN ('SCHEDULED', 'ACCEPTED') THEN 1 END) AS scheduled_bookings,
+        COUNT(CASE WHEN UPPER(TRIM(status_code)) IN ('SCHEDULED', 'ACCEPTED') THEN 1 END) AS scheduled_bookings,
 
         -- Aggregate total
         COUNT(*) AS total_bookings,
