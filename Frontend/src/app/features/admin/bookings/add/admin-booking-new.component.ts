@@ -27,10 +27,9 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
             </svg>
-            <span>Back to Bookings</span>
+            <span>{{ authService.isAuthenticated() ? 'Back to Bookings' : 'Back' }}</span>
           </button>
-          <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Create New Booking</h1>
-          <p class="text-xs text-gray-500 mt-0.5">Register a customer door fitting enquiry according to booking records</p>
+          <h1 class="text-2xl font-bold text-gray-900 tracking-tight">New Booking</h1>
         </div>
 
         <div class="flex items-center gap-2">
@@ -70,14 +69,14 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
         <div>
           <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
-            <span>1. Customer & Location Details</span>
+            <span>Customer & Location Details</span>
           </h2>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Col 1: Customer Name (name) -->
             <div>
               <label class="block text-xs font-bold text-gray-700 mb-1.5">
-                Client / Customer Name <span class="text-red-500">*</span>
+                Customer Name <span class="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -166,7 +165,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
         <div>
           <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
-            <span>2. Booking Notes & Fitting Specifications</span>
+            <span>Notes</span>
           </h2>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -189,7 +188,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
         <div>
           <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
             <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
-            <span>3. Documents (documents JSON)</span>
+            <span>Documents</span>
           </h2>
 
           <div class="border-2 border-dashed border-gray-300 hover:border-gray-400 rounded-xl p-5 bg-gray-50/50 hover:bg-gray-50 text-center transition-colors">
@@ -278,7 +277,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
 })
 export class AdminBookingNewComponent implements OnInit {
   private dataService = inject(DataService);
-  private authService = inject(AuthService);
+  authService = inject(AuthService);
   private toast = inject(ToastService);
   private router = inject(Router);
   private titleService = inject(Title);
@@ -342,6 +341,10 @@ export class AdminBookingNewComponent implements OnInit {
           this.branchHeadId = this.loginId;
         }
       }
+    } else {
+      this.loginRoleId = 5;
+      this.loginId = null;
+      this.loginName = 'customer';
     }
 
     this.loadDistricts();
@@ -426,7 +429,11 @@ export class AdminBookingNewComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/bookings']);
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate(['/admin/bookings']);
+    } else {
+      this.router.navigate(['/']);
+    }
   }
 
   saveBooking(): void {
@@ -473,7 +480,11 @@ export class AdminBookingNewComponent implements OnInit {
       next: () => {
         this.isSubmitting = false;
         this.toast.success('Booking created successfully!');
-        this.router.navigate(['/admin/bookings']);
+        if (this.authService.isAuthenticated()) {
+          this.router.navigate(['/admin/bookings']);
+        } else {
+          this.router.navigate(['/']);
+        }
       },
       error: err => {
         this.isSubmitting = false;

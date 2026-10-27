@@ -39,12 +39,17 @@ export const PUBLIC_ROUTES: Routes = [
   },
   {
     path: 'services',
-    redirectTo: 'book-now',
+    redirectTo: 'bookings/new',
     pathMatch: 'full'
   },
   {
     path: 'book-now',
-    component: BookNowComponent,
+    redirectTo: 'bookings/new',
+    pathMatch: 'full'
+  },
+  {
+    path: 'bookings/new',
+    loadComponent: () => import('../admin/bookings/add/admin-booking-new.component').then(m => m.AdminBookingNewComponent),
     resolve: {
       districts: districtsResolver,
       branchHeads: branchHeadsResolver

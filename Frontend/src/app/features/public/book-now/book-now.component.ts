@@ -90,8 +90,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
               </svg>
               <span>Back</span>
             </button>
-            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Create New Booking</h1>
-            <p class="text-xs text-gray-500 mt-0.5">Register a customer door fitting enquiry according to booking records</p>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">New Booking</h1>
           </div>
 
           <div class="flex items-center gap-2">
@@ -131,14 +130,14 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
           <div>
             <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
-              <span>1. Customer & Location Details</span>
+              <span>Customer & Location Details</span>
             </h2>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <!-- Col 1: Customer Name (name) -->
               <div>
                 <label class="block text-xs font-bold text-gray-700 mb-1.5">
-                  Client / Customer Name <span class="text-red-500">*</span>
+                  Customer Name <span class="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -239,7 +238,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
           <div>
             <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
-              <span>2. Booking Notes & Fitting Specifications</span>
+              <span>Notes</span>
             </h2>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -262,7 +261,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
           <div>
             <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
               <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
-              <span>3. Documents (documents JSON)</span>
+              <span>Documents</span>
             </h2>
 
             <div class="border-2 border-dashed border-gray-300 hover:border-gray-400 rounded-xl p-5 bg-gray-50/50 hover:bg-gray-50 text-center transition-colors">

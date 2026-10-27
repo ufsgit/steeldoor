@@ -34,7 +34,7 @@ export const ADMIN_SIDEBAR_MENUS: NavMenuItem[] = [
   {
     id: 'admin-create-booking',
     label: 'Create Booking',
-    route: '/admin/bookings/new',
+    route: '/bookings/new',
     category: 'Operations',
     allowedRoles: ['admin', 'coordinator']
   },
@@ -69,7 +69,7 @@ export const USER_NAV_MENUS: NavMenuItem[] = [
   {
     id: 'user-new-fitting',
     label: 'Book Installation',
-    route: '/book-now',
+    route: '/bookings/new',
     allowedRoles: ['user', 'client']
   },
   {

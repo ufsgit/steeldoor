@@ -80,7 +80,7 @@ import { District } from '../../../core/models';
       <!-- CTA -->
       <div class="text-center pt-4">
         <a
-          routerLink="/book-now"
+          routerLink="/bookings/new"
           class="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-primary hover:bg-primary-hover text-text-inverted font-bold text-sm shadow-soft transition-all cursor-pointer"
         >
           <span>Book Installation</span>

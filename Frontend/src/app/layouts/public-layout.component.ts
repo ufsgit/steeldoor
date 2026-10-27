@@ -57,7 +57,7 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
           <div class="hidden md:flex items-center gap-2.5 sm:gap-3 shrink-0">
             <!-- Book Installation CTA Button -->
             <a
-              routerLink="/book-now"
+              routerLink="/bookings/new"
               class="h-10 px-5 rounded-xl text-xs sm:text-sm font-bold bg-primary hover:bg-primary-hover text-text-inverted shadow-soft transition-all transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2 group cursor-pointer"
             >
               <span>Book Installation</span>
@@ -160,7 +160,7 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
                 <span>Contact Us</span>
               </a>
               <a
-                routerLink="/book-now"
+                routerLink="/bookings/new"
                 routerLinkActive="bg-primary/10 text-primary font-bold"
                 (click)="mobileMenuOpen.set(false)"
                 class="px-4 py-2.5 rounded-xl border border-transparent text-text hover:bg-surface-muted transition-colors flex items-center justify-between font-bold text-primary"
@@ -242,7 +242,7 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
                 <li><a routerLink="/" class="hover:text-accent transition-colors">Home Portal</a></li>
                 <li><a routerLink="/about" class="hover:text-accent transition-colors">About Our Network</a></li>
                 <li><a routerLink="/contact" class="hover:text-accent transition-colors">Contact Us</a></li>
-                <li><a routerLink="/book-now" class="hover:text-accent transition-colors">Schedule Installation</a></li>
+                <li><a routerLink="/bookings/new" class="hover:text-accent transition-colors">Schedule Installation</a></li>
                 <li>
                   <button
                     type="button"

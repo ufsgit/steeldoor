@@ -67,7 +67,7 @@ import { ServiceItem } from '../../../core/models';
               </div>
 
               <a
-                routerLink="/book-now"
+                routerLink="/bookings/new"
                 [queryParams]="{ service: service.doorType }"
                 class="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-text-inverted text-xs font-bold shadow-soft transition-all"
               >
@@ -87,7 +87,7 @@ import { ServiceItem } from '../../../core/models';
           </p>
         </div>
         <a
-          routerLink="/book-now"
+          routerLink="/bookings/new"
           class="px-6 py-3 rounded-xl bg-primary text-text-inverted text-xs font-bold shrink-0 hover:bg-primary-hover transition-colors"
         >
           Book Installation

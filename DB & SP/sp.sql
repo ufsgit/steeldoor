@@ -1253,3 +1253,95 @@ BEGIN
     END IF;
 END$$
 DELIMITER ;
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `sp_get_dashboard_metrics`$$
+DROP PROCEDURE IF EXISTS `get_dashboard_metrics`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_dashboard_metrics`(
+    IN p_period      VARCHAR(20),  -- Filter: 'all', 'this_month', 'last_30_days' (default: 'this_month')
+    IN p_role_id     INT,          -- Optional Role ID: 1 (Company), 2 (Coordinator), 3 (Branch Head), 4 (Dealer), 5 (Customer)
+    IN p_login_id    INT,          -- Optional Login User ID
+    IN p_district_id INT,          -- Optional District ID filter
+    IN p_date_from   DATE,         -- Optional Custom Start Date
+    IN p_date_to     DATE          -- Optional Custom End Date
+)
+BEGIN
+    DECLARE v_from_date   DATE DEFAULT NULL;
+    DECLARE v_to_date     DATE DEFAULT NULL;
+    DECLARE v_district_id INT DEFAULT p_district_id;
+    DECLARE v_period      VARCHAR(20) DEFAULT 'this_month';
+
+    -- 1. Standardize period preset
+    IF p_period IS NOT NULL AND TRIM(p_period) != '' THEN
+        SET v_period = LOWER(TRIM(p_period));
+    END IF;
+
+    -- 2. Calculate Date Windows
+    IF v_period = 'this_month' THEN
+        SET v_from_date = DATE_FORMAT(CURRENT_DATE, '%Y-%m-01');
+        SET v_to_date   = LAST_DAY(CURRENT_DATE);
+    ELSEIF v_period = 'last_30_days' THEN
+        SET v_from_date = DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY);
+        SET v_to_date   = CURRENT_DATE;
+    ELSEIF v_period = 'all' THEN
+        SET v_from_date = NULL;
+        SET v_to_date   = NULL;
+    END IF;
+
+    -- Custom explicit date arguments override preset
+    IF p_date_from IS NOT NULL THEN
+        SET v_from_date = p_date_from;
+    END IF;
+    IF p_date_to IS NOT NULL THEN
+        SET v_to_date = p_date_to;
+    END IF;
+
+    -- 3. Auto-resolve Branch Head (Role 3) district if not supplied
+    IF p_role_id = 3 AND (v_district_id IS NULL OR v_district_id <= 0) AND p_login_id IS NOT NULL THEN
+        SELECT district_id INTO v_district_id
+        FROM users
+        WHERE id = p_login_id AND is_deleted = 0
+        LIMIT 1;
+    END IF;
+
+    -- 4. Calculate all 4 Fitmate Dashboard Metric Cards in a single query
+    SELECT 
+        -- Card 1: New Booking
+        COUNT(CASE WHEN UPPER(TRIM(status)) = 'NEW' THEN 1 END) AS new_bookings,
+
+        -- Card 2: Pending
+        COUNT(CASE WHEN UPPER(TRIM(status)) = 'PENDING' THEN 1 END) AS pending_bookings,
+
+        -- Card 3: Completed
+        COUNT(CASE WHEN UPPER(TRIM(status)) IN ('COMPLETED', 'FINISHED') THEN 1 END) AS completed_bookings,
+
+        -- Card 4: Scheduled
+        COUNT(CASE WHEN UPPER(TRIM(status)) IN ('SCHEDULED', 'ACCEPTED') THEN 1 END) AS scheduled_bookings,
+
+        -- Aggregate total
+        COUNT(*) AS total_bookings,
+
+        -- Metadata returned for UI display
+        v_period    AS active_period,
+        v_from_date AS date_from,
+        v_to_date   AS date_to
+    FROM bookings
+    WHERE is_deleted = 0
+      -- Role Scoping
+      AND (
+          p_role_id IS NULL OR p_role_id IN (1, 2)
+          OR (p_role_id = 3 AND (branch_head_id = p_login_id OR (branch_head_id IS NULL AND district_id = v_district_id)))
+          OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
+      )
+      -- Optional District Filter
+      AND (
+          v_district_id IS NULL OR v_district_id <= 0 
+          OR district_id = v_district_id 
+          OR p_role_id = 3
+      )
+      -- Date Filter
+      AND (v_from_date IS NULL OR DATE(created_at) >= v_from_date)
+      AND (v_to_date IS NULL OR DATE(created_at) <= v_to_date);
+
+END$$
+DELIMITER ;

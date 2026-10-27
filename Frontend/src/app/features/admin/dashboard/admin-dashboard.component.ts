@@ -23,7 +23,7 @@ import { SimpleChartComponent, ChartDatum } from '../../../shared/components/sim
 
         <div class="flex items-center gap-3">
           <a
-            routerLink="/admin/bookings/new"
+            routerLink="/bookings/new"
             class="h-11 px-5 rounded-xl bg-primary hover:bg-primary-hover text-text-inverted text-xs sm:text-sm font-bold shadow-soft transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2 cursor-pointer"
           >
             <svg class="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">

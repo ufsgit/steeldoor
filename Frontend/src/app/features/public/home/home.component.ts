@@ -35,7 +35,7 @@ import { BannerSlide, ServiceItem, SiteContent, TestimonialItem } from '../../..
               <!-- Action CTA Button -->
               <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
                 <a
-                  routerLink="/book-now"
+                  routerLink="/bookings/new"
                   class="px-7 py-3.5 rounded-xl bg-primary hover:bg-primary-hover text-text-inverted font-bold text-sm shadow-soft transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 group cursor-pointer"
                 >
                   <svg class="w-4 h-4 text-accent group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -199,7 +199,7 @@ import { BannerSlide, ServiceItem, SiteContent, TestimonialItem } from '../../..
           <div>
             <h2 class="text-3xl font-extrabold text-text">Popular Door Fittings</h2>
           </div>
-          <a routerLink="/book-now" class="text-xs font-bold text-primary hover:text-primary-hover flex items-center gap-1">
+          <a routerLink="/bookings/new" class="text-xs font-bold text-primary hover:text-primary-hover flex items-center gap-1">
             <span>Book Installation</span>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -245,7 +245,7 @@ import { BannerSlide, ServiceItem, SiteContent, TestimonialItem } from '../../..
                 </div>
 
                 <a
-                  routerLink="/book-now"
+                  routerLink="/bookings/new"
                   [queryParams]="{ service: service.doorType }"
                   class="w-full py-2.5 rounded-xl border border-primary text-primary hover:bg-primary hover:text-text-inverted text-xs font-bold text-center transition-colors block mt-4"
                 >
@@ -301,7 +301,7 @@ import { BannerSlide, ServiceItem, SiteContent, TestimonialItem } from '../../..
           </p>
           <div class="pt-2">
             <a
-              routerLink="/book-now"
+              routerLink="/bookings/new"
               class="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-accent hover:bg-accent-light text-primary-dark font-extrabold text-sm shadow-card transition-all transform hover:-translate-y-0.5"
             >
               <span>Book Door Installation Now</span>

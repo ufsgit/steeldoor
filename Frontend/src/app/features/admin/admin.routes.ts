@@ -52,7 +52,8 @@ export const ADMIN_ROUTES: Routes = [
       },
       {
         path: 'bookings/new',
-        loadComponent: () => import('./bookings/add/admin-booking-new.component').then(m => m.AdminBookingNewComponent)
+        redirectTo: '/bookings/new',
+        pathMatch: 'full'
       },
       {
         path: 'bookings/:id',
