@@ -28,7 +28,8 @@ export const swaggerDocument = {
     { name: 'Bookings', description: 'Booking Management & Pagination' },
     { name: 'Status', description: 'Client Status Updates & History (Scheduled, Completed, Cancelled)' },
     { name: 'Dropdowns', description: 'Searchable Dropdown Select Options (Districts, Areas)' },
-    { name: 'Uploads', description: 'File & Document Uploads for Bookings' }
+    { name: 'Uploads', description: 'File & Document Uploads for Bookings' },
+    { name: 'Mobile Dashboard', description: 'Fitmate Mobile App Dashboard Metrics & Statistics' }
   ],
   components: {
     securitySchemes: {
@@ -256,6 +257,59 @@ export const swaggerDocument = {
           data: {
             type: 'array',
             items: { $ref: '#/components/schemas/DropdownItem' }
+          }
+        }
+      },
+      DashboardMetricsResponse: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean', example: true },
+          data: {
+            type: 'object',
+            properties: {
+              newBookings: {
+                type: 'integer',
+                example: 12,
+                description: 'Count of bookings with status NEW'
+              },
+              pendingBookings: {
+                type: 'integer',
+                example: 5,
+                description: 'Count of bookings with status PENDING'
+              },
+              completedBookings: {
+                type: 'integer',
+                example: 28,
+                description: 'Count of bookings with status COMPLETED or FINISHED'
+              },
+              scheduledBookings: {
+                type: 'integer',
+                example: 8,
+                description: 'Count of bookings with status SCHEDULED or ACCEPTED'
+              },
+              totalBookings: {
+                type: 'integer',
+                example: 53,
+                description: 'Total booking count across matching filters'
+              },
+              period: {
+                type: 'string',
+                example: 'this_month',
+                description: 'Active filter preset: all | this_month | last_30_days'
+              },
+              dateFrom: {
+                type: 'string',
+                format: 'date',
+                nullable: true,
+                example: '2026-10-01'
+              },
+              dateTo: {
+                type: 'string',
+                format: 'date',
+                nullable: true,
+                example: '2026-10-31'
+              }
+            }
           }
         }
       }
@@ -1014,6 +1068,126 @@ export const swaggerDocument = {
           },
           400: {
             description: 'Invalid type parameter',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' }
+              }
+            }
+          }
+        }
+      }
+    },
+    '/api/mobile-dashboard': {
+      get: {
+        tags: ['Mobile Dashboard'],
+        summary: 'Fitmate Mobile Dashboard Metrics (Stored Procedure: get_dashboard_metrics)',
+        description: 'Fetches metric cards for Fitmate mobile dashboard: New Booking, Pending, Completed, Scheduled, and Total bookings count. Supports period presets (this_month, last_30_days, all) or custom date windows (dateFrom, dateTo), and scopes results based on authenticated user role and district.',
+        security: [{ BearerAuth: [] }, { CookieAuth: [] }, {}],
+        parameters: [
+          {
+            name: 'period',
+            in: 'query',
+            required: false,
+            schema: {
+              type: 'string',
+              enum: ['this_month', 'last_30_days', 'all'],
+              default: 'this_month'
+            },
+            description: "Date filter preset: 'this_month' (default), 'last_30_days', or 'all'"
+          },
+          {
+            name: 'districtId',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer' },
+            description: 'Optional District ID to filter metrics (Coordinator/Admin or Branch override)'
+          },
+          {
+            name: 'dateFrom',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', format: 'date', example: '2026-10-01' },
+            description: 'Custom start date (YYYY-MM-DD), overrides preset period'
+          },
+          {
+            name: 'dateTo',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', format: 'date', example: '2026-10-31' },
+            description: 'Custom end date (YYYY-MM-DD), overrides preset period'
+          }
+        ],
+        responses: {
+          200: {
+            description: 'Dashboard metrics retrieved successfully',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/DashboardMetricsResponse' }
+              }
+            }
+          },
+          500: {
+            description: 'Database or server error',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' }
+              }
+            }
+          }
+        }
+      }
+    },
+    '/api/mobile-dashboard/metrics': {
+      get: {
+        tags: ['Mobile Dashboard'],
+        summary: 'Fitmate Mobile Dashboard Metrics (Alias)',
+        description: 'Alias endpoint for `/api/mobile-dashboard` that calls `get_dashboard_metrics`.',
+        security: [{ BearerAuth: [] }, { CookieAuth: [] }, {}],
+        parameters: [
+          {
+            name: 'period',
+            in: 'query',
+            required: false,
+            schema: {
+              type: 'string',
+              enum: ['this_month', 'last_30_days', 'all'],
+              default: 'this_month'
+            },
+            description: "Date filter preset: 'this_month' (default), 'last_30_days', or 'all'"
+          },
+          {
+            name: 'districtId',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer' },
+            description: 'Optional District ID to filter metrics'
+          },
+          {
+            name: 'dateFrom',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', format: 'date', example: '2026-10-01' },
+            description: 'Custom start date (YYYY-MM-DD)'
+          },
+          {
+            name: 'dateTo',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', format: 'date', example: '2026-10-31' },
+            description: 'Custom end date (YYYY-MM-DD)'
+          }
+        ],
+        responses: {
+          200: {
+            description: 'Dashboard metrics retrieved successfully',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/DashboardMetricsResponse' }
+              }
+            }
+          },
+          500: {
+            description: 'Database or server error',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' }
