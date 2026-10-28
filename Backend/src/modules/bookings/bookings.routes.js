@@ -42,7 +42,7 @@ router.get('/', optionalAuth, (req, res, next) => bookingsController.getAll(req,
 router.post('/', optionalAuth, handleBookingUploads, (req, res, next) => bookingsController.create(req, res, next));
 
 // PUT /api/bookings/:id - Update existing booking with optional file upload
-router.put('/:id', handleBookingUploads, (req, res, next) => bookingsController.update(req, res, next));
+router.put('/:id', optionalAuth, handleBookingUploads, (req, res, next) => bookingsController.update(req, res, next));
 
 // PATCH & POST /api/bookings/:id/status - Update booking/client status
 router.patch('/:id/status', optionalAuth, (req, res, next) => statusController.save(req, res, next));

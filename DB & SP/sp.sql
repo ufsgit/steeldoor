@@ -547,6 +547,8 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `save_booking`(
 )
 BEGIN
     DECLARE v_booking_id INT;
+	DECLARE v_old_name VARCHAR(150);
+	DECLARE v_old_notes TEXT;
     
     DECLARE v_status_id INT DEFAULT 1;
     DECLARE v_status_code VARCHAR(50) DEFAULT 'New';
@@ -623,12 +625,35 @@ BEGIN
         );
 
         SET v_booking_id = LAST_INSERT_ID();
+        
+        INSERT INTO booking_history (
+            booking_id, booking_name,action_type, 
+            customer_note, staff_note,
+            new_status_id, new_status_code, new_status_label, new_status_color_code,
+            to_branch_head_id, to_branch_head_name,
+            to_assigned_head_district_id, to_assigned_head_district_name,
+            action_by_id, action_by_name, action_by_role_id
+        ) VALUES (
+            v_booking_id, p_name, 'New Booking Created', 
+            p_notes, NULL,
+            v_status_id, v_status_code, v_status_label, v_status_color_code,
+            v_branch_head_id, v_branch_head_name,
+            p_district_id, v_district_name,
+            p_login_id, p_login_name, p_login_role_id
+        );
 
 
     -- =========================================================================
     -- MODE 2: UPDATE (When p_id > 0)
     -- =========================================================================
     ELSE
+        -- 1. Fetch current name and note before update
+        SELECT name, notes 
+        INTO v_old_name, v_old_notes
+        FROM bookings
+        WHERE id = p_id AND is_deleted = 0;
+
+        -- 2. Update bookings table
         UPDATE bookings
         SET 
             name             = COALESCE(p_name, name),
@@ -653,7 +678,40 @@ BEGIN
         WHERE id = p_id AND is_deleted = 0;
 
         SET v_booking_id = p_id;
+
+        -- 3. Log history if customer name was updated
+        IF p_name IS NOT NULL AND TRIM(p_name) <> '' AND (v_old_name IS NULL OR v_old_name <> TRIM(p_name)) THEN
+            INSERT INTO booking_history (
+                booking_id, booking_name, action_type,
+                customer_note, staff_note,
+                action_by_id, action_by_name, action_by_role_id
+            ) VALUES (
+                v_booking_id, 
+                TRIM(p_name), 
+                CONCAT('Customer Name Updated from "', COALESCE(v_old_name, ''), '" to "', TRIM(p_name), '"'),
+                NULL, 
+                NULL,
+                p_login_id, 
+                p_login_name, 
+                p_login_role_id
+            );
+        END IF;
+
+
+        -- 4. Log history if customer note was updated
+        IF p_notes IS NOT NULL AND (v_old_notes IS NULL OR v_old_notes <> p_notes) THEN
+            INSERT INTO booking_history (
+                booking_id, booking_name, action_type,
+                customer_note, staff_note,
+                action_by_id, action_by_name, action_by_role_id
+            ) VALUES (
+                v_booking_id, COALESCE(TRIM(p_name), v_old_name), 'Customer Notes Updated',
+                p_notes, NULL,
+                p_login_id, p_login_name, p_login_role_id
+            );
+        END IF;
     END IF;
+
 
     -- =========================================================================
     -- RETURN THE SAVED / UPDATED RECORD
@@ -951,29 +1009,77 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `update_booking_status_or_branch_hea
     IN p_branch_head_id  INT
 )
 BEGIN
-    DECLARE v_new_id INT;
     DECLARE v_clean_date DATE;
     DECLARE v_client_name VARCHAR(150);
     DECLARE v_created_by_name VARCHAR(100);
+    DECLARE v_branch_head_id INT;
     DECLARE v_branch_head_name VARCHAR(150);
     DECLARE v_branch_head_district_id INT;
     DECLARE v_branch_head_district_name VARCHAR(100);
-    DECLARE v_status_id INT DEFAULT 1;
-    DECLARE v_status_code VARCHAR(50) DEFAULT 'New';
-    DECLARE v_status_label VARCHAR(100) DEFAULT 'New';
-    DECLARE v_status_color_code VARCHAR(20) DEFAULT '#3b82f6';
+    
+    -- Replace the existing v_status_* declarations with these (no DEFAULT values)
+    DECLARE v_status_id INT;
+    DECLARE v_status_code VARCHAR(50);
+    DECLARE v_status_label VARCHAR(100);
+    DECLARE v_status_color_code VARCHAR(20);
+
+    -- Add these new variables to track old values and acting user's role
+    DECLARE v_old_status_id INT;
+    DECLARE v_old_status_code VARCHAR(50);
+    DECLARE v_old_status_label VARCHAR(100);
+    DECLARE v_old_status_color_code VARCHAR(20);
+    
+	DECLARE v_old_schedule_date DATE;
+
+    
+    DECLARE v_old_branch_head_id INT;
+    DECLARE v_old_branch_head_name VARCHAR(150);
+    DECLARE v_old_assigned_head_district_id INT;
+    DECLARE v_old_assigned_head_district_name VARCHAR(100);
+    DECLARE v_creator_role_id INT;
+
+    -- 1. Fetch previous values from bookings table first
+    SELECT 
+        status_id, status_code, status_label, status_color_code,
+        branch_head_id, branch_head_name,
+        assigned_head_district_id, assigned_head_district_name,
+        schedule_date
+    INTO 
+        v_old_status_id, v_old_status_code, v_old_status_label, v_old_status_color_code,
+        v_old_branch_head_id, v_old_branch_head_name,
+        v_old_assigned_head_district_id, v_old_assigned_head_district_name,
+        v_old_schedule_date
+    FROM bookings 
+    WHERE id = p_client_id LIMIT 1;
+
+    -- Initialize with existing values in case they aren't provided in params
+    SET v_status_id = v_old_status_id;
+    SET v_status_code = v_old_status_code;
+    SET v_status_label = v_old_status_label;
+    SET v_status_color_code = v_old_status_color_code;
+    SET v_branch_head_id = v_old_branch_head_id;
+    SET v_branch_head_name = v_old_branch_head_name;
+    SET v_branch_head_district_id = v_old_assigned_head_district_id;
+    SET v_branch_head_district_name = v_old_assigned_head_district_name;
+    
     -- 1. Auto-fetch client_name if omitted
     SET v_client_name = TRIM(p_client_name);
     IF v_client_name IS NULL OR v_client_name = '' THEN
         SELECT name INTO v_client_name FROM bookings WHERE id = p_client_id LIMIT 1;
     END IF;
-    -- 2. Auto-fetch created_by_name
+    -- 2. Auto-fetch created_by_name and user role
     SET v_created_by_name = TRIM(p_created_by_name);
-    IF (v_created_by_name IS NULL OR v_created_by_name = '') AND p_created_by IS NOT NULL THEN
-        SELECT name INTO v_created_by_name FROM users WHERE id = p_created_by LIMIT 1;
+    IF p_created_by IS NOT NULL THEN
+        IF v_created_by_name IS NULL OR v_created_by_name = '' THEN
+            SELECT name, role_id INTO v_created_by_name, v_creator_role_id FROM users WHERE id = p_created_by LIMIT 1;
+        ELSE
+            SELECT role_id INTO v_creator_role_id FROM users WHERE id = p_created_by LIMIT 1;
+        END IF;
     END IF;
+
     -- 3. Lookup Selected Branch Head AND their assigned District directly from users table
     IF p_branch_head_id IS NOT NULL AND p_branch_head_id > 0 THEN
+        SET v_branch_head_id = p_branch_head_id;
         SELECT u.name, u.district_id, COALESCE(d.name, u.district_name)
         INTO v_branch_head_name, v_branch_head_district_id, v_branch_head_district_name
         FROM users u
@@ -981,6 +1087,7 @@ BEGIN
         WHERE u.id = p_branch_head_id AND u.role_id = 3 AND u.is_deleted = 0
         LIMIT 1;
     END IF;
+
     -- 4. Resolve status details from status_options table (by id, code, or label)
     IF p_status_input IS NOT NULL AND TRIM(p_status_input) != '' THEN
         SELECT id, code, label, color_code
@@ -997,13 +1104,65 @@ BEGIN
     ELSE
         SET v_clean_date = p_schedule_date;
     END IF;
-    -- 6. Insert audit trail into client_status_logs
-    INSERT INTO client_status_logs (
-        client_id, client_name, status, schedule_date, notes, created_by, created_by_name
-    ) VALUES (
-        p_client_id, v_client_name, v_status_label, v_clean_date, TRIM(p_notes), p_created_by, v_created_by_name
-    );
-    SET v_new_id = LAST_INSERT_ID();
+    
+    -- 7. Insert into booking_history
+
+    -- Case B: Branch Head Changed -> 'Transfered'
+    IF p_branch_head_id IS NOT NULL AND p_branch_head_id > 0 AND (v_old_branch_head_id IS NULL OR v_old_branch_head_id <> p_branch_head_id) THEN
+        INSERT INTO booking_history (
+            booking_id, booking_name, action_type, staff_note,
+            from_branch_head_id, from_branch_head_name,
+            to_branch_head_id, to_branch_head_name,
+            from_assigned_head_district_id, from_assigned_head_district_name,
+            to_assigned_head_district_id, to_assigned_head_district_name,
+            action_by_id, action_by_name, action_by_role_id
+        ) VALUES (
+            p_client_id, v_client_name, 'Transfered', NULLIF(TRIM(p_notes), ''),
+            v_old_branch_head_id, v_old_branch_head_name,
+            p_branch_head_id, v_branch_head_name,
+            v_old_assigned_head_district_id, v_old_assigned_head_district_name,
+            v_branch_head_district_id, v_branch_head_district_name,
+            p_created_by, v_created_by_name, v_creator_role_id
+        );
+    END IF;
+    
+        -- Case A: Status Changed -> 'Status Updated'
+    IF v_old_status_id IS NOT NULL AND v_status_id IS NOT NULL AND v_old_status_id <> v_status_id THEN
+        INSERT INTO booking_history (
+            booking_id, booking_name, action_type, staff_note,
+            old_status_id, old_status_code, old_status_label, old_status_color_code,
+            new_status_id, new_status_code, new_status_label, new_status_color_code,
+            old_schedule_date, new_schedule_date,
+            action_by_id, action_by_name, action_by_role_id
+        ) VALUES (
+            p_client_id, v_client_name, 'Status Updated', NULLIF(TRIM(p_notes), ''),
+            v_old_status_id, v_old_status_code, v_old_status_label, v_old_status_color_code,
+            v_status_id, v_status_code, v_status_label, v_status_color_code,
+            v_old_schedule_date, v_clean_date,
+            p_created_by, v_created_by_name, v_creator_role_id
+        );
+
+    -- Case C: Status remained 'Scheduled', but schedule_date was modified
+    ELSEIF LOWER(v_status_code) = 'scheduled' AND v_clean_date IS NOT NULL AND (v_old_schedule_date IS NULL OR v_old_schedule_date <> v_clean_date) THEN
+        INSERT INTO booking_history (
+            booking_id, booking_name, action_type, staff_note,
+            old_status_id, old_status_code, old_status_label, old_status_color_code,
+            new_status_id, new_status_code, new_status_label, new_status_color_code,
+            old_schedule_date, new_schedule_date,
+            action_by_id, action_by_name, action_by_role_id
+        ) VALUES (
+            p_client_id, 
+            v_client_name, 
+            CONCAT('Scheduled Date Changed from "', COALESCE(DATE_FORMAT(v_old_schedule_date, '%d-%m-%Y'), 'None'), '" to "', DATE_FORMAT(v_clean_date, '%d-%m-%Y'), '"'),
+            NULLIF(TRIM(p_notes), ''),
+            v_old_status_id, v_old_status_code, v_old_status_label, v_old_status_color_code,
+            v_status_id, v_status_code, v_status_label, v_status_color_code,
+            v_old_schedule_date, v_clean_date,
+            p_created_by, v_created_by_name, v_creator_role_id
+        );
+    END IF;
+
+    
     -- 7. Update bookings table with new status and selected branch head + their assigned district
     UPDATE bookings
     SET 

@@ -177,6 +177,9 @@ export class BookingsController {
   async update(req, res, next) {
     try {
       const { id } = req.params;
+      const user = req.user || {};
+      const roleId = Number(user.roleId ?? user.dbRoleId ?? req.body.loginRoleId ?? req.body.login_role_id ?? null);
+
       const rawDocs = req.body.documents ?? req.body.doorDetails?.documents ?? req.body.doorDetails?.images;
       const savedDocs = rawDocs !== undefined ? processIncomingDocuments(rawDocs, req.files) : undefined;
 
@@ -186,7 +189,10 @@ export class BookingsController {
         mobile: req.body.mobile ?? req.body.contactPhone,
         address: req.body.address ?? req.body.streetAddress,
         notes: req.body.notes ?? req.body.doorDetails?.notes,
-        documents: savedDocs
+        documents: savedDocs,
+        loginRoleId: roleId || null,
+        loginId: user.id ?? req.body.loginId ?? req.body.login_id ?? null,
+        loginName: user.name ?? req.body.loginName ?? req.body.login_name ?? null
       };
       const updatedBooking = await bookingsService.updateBooking(id, updateData);
       
