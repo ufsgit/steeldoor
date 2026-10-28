@@ -11,7 +11,7 @@ export class MobileDashboardController {
    */
   async getMetrics(req, res, next) {
     try {
-      const { period, districtId, dateFrom, dateTo } = req.query;
+      const { period, districtId, assignedHeadDistrictId, dateFrom, dateTo } = req.query;
       const user = req.user || {};
 
       const roleId = user.roleId ?? user.dbRoleId ?? user.role_id ?? (
@@ -27,7 +27,7 @@ export class MobileDashboardController {
         period: period || 'this_month',
         roleId,
         loginId,
-        districtId: districtId || user.districtId || null,
+        districtId: assignedHeadDistrictId || districtId || user.assignedHeadDistrictId || user.districtId || null,
         dateFrom,
         dateTo
       });

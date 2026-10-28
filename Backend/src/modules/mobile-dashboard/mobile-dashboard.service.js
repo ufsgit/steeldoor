@@ -29,8 +29,12 @@ export class MobileDashboardService {
     return {
       newBookings: Number(row.new_bookings || 0),
       pendingBookings: Number(row.pending_bookings || 0),
-      completedBookings: Number(row.completed_bookings || 0),
       scheduledBookings: Number(row.scheduled_bookings || 0),
+      todayScheduledBookings: Number(row.today_scheduled_bookings || 0),
+      upcomingInstallations: Number(row.upcoming_installations || 0),
+      delayedBookings: Number(row.delayed_bookings || 0),
+      completedBookings: Number(row.completed_bookings || 0),
+      cancelledBookings: Number(row.cancelled_bookings || 0),
       totalBookings: Number(row.total_bookings || 0),
       period: row.active_period || period,
       dateFrom: row.date_from || null,

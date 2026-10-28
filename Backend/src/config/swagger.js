@@ -274,22 +274,42 @@ export const swaggerDocument = {
               newBookings: {
                 type: 'integer',
                 example: 12,
-                description: 'Count of bookings with status NEW'
+                description: 'Count of bookings with status NEW within last 24 hours'
               },
               pendingBookings: {
                 type: 'integer',
                 example: 5,
-                description: 'Count of bookings with status PENDING'
+                description: 'Count of bookings with status NEW older than 24 hours'
+              },
+              scheduledBookings: {
+                type: 'integer',
+                example: 8,
+                description: 'Total count of bookings with status SCHEDULED or ACCEPTED'
+              },
+              todayScheduledBookings: {
+                type: 'integer',
+                example: 2,
+                description: 'Scheduled bookings where schedule_date = today'
+              },
+              upcomingInstallations: {
+                type: 'integer',
+                example: 4,
+                description: 'Scheduled bookings where schedule_date > today'
+              },
+              delayedBookings: {
+                type: 'integer',
+                example: 2,
+                description: 'Scheduled bookings where schedule_date < today'
               },
               completedBookings: {
                 type: 'integer',
                 example: 28,
                 description: 'Count of bookings with status COMPLETED or FINISHED'
               },
-              scheduledBookings: {
+              cancelledBookings: {
                 type: 'integer',
-                example: 8,
-                description: 'Count of bookings with status SCHEDULED or ACCEPTED'
+                example: 1,
+                description: 'Count of bookings with status CANCELLED or CANCELED'
               },
               totalBookings: {
                 type: 'integer',
