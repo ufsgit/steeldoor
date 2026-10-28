@@ -327,18 +327,18 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_dashboard_metrics`(
-    IN p_period      VARCHAR(20),  -- Filter: 'all', 'this_month', 'last_30_days' (default: 'this_month')
-    IN p_role_id     INT,          -- Optional Role ID: 1 (Company), 2 (Coordinator), 3 (Branch Head), 4 (Dealer), 5 (Customer)
-    IN p_login_id    INT,          -- Optional Login User ID
-    IN p_district_id INT,          -- Optional District ID filter
-    IN p_date_from   DATE,         -- Optional Custom Start Date
-    IN p_date_to     DATE          -- Optional Custom End Date
+    IN p_period                    VARCHAR(20),  -- Filter: 'all', 'this_month', 'last_30_days' (default: 'this_month')
+    IN p_role_id                   INT,          -- Optional Role ID: 1 (Company), 2 (Coordinator), 3 (Branch Head), 4 (Dealer), 5 (Customer)
+    IN p_login_id                  INT,          -- Optional Login User ID
+    IN p_assigned_head_district_id INT,          -- Optional Assigned Head District ID filter
+    IN p_date_from                 DATE,         -- Optional Custom Start Date
+    IN p_date_to                   DATE          -- Optional Custom End Date
 )
 BEGIN
-    DECLARE v_from_date   DATE DEFAULT NULL;
-    DECLARE v_to_date     DATE DEFAULT NULL;
-    DECLARE v_district_id INT DEFAULT p_district_id;
-    DECLARE v_period      VARCHAR(20) DEFAULT 'this_month';
+    DECLARE v_from_date                 DATE DEFAULT NULL;
+    DECLARE v_to_date                   DATE DEFAULT NULL;
+    DECLARE v_assigned_head_district_id INT DEFAULT p_assigned_head_district_id;
+    DECLARE v_period                    VARCHAR(20) DEFAULT 'this_month';
 
     -- 1. Standardize period preset
     IF p_period IS NOT NULL AND TRIM(p_period) != '' THEN
@@ -366,47 +366,91 @@ BEGIN
     END IF;
 
     -- 3. Auto-resolve Branch Head (Role 3) district if not supplied
-    IF p_role_id = 3 AND (v_district_id IS NULL OR v_district_id <= 0) AND p_login_id IS NOT NULL THEN
-        SELECT district_id INTO v_district_id
+    IF p_role_id = 3 AND (v_assigned_head_district_id IS NULL OR v_assigned_head_district_id <= 0) AND p_login_id IS NOT NULL THEN
+        SELECT district_id INTO v_assigned_head_district_id
         FROM users
         WHERE id = p_login_id AND is_deleted = 0
         LIMIT 1;
     END IF;
 
-    -- 4. Calculate all 4 Fitmate Dashboard Metric Cards in a single query
+    -- 4. Calculate Metric Cards
     SELECT 
-        -- Card 1: New Booking
-        COUNT(CASE WHEN UPPER(TRIM(status_code)) = 'NEW' THEN 1 END) AS new_bookings,
+        -- Card: New Bookings (Status NEW within last 24 hours)
+        COUNT(CASE 
+            WHEN UPPER(TRIM(status_code)) = 'NEW' 
+                 AND created_at >= NOW() - INTERVAL 24 HOUR 
+            THEN 1 
+        END) AS new_bookings,
 
-        -- Card 2: Pending
-        COUNT(CASE WHEN UPPER(TRIM(status_code)) = 'PENDING' THEN 1 END) AS pending_bookings,
+        -- Card: Pending Bookings (Status NEW older than 24 hours)
+        COUNT(CASE 
+            WHEN UPPER(TRIM(status_code)) = 'NEW' 
+                 AND created_at < NOW() - INTERVAL 24 HOUR 
+            THEN 1 
+        END) AS pending_bookings,
 
-        -- Card 3: Completed
-        COUNT(CASE WHEN UPPER(TRIM(status_code)) IN ('COMPLETED', 'FINISHED') THEN 1 END) AS completed_bookings,
+        -- Card: Total Scheduled Bookings
+        COUNT(CASE 
+            WHEN UPPER(TRIM(status_code)) IN ('SCHEDULED', 'ACCEPTED') 
+            THEN 1 
+        END) AS scheduled_bookings,
 
-        -- Card 4: Scheduled
-        COUNT(CASE WHEN UPPER(TRIM(status_code)) IN ('SCHEDULED', 'ACCEPTED') THEN 1 END) AS scheduled_bookings,
+        -- Card: Today's Scheduled (schedule_date = today)
+        COUNT(CASE 
+            WHEN UPPER(TRIM(status_code)) IN ('SCHEDULED', 'ACCEPTED') 
+                 AND schedule_date = CURRENT_DATE 
+            THEN 1 
+        END) AS today_scheduled_bookings,
 
-        -- Aggregate total
+        -- Card: Upcoming Installations (schedule_date > today)
+        COUNT(CASE 
+            WHEN UPPER(TRIM(status_code)) IN ('SCHEDULED', 'ACCEPTED') 
+                 AND schedule_date > CURRENT_DATE 
+            THEN 1 
+        END) AS upcoming_installations,
+
+        -- Card: Delayed Bookings (schedule_date < today)
+        COUNT(CASE 
+            WHEN UPPER(TRIM(status_code)) IN ('SCHEDULED', 'ACCEPTED') 
+                 AND schedule_date < CURRENT_DATE 
+            THEN 1 
+        END) AS delayed_bookings,
+
+        -- Card: Completed Bookings
+        COUNT(CASE 
+            WHEN UPPER(TRIM(status_code)) IN ('COMPLETED', 'FINISHED') 
+            THEN 1 
+        END) AS completed_bookings,
+
+        -- Card: Cancelled Bookings
+        COUNT(CASE 
+            WHEN UPPER(TRIM(status_code)) IN ('CANCELLED', 'CANCELED') 
+            THEN 1 
+        END) AS cancelled_bookings,
+
+        -- Aggregate Total Bookings
         COUNT(*) AS total_bookings,
 
         -- Metadata returned for UI display
-        v_period    AS active_period,
-        v_from_date AS date_from,
-        v_to_date   AS date_to
+        v_period                    AS active_period,
+        v_from_date                 AS date_from,
+        v_to_date                   AS date_to
     FROM bookings
     WHERE is_deleted = 0
       -- Role Scoping
       AND (
           p_role_id IS NULL OR p_role_id IN (1, 2)
-          OR (p_role_id = 3 AND (branch_head_id = p_login_id OR (branch_head_id IS NULL AND district_id = v_district_id)))
+          OR (p_role_id = 3 AND (
+              branch_head_id = p_login_id 
+              OR assigned_head_district_id = v_assigned_head_district_id
+          ))
           OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
       )
-      -- Optional District Filter
+      -- District Filter using assigned_head_district_id
       AND (
-          v_district_id IS NULL OR v_district_id <= 0 
-          OR district_id = v_district_id 
-          OR p_role_id = 3
+          v_assigned_head_district_id IS NULL 
+          OR v_assigned_head_district_id <= 0 
+          OR assigned_head_district_id = v_assigned_head_district_id
       )
       -- Date Filter
       AND (v_from_date IS NULL OR DATE(created_at) >= v_from_date)
@@ -707,26 +751,6 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_client_status_history`(
-    IN p_client_id INT
-)
-BEGIN
-    SELECT 
-        id,
-        client_id,
-        client_name,
-        status,
-        schedule_date,
-        notes,
-        created_by_name,
-        created_at
-    FROM client_status_logs
-    WHERE client_id = p_client_id
-    ORDER BY created_at DESC;
-END$$
-DELIMITER ;
-
-DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_dropdown_data`(
     IN p_type       VARCHAR(20),
     IN p_parent_id  INT,
@@ -857,78 +881,6 @@ BEGIN
     FROM status_options
     WHERE is_active = 1
     ORDER BY sort_order ASC, id ASC;
-END$$
-DELIMITER ;
-
-DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_save_client_status`(
-    IN p_client_id       INT,
-    IN p_client_name     VARCHAR(150),
-    IN p_status          VARCHAR(50),
-    IN p_schedule_date   DATE,
-    IN p_notes           TEXT,
-    IN p_created_by      INT,
-    IN p_created_by_name VARCHAR(100),
-    IN p_branch_head_id  INT
-)
-BEGIN
-    DECLARE v_new_id INT;
-    DECLARE v_clean_date DATE;
-    DECLARE v_client_name VARCHAR(150);
-    DECLARE v_created_by_name VARCHAR(100);
-    DECLARE v_branch_head_name VARCHAR(150);
-
-    -- 1. Auto-fetch client_name if omitted
-    SET v_client_name = TRIM(p_client_name);
-    IF v_client_name IS NULL OR v_client_name = '' THEN
-        SELECT name INTO v_client_name FROM bookings WHERE id = p_client_id LIMIT 1;
-    END IF;
-
-    -- 2. Auto-fetch created_by_name (Who submitted the status update)
-    SET v_created_by_name = TRIM(p_created_by_name);
-    IF (v_created_by_name IS NULL OR v_created_by_name = '') AND p_created_by IS NOT NULL THEN
-        SELECT name INTO v_created_by_name FROM users WHERE id = p_created_by LIMIT 1;
-	   END IF;
-
-    -- 3. Auto-resolve Branch Head Name from users table
-    IF p_branch_head_id IS NOT NULL AND p_branch_head_id > 0 THEN
-        SELECT name INTO v_branch_head_name FROM users WHERE id = p_branch_head_id AND role_id = 3 LIMIT 1;
-    END IF;
-
-    -- 4. If status is Cancelled, clear schedule_date
-    IF LOWER(TRIM(p_status)) = 'cancelled' THEN
-        SET v_clean_date = NULL;
-    ELSE
-        SET v_clean_date = p_schedule_date;
-    END IF;
-
-    -- 5. Insert audit trail into client_status_logs
-    INSERT INTO client_status_logs (
-        client_id, client_name, status, schedule_date, notes, created_by, created_by_name
-    ) VALUES (
-        p_client_id, v_client_name, UPPER(TRIM(p_status)), v_clean_date, TRIM(p_notes), p_created_by, v_created_by_name
-    );
-
-    SET v_new_id = LAST_INSERT_ID();
-
-    -- 6. Update BOTH Status AND Branch Head in bookings
-    UPDATE bookings
-    SET 
-        status           = UPPER(TRIM(p_status)),
-        schedule_date    = v_clean_date,
-        notes            = CASE WHEN p_notes IS NOT NULL AND TRIM(p_notes) != '' THEN TRIM(p_notes) ELSE notes END,
-        created_by       = p_created_by,
-        created_by_name  = v_created_by_name,
-        branch_head_id   = COALESCE(p_branch_head_id, branch_head_id),
-        branch_head_name = COALESCE(v_branch_head_name, branch_head_name),
-        updated_at       = CURRENT_TIMESTAMP
-    WHERE id = p_client_id;
-
-    -- 7. Return saved log
-    SELECT id, client_id, client_name, status, schedule_date, notes, created_by, created_by_name, created_at
-    FROM client_status_logs
-    WHERE id = v_new_id;
-
 END$$
 DELIMITER ;
 
