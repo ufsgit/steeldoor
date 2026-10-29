@@ -540,4 +540,17 @@ export class DataService {
   deleteUser(id: number | string): Observable<any> {
     return this.http.delete(this.url(`/api/users/${id}`));
   }
+
+  getAvailableBranchDistricts(userId?: number | string | null): Observable<District[]> {
+    if (isPlatformServer(this.platformId)) {
+      return of([]);
+    }
+    let params = new HttpParams();
+    if (userId) {
+      params = params.set('userId', String(userId));
+    }
+    return this.http.get<District[]>(this.url('/api/users/available-branch-districts'), { params }).pipe(
+      catchError(() => of([]))
+    );
+  }
 }

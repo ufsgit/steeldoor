@@ -485,22 +485,7 @@ export class AdminUsersComponent implements OnInit {
 
   // Only allow districts that are NOT assigned to another non-deleted branch head user
   availableDistrictsForBranchHead = computed(() => {
-    const allDistricts = this.districts();
-    const currentId = this.editingUserId();
-    const currentUserIdStr = currentId != null ? String(currentId) : null;
-    
-    // Collect all district IDs assigned to active branch head users (excluding deleted and current editing user)
-    const assignedDistrictIds = new Set(
-      this.branchHeadUsers()
-        .filter(u => {
-          const isDeleted = u.isDeleted === 1 || u.is_deleted === 1;
-          const isCurrent = currentUserIdStr && String(u.id) === currentUserIdStr;
-          return !isDeleted && !isCurrent && (u.districtId != null || u.district_id != null);
-        })
-        .map(u => String(u.districtId ?? u.district_id))
-    );
-
-    return allDistricts.filter(d => !assignedDistrictIds.has(String(d.id)));
+    return this.districts();
   });
 
   activeRoleFilter = signal<string>('all');
@@ -574,7 +559,7 @@ export class AdminUsersComponent implements OnInit {
     }
 
     // Preload districts and branch heads for quick availability in the creation modal
-    this.loadDistrictsIfNeeded();
+
   }
 
   loadUsers(page: number = this.currentPage()): void {
@@ -704,22 +689,12 @@ export class AdminUsersComponent implements OnInit {
     });
   }
 
-  loadDistrictsIfNeeded(): void {
-    if (this.districts().length === 0) {
-      this.dataService.getDistricts().subscribe({
-        next: (dists) => {
-          if (Array.isArray(dists)) {
-            this.districts.set(dists);
-          }
-        }
-      });
-    }
-
-    // Always fetch latest branch heads to ensure assigned districts list is up to date
-    this.dataService.getUsers({ role: 'branch_head', limit: 100 }).subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.branchHeadUsers.set(res.data);
+  loadAvailableBranchDistricts(userId?: string | number | null): void {
+    const targetUserId = userId !== undefined ? userId : this.editingUserId();
+    this.dataService.getAvailableBranchDistricts(targetUserId).subscribe({
+      next: (dists) => {
+        if (Array.isArray(dists)) {
+          this.districts.set(dists);
         }
       }
     });
@@ -727,7 +702,7 @@ export class AdminUsersComponent implements OnInit {
 
   onRoleChange(): void {
     if (this.formRole === 'branch_head') {
-      this.loadDistrictsIfNeeded();
+      this.loadAvailableBranchDistricts(this.editingUserId());
     } else {
       this.formDistrictId = null;
     }
@@ -764,7 +739,7 @@ export class AdminUsersComponent implements OnInit {
     }
     this.formDistrictId = this.formRole === 'branch_head' ? (user.districtId || null) : null;
     if (this.formRole === 'branch_head') {
-      this.loadDistrictsIfNeeded();
+      this.loadAvailableBranchDistricts(user.id);
     }
     this.formPhone = user.phone || '';
     this.formEmail = user.email || '';

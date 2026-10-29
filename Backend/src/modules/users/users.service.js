@@ -438,6 +438,15 @@ export class UsersService {
     );
     return { success: true, id };
   }
+
+  /**
+   * Fetch available districts for Branch Head
+   */
+  async getAvailableBranchDistricts(userId = null) {
+    const idParam = userId ? Number(userId) : null;
+    const [results] = await pool.query('CALL get_available_branch_districts(?)', [idParam]);
+    return results?.[0] || [];
+  }
 }
 
 export const usersService = new UsersService();

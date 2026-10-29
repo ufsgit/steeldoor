@@ -4,6 +4,9 @@ import { optionalAuth } from '../auth/jwt.util.js';
 
 const router = Router();
 
+// GET /api/users/available-branch-districts
+router.get('/available-branch-districts', optionalAuth, (req, res, next) => usersController.getAvailableBranchDistricts(req, res, next));
+
 // GET /api/users
 router.get('/', optionalAuth, (req, res, next) => usersController.getAll(req, res, next));
 

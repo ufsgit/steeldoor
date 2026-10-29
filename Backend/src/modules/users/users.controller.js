@@ -93,6 +93,16 @@ export class UsersController {
       next(err);
     }
   }
+
+  async getAvailableBranchDistricts(req, res, next) {
+    try {
+      const userId = req.query.userId || null;
+      const districts = await usersService.getAvailableBranchDistricts(userId);
+      res.json(districts);
+    } catch (err) {
+      return res.status(400).json({ error: this._formatError(err) });
+    }
+  }
 }
 
 export const usersController = new UsersController();
