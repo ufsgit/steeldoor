@@ -94,6 +94,19 @@ export class UsersController {
     }
   }
 
+  async getBranchHeadsForStatusUpdate(req, res, next) {
+    try {
+      const data = await usersService.getBranchHeadsForStatusUpdate();
+      res.json({
+        success: true,
+        count: data.length,
+        data
+      });
+    } catch (err) {
+      return res.status(400).json({ error: this._formatError(err) });
+    }
+  }
+
   async getAvailableBranchDistricts(req, res, next) {
     try {
       const userId = req.query.userId || null;

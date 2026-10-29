@@ -7,6 +7,9 @@ const router = Router();
 // GET /api/users/available-branch-districts
 router.get('/available-branch-districts', optionalAuth, (req, res, next) => usersController.getAvailableBranchDistricts(req, res, next));
 
+// GET /api/users/get_branch_heads_for_status_update
+router.get('/get_branch_heads_for_status_update', optionalAuth, (req, res, next) => usersController.getBranchHeadsForStatusUpdate(req, res, next));
+
 // GET /api/users
 router.get('/', optionalAuth, (req, res, next) => usersController.getAll(req, res, next));
 

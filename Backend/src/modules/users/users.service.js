@@ -164,7 +164,7 @@ export class UsersService {
     if (resolvedDistrictId) {
       const [distRows] = await pool.query('SELECT name FROM districts WHERE id = ?', [resolvedDistrictId]);
       if (distRows && distRows.length > 0) {
-        resolvedDistrictName = distRows[0].name ? distRows[0].name.replace(' Hub', '').trim() : null;
+        resolvedDistrictName = distRows[0].name ? distRows[0].name.trim() : null;
       }
     }
 
@@ -306,7 +306,7 @@ export class UsersService {
     if (resolvedDistrictId) {
       const [distRows] = await pool.query('SELECT name FROM districts WHERE id = ?', [resolvedDistrictId]);
       if (distRows && distRows.length > 0) {
-        resolvedDistrictName = distRows[0].name ? distRows[0].name.replace(' Hub', '').trim() : null;
+        resolvedDistrictName = distRows[0].name ? distRows[0].name.trim() : null;
       }
 
       // Check current or updated role of user
@@ -442,6 +442,14 @@ export class UsersService {
   /**
    * Fetch available districts for Branch Head
    */
+  /**
+   * Fetch Branch Heads for status update modal
+   */
+  async getBranchHeadsForStatusUpdate() {
+    const [results] = await pool.query('CALL get_branch_heads_for_status_update()');
+    return results?.[0] || [];
+  }
+
   async getAvailableBranchDistricts(userId = null) {
     const idParam = userId ? Number(userId) : null;
     const [results] = await pool.query('CALL get_available_branch_districts(?)', [idParam]);

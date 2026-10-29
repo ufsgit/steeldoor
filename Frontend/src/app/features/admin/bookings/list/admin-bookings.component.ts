@@ -944,7 +944,7 @@ import { environment } from '../../../../../environments/environment';
                   <label class="block font-medium text-gray-700 mb-1">District  *</label>
                   <app-district-dropdown
                     [(ngModel)]="newDistrict"
-                    [districts]="districts"
+                    [districts]="districts()"
                     valueField="name"
                     suffix="Hub"
                     placeholder="Select District / Hub"
@@ -1164,7 +1164,7 @@ import { environment } from '../../../../../environments/environment';
                     <option value="">Select Branch Head</option>
                     @for (head of availableBranchHeadOptions(); track head.id) {
                       <option [value]="head.name">
-                        {{ head.name }}{{ head.districtName ? ' (' + head.districtName + ' Hub)' : '' }}
+                        {{ head.name }}{{ head.districtName ? ' (' + head.districtName + ')' : '' }}
                       </option>
                     }
                   </select>
@@ -1251,9 +1251,10 @@ export class AdminBookingsComponent implements OnInit {
   toastService = inject(ToastService);
 
   bookings = signal<Booking[]>([]);
-  districts: District[] = [];
+  districts = signal<District[]>([]);
   branchHeads: BranchHead[] = [];
   branchHeadUsers: any[] = [];
+  branchHeadDropdownOptions = signal<Array<{ id: number; name: string; district_id: number; district_name: string }>>([]);
 
   isCompany = computed(() => {
     const u = this.authService.currentUser();
@@ -1269,17 +1270,42 @@ export class AdminBookingsComponent implements OnInit {
   });
 
   availableDistricts = computed(() => {
+    const list = this.districts();
     if (this.isBranchHead()) {
       const u = this.authService.currentUser();
-      return this.districts.filter(d => matchesDistrict(d.id, d.name, u?.districtId, u?.districtName));
+      return list.filter(d => matchesDistrict(d.id, d.name, u?.districtId, u?.districtName));
     }
-    return this.districts;
+    return list;
   });
 
   availableBranchHeadOptions = computed(() => {
     const list: Array<{ id: string | number; name: string; districtName?: string }> = [];
     const seen = new Set<string>();
 
+    // 1. Add current booking's assigned head as default option even if not yet in or missing from API response
+    const currentBookingHead = this.selectedBooking()?.branchHeadName || this.statusBranchHeadName;
+    if (currentBookingHead && !seen.has(currentBookingHead.toLowerCase())) {
+      seen.add(currentBookingHead.toLowerCase());
+      list.push({
+        id: this.selectedBooking()?.branchHeadId || 'current',
+        name: currentBookingHead,
+        districtName: (this.selectedBooking()?.districtName || '').trim()
+      });
+    }
+
+    // 2. Add options from the status update API
+    for (const h of this.branchHeadDropdownOptions()) {
+      if (h.name && !seen.has(h.name.toLowerCase())) {
+        seen.add(h.name.toLowerCase());
+        list.push({
+          id: h.id,
+          name: h.name,
+          districtName: (h.district_name || '').trim()
+        });
+      }
+    }
+
+    // 3. Fallback to branchHeadUsers or branchHeads if any
     for (const u of this.branchHeadUsers) {
       if (u.name && !seen.has(u.name.toLowerCase())) {
         seen.add(u.name.toLowerCase());
@@ -1290,19 +1316,6 @@ export class AdminBookingsComponent implements OnInit {
         });
       }
     }
-
-    for (const h of this.branchHeads) {
-      if (h.name && !seen.has(h.name.toLowerCase())) {
-        seen.add(h.name.toLowerCase());
-        list.push({
-          id: h.id,
-          name: h.name,
-          districtName: (h.districtName || '').replace(/\s+hub$/i, '').trim()
-        });
-      }
-    }
-
-    
 
     return list;
   });
@@ -1451,7 +1464,7 @@ export class AdminBookingsComponent implements OnInit {
       return;
     }
     const cleanDist = districtName.replace(/\s+hub$/i, '').trim().toLowerCase();
-    const matchedDistObj = this.districts.find(d => d.name.toLowerCase() === cleanDist);
+    const matchedDistObj = this.districts().find(d => d.name.toLowerCase() === cleanDist);
     const targetDistrictId = matchedDistObj ? String(matchedDistObj.id) : null;
 
     // 1. Search the user table for role 'branch_head' (role_id: 3) matching district_id or district_name
@@ -1562,7 +1575,7 @@ export class AdminBookingsComponent implements OnInit {
     // District Filter (checks districtId or districtName via matchesDistrict)
     const dist = this.selectedDistrict();
     if (dist) {
-      const matchedDistObj = this.districts.find(d => String(d.id) === String(dist) || d.name.toLowerCase() === String(dist).toLowerCase());
+      const matchedDistObj = this.districts().find(d => String(d.id) === String(dist) || d.name.toLowerCase() === String(dist).toLowerCase());
       const distName = matchedDistObj ? matchedDistObj.name : String(dist);
       list = list.filter(b => matchesDistrict(b.districtId, b.districtName, dist, distName));
     }
@@ -1622,7 +1635,7 @@ export class AdminBookingsComponent implements OnInit {
 
     this.dataService.getDropdownDistricts().subscribe({
       next: (dists) => {
-        this.districts = dists || [];
+        this.districts.set(dists || []);
       }
     });
 
@@ -1814,8 +1827,23 @@ export class AdminBookingsComponent implements OnInit {
 
     this.pendingStatusChange.set(newStatus);
 
+    // Fetch branch heads for status update
+    this.dataService.getBranchHeadsForStatusUpdate().subscribe({
+      next: (heads) => {
+        this.branchHeadDropdownOptions.set(heads || []);
+        if (!this.statusBranchHeadName && b.districtName) {
+          const cleanDist = b.districtName.replace(/\s+hub$/i, '').trim().toLowerCase();
+          const matched = heads.find(h => (h.district_name || '').toLowerCase() === cleanDist);
+          if (matched) {
+            this.statusBranchHeadName = matched.name;
+          }
+        }
+      },
+      error: (err) => console.error('Error fetching branch heads:', err)
+    });
+
     // Pre-fill Branch Head directly from the booking
-    this.statusBranchHeadName = b.branchHeadName || 'Rajesh Menon';
+    this.statusBranchHeadName = b.branchHeadName || '';
 
     // If Scheduled, default to today's date formatted as YYYY-MM-DD
     if (newStatus === 'Scheduled') {
@@ -1854,11 +1882,24 @@ export class AdminBookingsComponent implements OnInit {
     const user = this.authService.currentUser();
     const scheduleDate = newStatus === 'Scheduled' ? this.statusScheduleDate : null;
     const notes = this.statusNotes.trim();
-    const chosenBranchHead = this.statusBranchHeadName.trim() || b.branchHeadName || 'Rajesh Menon';
+    const chosenBranchHead = this.statusBranchHeadName.trim() || b.branchHeadName || '';
 
-    // Find matched branch head from users or branch heads
-    const matchedHeadUser = this.branchHeadUsers.find(u => u.name?.toLowerCase() === chosenBranchHead.toLowerCase());
-    const matchedHead = this.branchHeads.find(h => h.name?.toLowerCase() === chosenBranchHead.toLowerCase());
+    // Find matched branch head from available dropdown options first (exact new ID)
+    const matchedOption = this.availableBranchHeadOptions().find(
+      h => h.name.toLowerCase() === chosenBranchHead.toLowerCase()
+    );
+    const matchedDropdownItem = this.branchHeadDropdownOptions().find(
+      h => h.name.toLowerCase() === chosenBranchHead.toLowerCase()
+    );
+
+    let resolvedBranchHeadId = null;
+    if (matchedDropdownItem && matchedDropdownItem.id) {
+      resolvedBranchHeadId = String(matchedDropdownItem.id);
+    } else if (matchedOption && matchedOption.id && matchedOption.id !== 'current') {
+      resolvedBranchHeadId = String(matchedOption.id);
+    } else if (b.branchHeadName && b.branchHeadName.toLowerCase() === chosenBranchHead.toLowerCase()) {
+      resolvedBranchHeadId = b.branchHeadId ? String(b.branchHeadId) : null;
+    }
 
     // Keep the booking's original district unchanged
     const bookingDistrictId = b.districtId || null;
@@ -1873,7 +1914,7 @@ export class AdminBookingsComponent implements OnInit {
       staffNotes: notes,
       createdBy: user?.id ? String(user.id) : null,
       createdByName: user?.name || null,
-      branchHeadId: matchedHeadUser?.id || matchedHead?.id || b.branchHeadId || null,
+      branchHeadId: resolvedBranchHeadId,
       branchHeadName: chosenBranchHead,
       districtId: bookingDistrictId,
       districtName: bookingDistrictName
@@ -1892,7 +1933,7 @@ export class AdminBookingsComponent implements OnInit {
           ...b,
           status: newStatus,
           branchHeadName: returnedData.branchHeadName || chosenBranchHead,
-          branchHeadId: returnedData.branchHeadId ? String(returnedData.branchHeadId) : (matchedHeadUser?.id || matchedHead?.id ? String(matchedHeadUser?.id || matchedHead?.id) : b.branchHeadId),
+          branchHeadId: returnedData.branchHeadId ? String(returnedData.branchHeadId) : (resolvedBranchHeadId || b.branchHeadId),
           assignedHeadDistrictId: returnedData.assignedHeadDistrictId ?? b.assignedHeadDistrictId,
           assignedHeadDistrictName: returnedData.assignedHeadDistrictName ?? b.assignedHeadDistrictName,
           scheduledDate: scheduleDate || b.scheduledDate,
@@ -1926,7 +1967,7 @@ export class AdminBookingsComponent implements OnInit {
         this.newHead = u.name;
       }
     }
-    const targetDist = this.districts.find(d => d.name.toLowerCase() === this.newDistrict.toLowerCase());
+    const targetDist = this.districts().find(d => d.name.toLowerCase() === this.newDistrict.toLowerCase());
     if (targetDist?.id) {
       this.loadNewDistrictAreas(targetDist.id);
     }
@@ -2080,7 +2121,7 @@ export class AdminBookingsComponent implements OnInit {
     if (!this.newClientName || !this.newPhone || !this.newAddress) return;
 
     this.isSubmitting = true;
-    const matchedDist = this.districts.find(d => d.name === this.newDistrict);
+    const matchedDist = this.districts().find(d => d.name === this.newDistrict);
     const districtId = matchedDist?.id || 'dist-ekm';
 
     const u = this.authService.currentUser();

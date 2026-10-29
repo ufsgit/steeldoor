@@ -111,7 +111,7 @@ export interface SystemUser {
               </th>
               <th class="py-3 px-4 whitespace-nowrap">
                 <span class="text-gray-400 font-normal mr-1">D ·</span>
-                <span class="uppercase tracking-wider">DISTRICT / HUB</span>
+                <span class="uppercase tracking-wider">DISTRICT</span>
               </th>
               <th class="py-3 px-4 whitespace-nowrap">
                 <span class="text-gray-400 font-normal mr-1">E ·</span>

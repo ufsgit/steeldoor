@@ -226,6 +226,16 @@ export class DataService {
 
   // ---------------- Branch Heads ----------------
 
+  getBranchHeadsForStatusUpdate(): Observable<Array<{ id: number; name: string; district_id: number; district_name: string }>> {
+    if (isPlatformServer(this.platformId)) {
+      return of([]);
+    }
+    return this.http.get<{ success: boolean; data: any[] }>(this.url('/api/users/get_branch_heads_for_status_update')).pipe(
+      map(res => res?.data || []),
+      catchError(() => of([]))
+    );
+  }
+
   getBranchHeads(): Observable<BranchHead[]> {
     if (isPlatformServer(this.platformId)) {
       return of([]);
