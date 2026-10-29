@@ -416,6 +416,38 @@ export class UsersService {
    * Toggle user active/inactive status
    */
   async toggleStatus(id) {
+    // Check if activating an inactive branch head causes a district conflict
+    const [conflicts] = await pool.query(
+      `SELECT 
+        active_user.id AS active_user_id,
+        active_user.name AS active_user_name,
+        d.name AS district_name
+      FROM users target_user
+      INNER JOIN users active_user 
+        ON active_user.district_id = target_user.district_id
+        AND active_user.role_id = 3
+        AND active_user.is_active = 1
+        AND active_user.is_deleted = 0
+        AND active_user.id != target_user.id
+      INNER JOIN districts d 
+        ON d.id = target_user.district_id
+      WHERE target_user.id = ?
+        AND target_user.role_id = 3
+        AND target_user.is_active = 0
+        AND target_user.is_deleted = 0
+      LIMIT 1`,
+      [id]
+    );
+
+    if (conflicts.length > 0) {
+      const conflict = conflicts[0];
+      const error = new Error(
+        `District "${conflict.district_name}" is already assigned to active Branch Head "${conflict.active_user_name}". Please inactivate that user first or assign this user to a different district.`
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
     await pool.query(
       'UPDATE users SET is_active = IF(is_active = 1, 0, 1) WHERE id = ?',
       [id]

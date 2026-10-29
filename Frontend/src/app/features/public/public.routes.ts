@@ -3,10 +3,6 @@ import { HomeComponent } from './home/home.component';
 import { AboutComponent } from './about/about.component';
 import { RegisterComponent } from './register/register.component';
 import { guestGuard, rootGuard } from '../../core/guards/auth.guard';
-import {
-  branchHeadsResolver,
-  districtsResolver
-} from '../../core/resolvers/data.resolvers';
 
 export const PUBLIC_ROUTES: Routes = [
   {
@@ -16,17 +12,11 @@ export const PUBLIC_ROUTES: Routes = [
   },
   {
     path: 'about',
-    component: AboutComponent,
-    resolve: {
-      districts: districtsResolver
-    }
+    component: AboutComponent
   },
   {
     path: 'contact',
-    loadComponent: () => import('./contact/contact.component').then(m => m.ContactComponent),
-    resolve: {
-      districts: districtsResolver
-    }
+    loadComponent: () => import('./contact/contact.component').then(m => m.ContactComponent)
   },
   {
     path: 'services',
@@ -40,11 +30,7 @@ export const PUBLIC_ROUTES: Routes = [
   },
   {
     path: 'bookings/new',
-    loadComponent: () => import('../admin/bookings/add/booking-new.component').then(m => m.BookingNewComponent),
-    resolve: {
-      districts: districtsResolver,
-      branchHeads: branchHeadsResolver
-    }
+    loadComponent: () => import('../admin/bookings/add/booking-new.component').then(m => m.BookingNewComponent)
   },
   {
     path: 'login',

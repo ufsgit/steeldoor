@@ -665,26 +665,23 @@ export class AdminUsersComponent implements OnInit {
 
   toggleStatus(user: SystemUser): void {
     this.dataService.toggleUserStatus(user.id).subscribe({
-      next: (res) => {
+      next: (res: any) => {
+        const nextActive = res?.data?.isActive !== undefined 
+          ? (res.data.isActive === 1 || res.data.isActive === true)
+          : !this.isUserActive(user);
+
         const updated = this.users().map(u => {
           if (u.id === user.id) {
-            return { ...u, isActive: !this.isUserActive(u) };
+            return { ...u, isActive: nextActive };
           }
           return u;
         });
         this.users.set(updated);
-        this.toast.success(`User status updated.`);
+        this.toast.success(res?.message || 'User status updated.');
       },
-      error: () => {
-        // Optimistic toggle fallback
-        const updated = this.users().map(u => {
-          if (u.id === user.id) {
-            return { ...u, isActive: !this.isUserActive(u) };
-          }
-          return u;
-        });
-        this.users.set(updated);
-        this.toast.success(`User status updated.`);
+      error: (err) => {
+        const errorMsg = err?.error?.error || err?.error?.message || err?.message || 'Failed to update user status.';
+        this.toast.error(errorMsg);
       }
     });
   }
