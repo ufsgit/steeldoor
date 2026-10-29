@@ -27,19 +27,11 @@ export const ADMIN_ROUTES: Routes = [
     children: [
       {
         path: '',
-        component: AdminBookingsComponent,
-        resolve: {
-          bookings: bookingsResolver,
-          districts: districtsResolver
-        }
+        component: AdminBookingsComponent
       },
       {
         path: 'bookings',
-        component: AdminBookingsComponent,
-        resolve: {
-          bookings: bookingsResolver,
-          districts: districtsResolver
-        }
+        component: AdminBookingsComponent
       },
       {
         path: 'reports',

@@ -249,6 +249,8 @@ export interface BookingFilters {
   dateFrom?: string;
   dateTo?: string;
   filterRole?: number | string;
+  page?: number;
+  limit?: number;
 }
 
 export interface CreateBookingPayload {

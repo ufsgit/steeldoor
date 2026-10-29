@@ -447,7 +447,7 @@ import { environment } from '../../../../../environments/environment';
       <div class="w-full px-7 sm:px-10 py-2.5 flex items-center justify-between text-[13px] text-gray-500 bg-white select-none">
         <div>
           Showing <strong class="text-gray-900 font-bold">{{ (currentPage() - 1) * pageSize + 1 }} to {{ getEndIndex() }}</strong> of
-          <strong class="text-gray-900 font-bold">{{ filteredBookings().length }}</strong> orders
+          <strong class="text-gray-900 font-bold">{{ totalRecords() || filteredBookings().length }}</strong> orders
         </div>
 
         <div class="flex items-center gap-4 text-[13px]">
@@ -1302,15 +1302,7 @@ export class AdminBookingsComponent implements OnInit {
       }
     }
 
-    // Default static heads if none loaded yet
-    if (list.length === 0) {
-      return [
-        { id: 4, name: 'Rajesh Menon', districtName: 'Ernakulam' },
-        { id: 5, name: 'Suresh Kumar', districtName: 'Trivandrum' },
-        { id: 6, name: 'Anas Kabeer', districtName: 'Kozhikode' },
-        { id: 10, name: 'K. V. Pavithran', districtName: 'Kannur' }
-      ];
-    }
+    
 
     return list;
   });
@@ -1335,7 +1327,10 @@ export class AdminBookingsComponent implements OnInit {
   // Fetch bookings directly from backend SP with all active filters
   fetchBookingsFromApi(): void {
     this.isLoading.set(true);
-    const filterParams: any = {};
+    const filterParams: any = {
+      page: this.currentPage(),
+      limit: this.pageSize
+    };
 
     const q = this.searchQuery().trim();
     if (q) filterParams.search = q;
@@ -1355,9 +1350,13 @@ export class AdminBookingsComponent implements OnInit {
     const dTo = this.dateTo();
     if (dTo) filterParams.dateTo = dTo;
 
-    this.dataService.getBookings(filterParams).subscribe({
-      next: (b) => {
-        this.bookings.set(b || []);
+    this.dataService.getBookingsWithPagination(filterParams).subscribe({
+      next: (res) => {
+        this.bookings.set(res?.data || []);
+        if (res?.pagination) {
+          this.totalRecords.set(res.pagination.total);
+          this.totalPages.set(res.pagination.totalPages || Math.ceil(res.pagination.total / this.pageSize) || 1);
+        }
         this.isLoading.set(false);
       },
       error: (err) => {
@@ -1398,7 +1397,9 @@ export class AdminBookingsComponent implements OnInit {
 
   // Pagination (11 items per page to fill the screen cleanly without vertical overflow)
   currentPage = signal(1);
-  pageSize = 11;
+  totalRecords = signal(0);
+  totalPages = signal(1);
+  pageSize = 10;
 
   // Modals / Drawers
   selectedBooking = signal<Booking | null>(null);
@@ -1481,7 +1482,7 @@ export class AdminBookingsComponent implements OnInit {
       this.statusBranchHeadName = matchedUser.name;
     } else {
       // Default fallback
-      this.statusBranchHeadName = cleanDist === 'trivandrum' ? 'Suresh Kumar' : 'Rajesh Menon';
+      this.statusBranchHeadName = '';
     }
   }
 
@@ -1611,46 +1612,21 @@ export class AdminBookingsComponent implements OnInit {
     return list;
   });
 
-  totalPages = computed(() => Math.ceil(this.filteredBookings().length / this.pageSize));
-
+  
   paginatedBookings = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.filteredBookings().slice(start, start + this.pageSize);
+    return this.filteredBookings();
   });
 
   ngOnInit(): void {
     this.titleService.setTitle('SteelGuard Orders Sheet');
 
-    const resolvedBookings = this.route.snapshot.data['bookings'];
-    if (resolvedBookings && resolvedBookings.length > 0) {
-      this.bookings.set(resolvedBookings);
-    } else {
-      this.dataService.getBookings().subscribe(b => {
-        if (b && b.length > 0) {
-          this.bookings.set(b);
-        }
-      });
-    }
-
-    const resolvedDistricts = this.route.snapshot.data['districts'];
-    if (resolvedDistricts) {
-      this.districts = resolvedDistricts;
-    } else {
-      this.dataService.getDistricts().subscribe(d => this.districts = d);
-    }
-
-    this.dataService.getBranchHeads().subscribe(heads => {
-      this.branchHeads = heads || [];
-    });
-
-    // Load branch head users from the user table to match by district_id
-    this.dataService.getUsers({ role: 'branch_head', limit: 100 }).subscribe(res => {
-      this.branchHeadUsers = res?.data || [];
-      // If modal is open, re-run district match
-      if (this.pendingStatusChange() && this.statusDistrictName) {
-        this.autoAssignBranchHeadForDistrict(this.statusDistrictName);
+    this.dataService.getDropdownDistricts().subscribe({
+      next: (dists) => {
+        this.districts = dists || [];
       }
     });
+
+    this.fetchBookingsFromApi();
 
     const initialStatus = this.route.snapshot.queryParamMap.get('status');
     if (initialStatus) {
@@ -1673,7 +1649,7 @@ export class AdminBookingsComponent implements OnInit {
   }
 
   getEndIndex(): number {
-    return Math.min(this.currentPage() * this.pageSize, this.filteredBookings().length);
+    return Math.min(this.currentPage() * this.pageSize, this.totalRecords() || this.filteredBookings().length);
   }
 
   formatDateDisplay(isoDate: string): string {
@@ -2243,10 +2219,16 @@ export class AdminBookingsComponent implements OnInit {
   }
 
   prevPage(): void {
-    if (this.currentPage() > 1) this.currentPage.update(p => p - 1);
+    if (this.currentPage() > 1) {
+      this.currentPage.update(p => p - 1);
+      this.fetchBookingsFromApi();
+    }
   }
 
   nextPage(): void {
-    if (this.currentPage() < this.totalPages()) this.currentPage.update(p => p + 1);
+    if (this.currentPage() < this.totalPages()) {
+      this.currentPage.update(p => p + 1);
+      this.fetchBookingsFromApi();
+    }
   }
 }

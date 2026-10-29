@@ -318,15 +318,22 @@ export class DataService {
   // ---------------- Bookings ----------------
 
   getBookings(filter?: BookingFilters): Observable<Booking[]> {
+    return this.getBookingsWithPagination(filter).pipe(map(r => r.data));
+  }
+
+  getBookingsWithPagination(filter?: BookingFilters): Observable<{ data: Booking[]; pagination: { total: number; page: number; limit: number; totalPages: number } }> {
     const currentUser = this.auth.currentUser();
 
     if (isPlatformServer(this.platformId)) {
-      return of([]);
+      return of({ data: [], pagination: { total: 0, page: 1, limit: 10, totalPages: 1 } });
     }
 
+    const pageNum = filter?.page ? Number(filter.page) : 1;
+    const limitNum = filter?.limit ? Number(filter.limit) : 10;
+
     let params = new HttpParams()
-      .set('page', '1')
-      .set('limit', '100');
+      .set('page', String(pageNum))
+      .set('limit', String(limitNum));
 
     if (filter) {
       if (filter.statusId != null && filter.statusId !== '') {
@@ -345,10 +352,23 @@ export class DataService {
     return this.http.get<any>(this.url('/api/bookings'), { params }).pipe(
       map(res => {
         const rawList: any[] = Array.isArray(res) ? res : (res?.data || []);
+        const pagination = res?.pagination || {
+          total: rawList.length,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(rawList.length / limitNum) || 1
+        };
         const normalized = rawList.map(b => this.normalizeBooking(b));
-        return filterBookingsForUser(normalized, currentUser);
+        const filtered = filterBookingsForUser(normalized, currentUser);
+        return {
+          data: filtered,
+          pagination: {
+            ...pagination,
+            total: pagination.total || filtered.length
+          }
+        };
       }),
-      catchError(() => of([]))
+      catchError(() => of({ data: [], pagination: { total: 0, page: 1, limit: 10, totalPages: 1 } }))
     );
   }
 
