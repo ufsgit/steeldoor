@@ -183,11 +183,18 @@ export interface User {
   phone?: string;
   roleId?: number;
   dbRoleId?: number;
+  stateId?: number | string;
+  stateName?: string;
   branchHeadId?: string;
   districtId?: string;
   districtName?: string;
   clientId?: string;
   clientType?: ClientType;
+  isActive?: number | boolean;
+  is_active?: number | boolean;
+  isDeleted?: number | boolean;
+  is_deleted?: number | boolean;
+  [key: string]: any;
 }
 
 export interface ServiceItem {

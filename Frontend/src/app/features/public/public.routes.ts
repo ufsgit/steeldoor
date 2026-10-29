@@ -1,27 +1,18 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './home/home.component';
 import { AboutComponent } from './about/about.component';
-import { ServicesComponent } from './services/services.component';
-import { BookNowComponent } from './book-now/book-now.component';
 import { RegisterComponent } from './register/register.component';
-import { guestGuard } from '../../core/guards/auth.guard';
+import { guestGuard, rootGuard } from '../../core/guards/auth.guard';
 import {
   branchHeadsResolver,
-  districtsResolver,
-  servicesResolver,
-  testimonialsResolver,
-  siteContentResolver
+  districtsResolver
 } from '../../core/resolvers/data.resolvers';
 
 export const PUBLIC_ROUTES: Routes = [
   {
     path: '',
     component: HomeComponent,
-    resolve: {
-      services: servicesResolver,
-      testimonials: testimonialsResolver,
-      siteContent: siteContentResolver
-    }
+    canActivate: [rootGuard]
   },
   {
     path: 'about',
@@ -49,7 +40,7 @@ export const PUBLIC_ROUTES: Routes = [
   },
   {
     path: 'bookings/new',
-    loadComponent: () => import('../admin/bookings/add/admin-booking-new.component').then(m => m.AdminBookingNewComponent),
+    loadComponent: () => import('../admin/bookings/add/booking-new.component').then(m => m.BookingNewComponent),
     resolve: {
       districts: districtsResolver,
       branchHeads: branchHeadsResolver

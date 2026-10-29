@@ -1,15 +1,19 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { Router } from '@angular/router';
+import { catchError, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
 /**
  * Functional HTTP Interceptor that attaches the JWT token from session/localStorage
  * to all outgoing API requests in the Authorization header: Bearer <token>.
+ * Also intercepts 401 Unauthorized responses to immediately clear invalid/deactivated sessions.
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const platformId = inject(PLATFORM_ID);
   const authService = inject(AuthService);
+  const router = inject(Router);
 
   let token = authService.token();
 
@@ -36,19 +40,30 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     return next(cleanReq);
   }
 
+  let finalReq = req;
   if (token) {
-    const authReq = req.clone({
+    finalReq = req.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`
       },
       withCredentials: true
     });
-    return next(authReq);
+  } else {
+    finalReq = req.clone({
+      withCredentials: true
+    });
   }
 
-  // Ensure cookies are transmitted even if bearer token is not yet in storage
-  const credReq = req.clone({
-    withCredentials: true
-  });
-  return next(credReq);
+  return next(finalReq).pipe(
+    catchError((err: HttpErrorResponse) => {
+      // If server reports unauthorized (e.g. account deleted/deactivated) and not during web-login
+      if ((err.status === 401 || err.status === 403) && !req.url.includes('/auth/web-login') && !req.url.includes('/auth/mobile-login')) {
+        authService.clearSession();
+        if (isPlatformBrowser(platformId)) {
+          router.navigate(['/']);
+        }
+      }
+      return throwError(() => err);
+    })
+  );
 };

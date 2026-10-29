@@ -1,4 +1,3 @@
-
 import { Component, PLATFORM_ID, inject, signal, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -66,51 +65,19 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
               </svg>
             </a>
 
-            <!-- Login Button & Portal Access -->
-            @if (!auth.isAuthenticated()) {
-              <button
-                type="button"
-                (click)="isLoginModalOpen.set(true)"
-                class="h-10 px-5 rounded-xl text-xs sm:text-sm font-bold border border-primary/30 hover:border-primary text-primary hover:text-primary-hover bg-surface hover:bg-primary/5 shadow-xs hover:shadow-soft transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2 group cursor-pointer"
-                id="nav-login-button"
-                title="Sign in to Admin, Branch Head, Customer, Company, or Dealer Portal"
-              >
-                <svg class="w-4 h-4 text-primary group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                </svg>
-                <span>Login</span>
-              </button>
-            } @else {
-              <!-- Authenticated Portal Link & Logout Button -->
-              <a
-                [routerLink]="getPortalLink()"
-                class="h-10 px-4 rounded-xl text-xs font-bold bg-surface-muted hover:bg-border text-text border border-border shadow-soft transition-all inline-flex items-center justify-center gap-2"
-                title="Go to your portal"
-              >
-                <span>Portal</span>
-              </a>
-              <button
-                type="button"
-                (click)="auth.logout()"
-                class="h-10 px-4 rounded-xl text-xs sm:text-sm font-bold bg-danger/10 hover:bg-danger text-danger hover:text-text-inverted border border-danger/20 transition-all flex items-center gap-1.5 cursor-pointer"
-                title="Sign Out"
-              >
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2.2"
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
-                </svg>
-                <span>Sign Out</span>
-              </button>
-            }
+            <!-- Login Button -->
+            <button
+              type="button"
+              (click)="isLoginModalOpen.set(true)"
+              class="h-10 px-5 rounded-xl text-xs sm:text-sm font-bold border border-primary/30 hover:border-primary text-primary hover:text-primary-hover bg-surface hover:bg-primary/5 shadow-xs hover:shadow-soft transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2 group cursor-pointer"
+              id="nav-login-button"
+              title="Sign in to Admin, Branch Head, Customer, Company, or Dealer Portal"
+            >
+              <svg class="w-4 h-4 text-primary group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+              <span>Login</span>
+            </button>
           </div>
 
           <!-- Mobile Hamburger Toggle -->
@@ -171,36 +138,16 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
 
             <!-- Mobile Auth Section -->
             <div class="pt-3 border-t border-border">
-              @if (!auth.isAuthenticated()) {
-                <button
-                  type="button"
-                  (click)="isLoginModalOpen.set(true); mobileMenuOpen.set(false)"
-                  class="w-full text-center py-2.5 rounded-xl bg-primary text-text-inverted text-xs font-bold shadow-soft flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <svg class="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                  </svg>
-                  <span>Portal Login</span>
-                </button>
-              } @else {
-                <div class="flex flex-col gap-2">
-                  <a
-                    [routerLink]="getPortalLink()"
-                    (click)="mobileMenuOpen.set(false)"
-                    class="w-full text-center py-2.5 rounded-xl bg-surface-muted text-text text-xs font-semibold flex items-center justify-center gap-2"
-                  >
-                    <span class="w-2 h-2 rounded-full bg-accent"></span>
-                    <span>Go to Portal ({{ auth.currentUser()?.role }})</span>
-                  </a>
-                  <button
-                    type="button"
-                    (click)="auth.logout(); mobileMenuOpen.set(false)"
-                    class="w-full text-center py-2 text-xs text-danger font-medium cursor-pointer"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              }
+              <button
+                type="button"
+                (click)="isLoginModalOpen.set(true); mobileMenuOpen.set(false)"
+                class="w-full text-center py-2.5 rounded-xl bg-primary text-text-inverted text-xs font-bold shadow-soft flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <svg class="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+                <span>Portal Login</span>
+              </button>
             </div>
           </div>
         }
@@ -218,21 +165,17 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
             <!-- Col 1: Brand & Tagline -->
             <div class="space-y-4">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-accent">
-                  <svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="w-9 h-9 rounded-xl bg-accent flex items-center justify-center text-primary font-bold shadow-soft">
+                  <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <rect x="4" y="2" width="16" height="20" rx="2"/>
                     <circle cx="16" cy="12" r="1.5" fill="currentColor"/>
                   </svg>
                 </div>
-                <span class="text-lg font-bold tracking-tight text-text-inverted">SteelGuard</span>
+                <span class="text-xl font-black text-text-inverted tracking-tight">SteelGuard</span>
               </div>
               <p class="text-xs text-text-inverted/70 leading-relaxed">
-                Precision steel door installation, frame retrofitting, and certified fire & security door structural mounting across Kerala districts.
+                South India's premier precision steel door supply and certified fitting service network. ISO standard security architectures.
               </p>
-              <div class="flex items-center gap-2 text-xs text-accent">
-                <span class="w-2 h-2 rounded-full bg-accent animate-ping"></span>
-                <span>Active in 5 Regional Districts</span>
-              </div>
             </div>
 
             <!-- Col 2: Quick Links -->
@@ -367,13 +310,5 @@ export class PublicLayoutComponent implements OnInit, OnDestroy {
     if (this.scrollListenerRemover) {
       this.scrollListenerRemover();
     }
-  }
-
-  getPortalLink(): string {
-    const role = this.auth.userRole();
-    if (role === 'admin' || role === 'coordinator') return '/admin';
-    if (role === 'branch_head') return '/branch';
-    if (role === 'user' || role === 'client') return '/client';
-    return '/';
   }
 }

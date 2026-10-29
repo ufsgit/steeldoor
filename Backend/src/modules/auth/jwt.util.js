@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import { pool } from '../../../db.js';
 
 dotenv.config();
 
@@ -68,9 +69,10 @@ export function extractToken(req) {
 }
 
 /**
- * Express middleware to authenticate requests via Bearer JWT or cookie
+ * Express middleware to authenticate requests via Bearer JWT or cookie,
+ * verifying that the user is not deleted and is active in the database.
  */
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   const token = extractToken(req);
 
   if (!token) {
@@ -82,23 +84,49 @@ export function requireAuth(req, res, next) {
     return res.status(401).json({ error: 'Invalid or expired token.' });
   }
 
-  req.user = decoded;
-  next();
+  try {
+    // Check live database status
+    const [rows] = await pool.query(
+      'SELECT id, is_active, is_deleted FROM users WHERE id = ? LIMIT 1',
+      [decoded.id]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(401).json({ error: 'User account does not exist.' });
+    }
+
+    const dbUser = rows[0];
+    if (dbUser.is_deleted === 1 || dbUser.is_active === 0) {
+      return res.status(401).json({ error: 'User account is deactivated or deleted.' });
+    }
+
+    req.user = decoded;
+    next();
+  } catch (err) {
+    next(err);
+  }
 }
 
 /**
  * Express middleware to extract and verify JWT if provided (non-blocking)
  */
-export function optionalAuth(req, res, next) {
+export async function optionalAuth(req, res, next) {
   const token = extractToken(req);
 
   if (token) {
     const decoded = verifyToken(token);
-    if (decoded) {
-      req.user = decoded;
+    if (decoded && decoded.id) {
+      try {
+        const [rows] = await pool.query(
+          'SELECT id, is_active, is_deleted FROM users WHERE id = ? LIMIT 1',
+          [decoded.id]
+        );
+        if (rows && rows.length > 0 && rows[0].is_deleted === 0 && rows[0].is_active === 1) {
+          req.user = decoded;
+        }
+      } catch {}
     }
   }
 
   next();
 }
-

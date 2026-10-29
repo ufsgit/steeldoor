@@ -215,7 +215,7 @@ import { environment } from '../../../../../environments/environment';
 
           <!-- + New Enquiry Green Button -->
           <a
-            routerLink="/bookings/new"
+            routerLink="/admin/bookings/new"
             class="h-[36px] px-4 rounded-md bg-[#246b3f] hover:bg-[#1e5834] text-white font-semibold text-[13px] flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
           >
             <svg class="w-4 h-4 fill-none shrink-0" viewBox="0 0 24 24" stroke="currentColor">

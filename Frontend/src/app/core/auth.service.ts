@@ -1,9 +1,8 @@
 import { Injectable, signal, computed, inject, PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser, isPlatformServer, DOCUMENT } from '@angular/common';
+import { isPlatformBrowser, DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { REQUEST } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, catchError, of } from 'rxjs';
 import { User, UserRole } from './models';
 import { environment } from '../../environments/environment';
 
@@ -15,7 +14,6 @@ export class AuthService {
   private router = inject(Router);
   private platformId = inject(PLATFORM_ID);
   private document = inject(DOCUMENT);
-  private request = inject(REQUEST, { optional: true });
 
   // Core reactive signals
   currentUser = signal<User | null>(null);
@@ -28,7 +26,8 @@ export class AuthService {
   }
 
   /**
-   * Initializes session from localStorage in the browser.
+   * Initializes session from localStorage / cookies in the browser,
+   * then verifies token authenticity and active status with the backend.
    */
   private initSessionFromStorage(): void {
     if (!isPlatformBrowser(this.platformId)) {
@@ -47,19 +46,69 @@ export class AuthService {
       }
 
       if (storedToken && storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        // Quick local check if user was already marked inactive or deleted
+        if (parsedUser.is_active === 0 || parsedUser.isActive === 0 || parsedUser.is_deleted === 1 || parsedUser.isDeleted === 1) {
+          this.clearSession();
+          return;
+        }
+
         this.token.set(storedToken);
-        this.currentUser.set(JSON.parse(storedUser));
-      } else if (storedUser) {
-        this.currentUser.set(JSON.parse(storedUser));
+        this.currentUser.set(parsedUser);
+
+        // Verify with backend that token is valid and user is not deactivated/deleted
+        this.verifySession().subscribe();
       } else {
-        this.currentUser.set(null);
-        this.token.set(null);
+        this.clearSession();
       }
     } catch (err) {
       console.error('Failed to load session from localStorage:', err);
-      this.currentUser.set(null);
-      this.token.set(null);
+      this.clearSession();
     }
+  }
+
+  /**
+   * Verify session token against the server to ensure user is still active and valid.
+   * If invalid or deactivated, clears session.
+   */
+  verifySession(): Observable<{ status: number; user: User; token: string } | null> {
+    const currentToken = this.token();
+    if (!currentToken) {
+      this.clearSession();
+      return of(null);
+    }
+
+    const baseApi = environment.apiUrl ? environment.apiUrl.replace(/\/$/, '') : 'http://localhost:5000/api';
+    const url = `${baseApi}/auth/me`;
+
+    return this.http.get<{ status: number; user: User; token: string }>(url, {
+      headers: { Authorization: `Bearer ${currentToken}` }
+    }).pipe(
+      tap(res => {
+        if (res && res.user) {
+          this.currentUser.set(res.user);
+          if (res.token) {
+            this.token.set(res.token);
+            try {
+              localStorage.setItem('auth_token', res.token);
+            } catch {}
+          }
+          try {
+            localStorage.setItem('auth_user', JSON.stringify(res.user));
+          } catch {}
+        }
+      }),
+      catchError(err => {
+        // Token expired, signature invalid, user deleted or user deactivated (401/403)
+        if (err.status === 401 || err.status === 403 || err.status === 404) {
+          this.clearSession();
+          if (isPlatformBrowser(this.platformId) && window.location.hash.includes('/admin')) {
+            this.router.navigate(['/']);
+          }
+        }
+        return of(null);
+      })
+    );
   }
 
   login(username: string, password: string): Observable<{ user: User; token: string }> {
@@ -91,6 +140,16 @@ export class AuthService {
   }
 
   logout(): void {
+    this.clearSession();
+    if (isPlatformBrowser(this.platformId)) {
+      try {
+        localStorage.setItem('logged_out', 'true');
+      } catch {}
+    }
+    this.router.navigate(['/']);
+  }
+
+  clearSession(): void {
     this.currentUser.set(null);
     this.token.set(null);
 
@@ -98,13 +157,10 @@ export class AuthService {
       try {
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
-        localStorage.setItem('logged_out', 'true');
-        // Clear any old auth_session cookies if they were left over
+        this.document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
         this.document.cookie = 'auth_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
       } catch {}
     }
-
-    this.router.navigate(['/']);
   }
 
   isAdmin = computed(() => {

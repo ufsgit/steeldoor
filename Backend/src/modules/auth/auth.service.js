@@ -55,6 +55,51 @@ export class AuthService {
   }
 
   /**
+   * Validate session token user against current DB state (checks is_active & is_deleted)
+   */
+  async getActiveUserById(userId) {
+    if (!userId) return null;
+    const [rows] = await pool.query(
+      `SELECT 
+        u.id,
+        u.username,
+        u.role_id AS roleId,
+        u.role,
+        u.user_type_id AS userTypeId,
+        u.user_type AS userType,
+        u.name,
+        u.email,
+        u.phone,
+        u.state_id AS stateId,
+        s.name AS stateName,
+        u.district_id AS districtId,
+        d.name AS districtName,
+        d.code AS districtCode,
+        u.address,
+        u.is_active AS isActive,
+        u.is_deleted AS isDeleted,
+        u.last_login_at AS lastLoginAt,
+        u.created_at AS createdAt
+      FROM users u
+      LEFT JOIN states s ON u.state_id = s.id
+      LEFT JOIN districts d ON u.district_id = d.id
+      WHERE u.id = ? LIMIT 1`,
+      [userId]
+    );
+
+    if (!rows || rows.length === 0) {
+      return null;
+    }
+
+    const user = rows[0];
+    if (user.isDeleted === 1 || user.is_deleted === 1 || user.isActive === 0 || user.is_active === 0) {
+      return null;
+    }
+
+    return this.formatSessionResponse(user);
+  }
+
+  /**
    * Helper to normalize user session token and ensure frontend role compatibility
    */
   formatSessionResponse(user) {
@@ -62,7 +107,7 @@ export class AuthService {
 
     // Map internal DB roles to frontend role conventions
     let frontendRole = 'client';
-    const roleId = Number(userSafe.roleId);
+    const roleId = Number(userSafe.roleId ?? userSafe.role_id);
     const roleStr = String(userSafe.role || '').toLowerCase();
 
     if (roleId === 1 || roleStr === 'company' || roleStr === 'superadmin' || roleStr === 'admin') {
@@ -80,9 +125,9 @@ export class AuthService {
     const payload = {
       ...userSafe,
       dbRole: userSafe.role,
-      dbRoleId: userSafe.roleId,
-      dbUserType: userSafe.userType,
-      dbUserTypeId: userSafe.userTypeId,
+      dbRoleId: userSafe.roleId ?? userSafe.role_id,
+      dbUserType: userSafe.userType ?? userSafe.user_type,
+      dbUserTypeId: userSafe.userTypeId ?? userSafe.user_type_id,
       role: frontendRole,
       clientType: userSafe.userType || userSafe.role
     };

@@ -3,7 +3,7 @@ import { AdminLayoutComponent } from '../../layouts/admin-layout.component';
 import { AdminDashboardComponent } from './dashboard/admin-dashboard.component';
 import { AdminBookingsComponent } from './bookings/list/admin-bookings.component';
 import { AdminBookingDetailComponent } from './bookings/booking-detail.component';
-import { BookNowComponent } from '../public/book-now/book-now.component';
+import { BookingNewComponent } from './bookings/add/booking-new.component';
 import { AdminBranchHeadsComponent } from './branch-heads/branch-heads.component';
 import { AdminClientsComponent } from './clients/clients.component';
 import { AdminAreasComponent } from './areas/areas.component';
@@ -52,8 +52,11 @@ export const ADMIN_ROUTES: Routes = [
       },
       {
         path: 'bookings/new',
-        redirectTo: '/bookings/new',
-        pathMatch: 'full'
+        component: BookingNewComponent,
+        resolve: {
+          districts: districtsResolver,
+          branchHeads: branchHeadsResolver
+        }
       },
       {
         path: 'bookings/:id',

@@ -74,6 +74,37 @@ export class AuthController {
       next(err);
     }
   }
+
+  /**
+   * Verify session token and retrieve current user status
+   */
+  async me(req, res, next) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ 
+          status: 401, 
+          error: 'Invalid or missing authentication credentials.' 
+        });
+      }
+
+      const result = await authService.getActiveUserById(userId);
+      if (!result) {
+        return res.status(401).json({ 
+          status: 401, 
+          error: 'User account is inactive, deleted, or does not exist.' 
+        });
+      }
+
+      return res.json({
+        status: 200,
+        user: result.user,
+        token: result.token
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const authController = new AuthController();

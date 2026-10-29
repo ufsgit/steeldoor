@@ -10,7 +10,7 @@ import { DistrictDropdownComponent, DropdownComponent, DropdownOption } from '..
 import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../core/models';
 
 @Component({
-  selector: 'app-admin-booking-new',
+  selector: 'app-booking-new',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, DistrictDropdownComponent, DropdownComponent],
   template: `
@@ -27,7 +27,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
             </svg>
-            <span>{{ authService.isAuthenticated() ? 'Back to Bookings' : 'Back' }}</span>
+            <span>{{ authService.isAuthenticated() ? 'Back to Bookings' : 'Back to Home' }}</span>
           </button>
           <h1 class="text-2xl font-bold text-gray-900 tracking-tight">New Booking</h1>
         </div>
@@ -105,231 +105,202 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
               />
             </div>
 
-            <!-- Col 3: District Hub (district_id / district_name) -->
+            <!-- Col 3: District Dropdown (Searchable) -->
             <div>
               <label class="block text-xs font-bold text-gray-700 mb-1.5">
                 District <span class="text-red-500">*</span>
               </label>
               <app-district-dropdown
-                [(ngModel)]="districtName"
                 [districts]="districts()"
-                valueField="name"
-                suffix="Hub"
+                [selectedDistrict]="selectedDistrictObj()"
                 placeholder="Select District"
-                searchPlaceholder="Search district..."
                 (districtChange)="onDistrictChange($event)"
               ></app-district-dropdown>
             </div>
 
-            <!-- Col 4: Area / Locality (area_id / area_name) -->
+            <!-- Col 4: Area Dropdown (Searchable, filtered by district) -->
             <div>
-              <label class="block text-xs font-bold text-gray-700 mb-1.5 flex items-center justify-between">
-                <span>Area / Locality <span class="text-red-500">*</span></span>
+              <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                Area / Locality <span class="text-red-500">*</span>
                 @if (!districtId) {
-                  <span class="text-[10px] font-normal text-amber-600 italic">Select district first</span>
+                  <span class="text-[10px] text-amber-600 font-normal italic ml-1">Select district first</span>
                 }
               </label>
-
               <app-dropdown
-                [options]="areaOptions()"
-                [(ngModel)]="areaName"
-                name="areaDropdown"
-                placeholder="Select Area"
-                searchPlaceholder="Search area or pincode..."
+                [options]="areaDropdownOptions()"
+                [ngModel]="areaName"
+                name="area"
                 [searchable]="true"
-                [clearable]="false"
                 [disabled]="!districtId"
-                emptyMessage="No areas found for this district"
-                (selectionChange)="onAreaSelected($event)"
+                placeholder="Select Area"
+                (ngModelChange)="onAreaSelected($event)"
               ></app-dropdown>
             </div>
+          </div>
 
-            <!-- Full Address (address) spans all 4 columns -->
-            <div class="sm:col-span-2 lg:col-span-4">
-              <label class="block text-xs font-bold text-gray-700 mb-1.5">
-                Full Address <span class="text-red-500">*</span>
-              </label>
-              <textarea
-                name="address"
-                [(ngModel)]="address"
-                required
-                rows="2"
-                placeholder="Door No, Street Name, Landmark, Post"
-                class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
-              ></textarea>
-            </div>
+          <!-- Full Width Address (address) -->
+          <div class="mt-4">
+            <label class="block text-xs font-bold text-gray-700 mb-1.5">
+              Full Address <span class="text-red-500">*</span>
+            </label>
+            <textarea
+              name="address"
+              [(ngModel)]="address"
+              required
+              rows="2"
+              placeholder="Door No, Street Name, Landmark, Post"
+              class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+            ></textarea>
           </div>
         </div>
 
-        <!-- Section 2: Notes & Instructions (4 Columns) -->
+        <!-- Section 2: Notes / Instructions (notes) -->
         <div>
           <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
             <span>Notes</span>
           </h2>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="sm:col-span-2 lg:col-span-4">
-              <label class="block text-xs font-bold text-gray-700 mb-1.5">
-                Notes / Instructions
-              </label>
-              <textarea
-                name="notes"
-                [(ngModel)]="notes"
-                rows="3"
-                placeholder="Fitting requirements, door specifications, masonry status, delivery notes..."
-                class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
-              ></textarea>
-            </div>
-          </div>
+          <textarea
+            name="notes"
+            [(ngModel)]="notes"
+            rows="3"
+            placeholder="Fitting requirements, door specifications, masonry status, delivery notes..."
+            class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+          ></textarea>
         </div>
 
-        <!-- Section 3: Documents (JSON) -->
+        <!-- Section 3: Documents / Uploads (documents) -->
         <div>
-          <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
+          <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
             <span>Documents</span>
           </h2>
 
-          <div class="border-2 border-dashed border-gray-300 hover:border-gray-400 rounded-xl p-5 bg-gray-50/50 hover:bg-gray-50 text-center transition-colors">
-            <input
-              type="file"
-              multiple
-              #fileInput
-              (change)="onFilesSelected($event)"
-              class="hidden"
-              accept="image/*,.pdf,.doc,.docx"
-            />
+          <div class="space-y-3">
+            <label
+              class="border-2 border-dashed border-gray-300 hover:border-[#0f9d58] rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50/50 hover:bg-[#0f9d58]/5"
+            >
+              <input
+                type="file"
+                multiple
+                (change)="onFilesSelected($event)"
+                class="hidden"
+                accept="image/*,.pdf,.doc,.docx"
+              />
+              <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+              </svg>
+              <span class="text-xs font-semibold text-gray-700">Click or drag files here to upload</span>
+              <span class="text-[11px] text-gray-400 mt-0.5">Images, PDFs, site measurements (Up to 10 files)</span>
+            </label>
+
             @if (isUploading()) {
-              <div class="flex flex-col items-center justify-center gap-1.5 py-1">
-                <svg class="animate-spin h-6 w-6 text-[#0f9d58]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <div class="text-xs text-[#0f9d58] font-semibold flex items-center gap-2">
+                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                 </svg>
-                <span class="text-xs text-gray-700 font-semibold">Uploading documents...</span>
+                <span>Uploading files...</span>
               </div>
-            } @else {
-              <div class="flex flex-col items-center justify-center gap-1.5 cursor-pointer" (click)="fileInput.click()">
-                <div class="w-10 h-10 rounded-full bg-emerald-50 text-[#0f9d58] flex items-center justify-center">
-                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                </div>
-                <span class="text-xs text-gray-700 font-semibold">Click to select documents or site photos</span>
-                <span class="text-[10px] text-gray-400">Upload door frame pictures or architectural site documents</span>
+            }
+
+            @if (documents().length > 0) {
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-2">
+                @for (doc of documents(); track doc; let i = $index) {
+                  <div class="flex items-center justify-between p-2.5 rounded-xl border border-gray-200 bg-white text-xs">
+                    <div class="flex items-center gap-2 truncate">
+                      <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                      </svg>
+                      <span class="truncate font-medium text-gray-800">{{ getFilename(doc) }}</span>
+                    </div>
+                    <button
+                      type="button"
+                      (click)="removeDoc(i)"
+                      class="text-red-500 hover:text-red-700 ml-2 cursor-pointer p-1"
+                      title="Remove"
+                    >
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                }
               </div>
             }
           </div>
-
-          @if (documents().length > 0) {
-            <div class="flex flex-wrap gap-2 mt-3">
-              @for (doc of documents(); track $index) {
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 border border-gray-200 text-xs text-gray-800">
-                  <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                  </svg>
-                  <span class="truncate max-w-[200px] font-medium">{{ getFilename(doc) }}</span>
-                  <button
-                    type="button"
-                    (click)="removeDoc($index)"
-                    class="p-0.5 text-gray-400 hover:text-red-500 rounded cursor-pointer"
-                    title="Remove"
-                  >
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                  </button>
-                </div>
-              }
-            </div>
-          }
-        </div>
-
-        <!-- Bottom Form Actions -->
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
-          <button
-            type="button"
-            (click)="goBack()"
-            class="px-5 py-2.5 rounded-xl border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            [disabled]="isSubmitting || !name.trim() || !mobile.trim() || !address.trim()"
-            class="px-6 py-2.5 rounded-xl bg-[#246b3f] hover:bg-[#1e5834] disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-2"
-          >
-            @if (isSubmitting) {
-              <svg class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-              </svg>
-              <span>Saving Booking...</span>
-            } @else {
-              <span>Submit & Create Booking</span>
-            }
-          </button>
         </div>
 
       </form>
     </div>
   `
 })
-export class AdminBookingNewComponent implements OnInit {
+export class BookingNewComponent implements OnInit {
   private dataService = inject(DataService);
   authService = inject(AuthService);
   private toast = inject(ToastService);
   private router = inject(Router);
-  private titleService = inject(Title);
+  private title = inject(Title);
 
-  districts = signal<District[]>([]);
-  districtAreas = signal<AreaItem[]>([]);
+  // Form Fields matching create_booking SP
+  name: string = '';
+  mobile: string = '';
+  address: string = '';
+  notes: string = '';
+  status: string = 'NEW';
 
-  // DDL exact fields:
-  name = '';
-  mobile = '';
-  address = '';
-  notes = '';
-  status = 'NEW';
+  // System auto-resolved location fields
+  stateId: number = 1;
+  stateName: string = 'Kerala';
+  districtId: number | null = null;
+  districtName: string = '';
+  areaId: number | null = null;
+  areaName: string = '';
+
+  // Branch Head assignment
+  branchHeadId: number | null = null;
+  branchHeadName: string = '';
+
+  // Auth context
   loginRoleId: number | null = null;
   loginId: number | null = null;
   loginName: string | null = null;
-  stateId: number | null = 1;
-  stateName = 'Kerala';
-  districtId: number | null = null;
-  districtName = '';
-  areaId: number | null = null;
-  areaName = '';
-  branchHeadId: number | null = null;
-  branchHeadName = 'Rajesh Menon';
+
+  // Documents
   documents = signal<string[]>([]);
   isUploading = signal(false);
-  areaOptions = computed<DropdownOption[]>(() => {
+  isSubmitting = false;
+
+  // Options
+  districts = signal<District[]>([]);
+  districtAreas = signal<AreaItem[]>([]);
+
+  selectedDistrictObj = computed(() => {
+    return this.districts().find(d => d.name === this.districtName || Number(d.id) === this.districtId) || null;
+  });
+
+  areaDropdownOptions = computed<DropdownOption[]>(() => {
     return this.districtAreas().map(a => ({
       label: a.name,
       value: a.name,
-      subtext: a.pincode ? a.pincode : undefined,
-      raw: a
+      subtext: a.pincode ? `PIN: ${a.pincode}` : undefined
     }));
   });
 
-  isSubmitting = false;
-
   ngOnInit(): void {
-    this.titleService.setTitle('Create New Booking | SteelGuard');
+    this.title.setTitle('New Booking | SteelGuard');
 
-    // Pre-populate user defaults if logged in as branch head
+    // Auto-resolve identity from authenticated session
     const u = this.authService.currentUser();
     if (u) {
-      this.loginId = u.id ? Number(u.id) || null : null;
-      this.loginName = u.name || null;
-      this.loginRoleId = Number(u.roleId ?? u.dbRoleId) || (
-        u.role === 'admin' ? 1 :
-        u.role === 'coordinator' ? 2 :
-        u.role === 'branch_head' ? 3 :
-        (u.role as string) === 'dealer' ? 4 : 5
-      );
-      if (u.role === 'branch_head') {
+      this.loginRoleId = Number(u.roleId ?? u.dbRoleId) || null;
+      this.loginId = Number(u.id) || null;
+      this.loginName = u.name || u.username || null;
+      this.stateId = Number(u.stateId) || 1;
+      this.stateName = u.stateName || 'Kerala';
+
+      // If branch head, lock district
+      if (this.loginRoleId === 3) {
         if (u.districtName) {
           this.districtName = u.districtName.replace(/\s+Hub$/i, '').trim();
         }
@@ -493,3 +464,7 @@ export class AdminBookingNewComponent implements OnInit {
     });
   }
 }
+
+// Backward compatibility alias
+export const AdminBookingNewComponent = BookingNewComponent;
+export type AdminBookingNewComponent = BookingNewComponent;
