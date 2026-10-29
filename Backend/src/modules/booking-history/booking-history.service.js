@@ -3,15 +3,6 @@ import { pool } from '../../../db.js';
 export class BookingHistoryService {
   /**
    * Fetch booking history records using get_booking_history stored procedure
-   * @param {Object} params
-   * @param {string} [params.search] - Prefix search on booking_name
-   * @param {string} [params.actionFilter] - Filter by action type
-   * @param {string} [params.fromDate] - YYYY-MM-DD
-   * @param {string} [params.toDate] - YYYY-MM-DD
-   * @param {number} [params.page] - Page number (defaults to 1)
-   * @param {number} [params.limit] - Limit per page (defaults to 20)
-   * @param {number} [params.userId] - Current user id
-   * @param {number} [params.roleId] - Current user role id (1, 2 = all, 3 = restricted to action_by_id)
    */
   async getBookingHistory({
     search = null,
@@ -40,7 +31,6 @@ export class BookingHistoryService {
       ]
     );
 
-    // Stored procedure returns results in first array item
     const rows = results?.[0] || [];
 
     return {
@@ -48,6 +38,39 @@ export class BookingHistoryService {
       page: pageNum,
       limit: limitNum,
       count: rows.length
+    };
+  }
+
+  /**
+   * Fetch complete history timeline for a specific booking using get_history_by_bookingid
+   * with pagination support (default limit: 10)
+   * @param {number|string} bookingId
+   * @param {number} [page=1]
+   * @param {number} [limit=10]
+   */
+  async getHistoryByBookingId(bookingId, page = 1, limit = 10) {
+    const bId = parseInt(bookingId, 10);
+    if (!bId || isNaN(bId)) {
+      const err = new Error('Invalid booking ID');
+      err.status = 400;
+      throw err;
+    }
+
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+
+    const [results] = await pool.query(
+      `CALL get_history_by_bookingid(?, ?, ?)`,
+      [bId, pageNum, limitNum]
+    );
+
+    const rows = results?.[0] || [];
+    return {
+      booking_id: bId,
+      page: pageNum,
+      limit: limitNum,
+      count: rows.length,
+      history: rows
     };
   }
 }

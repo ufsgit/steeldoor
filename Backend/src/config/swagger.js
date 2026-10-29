@@ -1278,6 +1278,64 @@ export const swaggerDocument = {
         }
       }
     },
+    '/api/booking-history/{bookingId}': {
+      get: {
+        tags: ['Booking History'],
+        summary: 'Get History / Audit Timeline by Booking ID',
+        description: 'Fetch complete event timeline and audit logs for a specific booking ID without role restrictions.',
+        parameters: [
+          {
+            name: 'bookingId',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer', example: 22 },
+            description: 'The booking ID'
+          }
+        ],
+        responses: {
+          200: {
+            description: 'Booking history timeline retrieved successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        booking_id: { type: 'integer', example: 22 },
+                        count: { type: 'integer', example: 5 },
+                        history: {
+                          type: 'array',
+                          items: { $ref: '#/components/schemas/BookingHistoryItem' }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          400: {
+            description: 'Invalid booking ID',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' }
+              }
+            }
+          },
+          500: {
+            description: 'Database or server error',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' }
+              }
+            }
+          }
+        }
+      }
+    },
     '/api/booking-history': {
       get: {
         tags: ['Booking History'],

@@ -44,6 +44,17 @@ export interface BookingHistoryResponse {
   };
 }
 
+export interface BookingHistoryByBookingIdResponse {
+  success: boolean;
+  data: {
+    booking_id: number;
+    page: number;
+    limit: number;
+    count: number;
+    history: BookingHistoryRecord[];
+  };
+}
+
 export interface BookingHistoryFilterParams {
   search?: string;
   actionFilter?: string;
@@ -87,5 +98,15 @@ export class BookingHistoryService {
       withCredentials: true
     });
   }
-}
 
+  getHistoryByBookingId(bookingId: number | string, page: number = 1, limit: number = 10): Observable<BookingHistoryByBookingIdResponse> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
+
+    return this.http.get<BookingHistoryByBookingIdResponse>(`${this.apiUrl}/${bookingId}`, {
+      params,
+      withCredentials: true
+    });
+  }
+}

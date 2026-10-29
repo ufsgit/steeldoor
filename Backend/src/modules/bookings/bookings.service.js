@@ -232,6 +232,7 @@ export class BookingsService {
       clientType: 'customer',
       address: b.address,
       notes: b.notes || null,
+      staffNotes: b.staff_notes ?? b.staffNotes ?? null,
       statusId: b.statusId ?? b.status_id ?? 1,
       statusCode: statusCode,
       statusLabel: statusLabel,

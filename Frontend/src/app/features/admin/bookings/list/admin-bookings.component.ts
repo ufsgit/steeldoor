@@ -548,7 +548,7 @@ import { environment } from '../../../../../environments/environment';
                 </div>
 
                 <div>
-                  <label class="block font-semibold text-gray-700 mb-1">Notes / Instructions</label>
+                  <label class="block font-semibold text-gray-700 mb-1">Customer Notes</label>
                   <textarea
                     rows="2"
                     [(ngModel)]="editNotes"
@@ -676,7 +676,7 @@ import { environment } from '../../../../../environments/environment';
                   </div>
                   @if (selectedBooking()?.notes) {
                     <div class="flex justify-between">
-                      <span class="text-gray-500">Notes:</span>
+                      <span class="text-gray-500">Customer Notes:</span>
                       <span class="font-medium text-gray-700 max-w-[220px] text-right truncate" [title]="selectedBooking()?.notes">{{ selectedBooking()?.notes }}</span>
                     </div>
                   }

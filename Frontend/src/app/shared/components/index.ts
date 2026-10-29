@@ -7,3 +7,4 @@ export * from './bottom-sheet.component';
 export * from './login-modal.component';
 export * from './simple-chart.component';
 export * from './skeletons.component';
+export * from './booking-history-modal.component';

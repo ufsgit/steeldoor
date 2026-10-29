@@ -4,14 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { BookingHistoryService, BookingHistoryRecord } from '../../../core/services/booking-history.service';
-import { DropdownComponent, DropdownOption } from '../../../shared/components';
+import { DropdownComponent, DropdownOption, BookingHistoryModalComponent } from '../../../shared/components';
 
 type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
 
 @Component({
   selector: 'app-admin-history',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, DropdownComponent],
+  imports: [CommonModule, FormsModule, RouterModule, DropdownComponent, BookingHistoryModalComponent],
   template: `
     <div class="w-full flex-1 flex flex-col bg-white">
       
@@ -172,26 +172,37 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
             </p>
           </div>
         } @else {
-          <!-- Modern Timeline Activity Cards -->
+          <!-- Modern Timeline Activity Cards (Clickable to open Booking History Modal) -->
           <div class="space-y-3.5">
             @for (item of historyList(); track item.history_id) {
-              <div class="bg-white rounded-xl border border-gray-200/80 hover:border-gray-300 hover:shadow-xs transition-all p-4.5">
+              <div
+                (click)="openBookingTimeline(item)"
+                class="group bg-white rounded-xl border border-gray-200/80 hover:border-[#0f9d58]/50 hover:shadow-md transition-all p-4.5 cursor-pointer relative"
+                title="Click to view full history timeline for this booking"
+              >
                 <div class="flex items-start justify-between gap-4">
                   <!-- Left side: Avatar + Title & Action Badges -->
                   <div class="flex items-start gap-3.5">
                     <!-- Avatar Initial Badge -->
-                    <div class="w-10 h-10 rounded-full bg-emerald-50 text-[#0f9d58] border border-emerald-100/60 font-bold text-[14px] flex items-center justify-center shrink-0 uppercase select-none">
+                    <div class="w-10 h-10 rounded-full bg-emerald-50 text-[#0f9d58] border border-emerald-100/60 font-bold text-[14px] flex items-center justify-center shrink-0 uppercase select-none group-hover:scale-105 transition-transform">
                       {{ (item.booking_name || 'B').charAt(0) }}
                     </div>
 
                     <div>
                       <!-- Booking Name & Booking ID -->
                       <div class="flex items-center gap-2 flex-wrap">
-                        <span class="text-[14px] font-bold text-gray-900">
+                        <span class="text-[14px] font-bold text-gray-900 group-hover:text-[#0f9d58] transition-colors">
                           {{ item.booking_name || 'Booking' }}
                         </span>
                         <span class="text-[11px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
                           #{{ item.booking_id }}
+                        </span>
+                        <!-- Visual indicator that row is clickable -->
+                        <span class="text-[11px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity font-medium hidden sm:inline-flex items-center gap-1">
+                          <span>View timeline</span>
+                          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                          </svg>
                         </span>
                       </div>
 
@@ -392,6 +403,14 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
         }
       </div>
 
+      <!-- Reusable Booking History Modal Component -->
+      <app-booking-history-modal
+        [isOpen]="isModalOpen()"
+        [bookingId]="selectedBookingId()"
+        [bookingName]="selectedBookingName()"
+        (closeModal)="closeBookingTimeline()"
+      ></app-booking-history-modal>
+
     </div>
   `
 })
@@ -401,6 +420,11 @@ export class AdminHistoryComponent implements OnInit {
 
   historyList = signal<BookingHistoryRecord[]>([]);
   loading = signal<boolean>(false);
+
+  // Modal signals for clicking a row
+  isModalOpen = signal<boolean>(false);
+  selectedBookingId = signal<number | null>(null);
+  selectedBookingName = signal<string | null>(null);
 
   datePreset = signal<DatePreset>('today');
   fromDate: string = '';
@@ -493,6 +517,19 @@ export class AdminHistoryComponent implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  // --- Row Click to Open Booking History Modal ---
+  openBookingTimeline(item: BookingHistoryRecord) {
+    this.selectedBookingId.set(item.booking_id);
+    this.selectedBookingName.set(item.booking_name);
+    this.isModalOpen.set(true);
+  }
+
+  closeBookingTimeline() {
+    this.isModalOpen.set(false);
+    this.selectedBookingId.set(null);
+    this.selectedBookingName.set(null);
   }
 
   prevPage() {

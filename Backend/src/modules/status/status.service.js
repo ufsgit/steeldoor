@@ -62,6 +62,7 @@ export class StatusService {
       statusColorCode: row.status_color_code ?? row.statusColorCode ?? '#3b82f6',
       scheduleDate: this.formatDateOnly(row.schedule_date),
       notes: row.notes || '',
+      staffNotes: row.staff_notes ?? row.staffNotes ?? '',
       assignedHeadDistrictId: row.assigned_head_district_id ?? null,
       assignedHeadDistrictName: row.assigned_head_district_name ?? null,
       branchHeadId: row.branch_head_id ?? null,
@@ -102,7 +103,7 @@ export class StatusService {
 
     const rawScheduleDate = data.scheduleDate ?? data.schedule_date ?? data.scheduledDate ?? null;
     const scheduleDate = this.normalizeDate(rawScheduleDate);
-    const notes = data.notes ?? null;
+    const staffNotes = data.staffNotes ?? data.staff_notes ?? data.notes ?? null;
     const createdBy = data.createdBy ?? data.created_by ?? data.userId ?? null;
     const createdByName = data.createdByName ?? data.created_by_name ?? data.userName ?? null;
     const branchHeadId = data.branchHeadId ?? data.branch_head_id ?? data.branchManagerId ?? null;
@@ -114,7 +115,7 @@ export class StatusService {
         clientName,
         status,
         scheduleDate,
-        notes,
+        staffNotes,
         createdBy,
         createdByName,
         branchHeadId ? parseInt(branchHeadId, 10) : null

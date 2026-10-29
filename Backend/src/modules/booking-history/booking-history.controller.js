@@ -3,13 +3,6 @@ import { bookingHistoryService } from './booking-history.service.js';
 export class BookingHistoryController {
   /**
    * GET /api/booking-history
-   * Supported query parameters:
-   *  - search: prefix search on booking_name
-   *  - actionFilter: 'New Booking Created' | 'Customer Notes Updated' | 'Status Updated' | 'Transfered' | 'Customer Name Updated' | 'Scheduled Date Changed'
-   *  - fromDate: 'YYYY-MM-DD'
-   *  - toDate: 'YYYY-MM-DD'
-   *  - page: number
-   *  - limit: number
    */
   async getBookingHistory(req, res, next) {
     try {
@@ -45,6 +38,30 @@ export class BookingHistoryController {
         userId,
         roleId
       });
+
+      return res.status(200).json({
+        success: true,
+        data
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * GET /api/booking-history/:bookingId
+   * Query params: page, limit (defaults: page=1, limit=10)
+   */
+  async getHistoryByBookingId(req, res, next) {
+    try {
+      const { bookingId } = req.params;
+      const { page, limit } = req.query;
+
+      const data = await bookingHistoryService.getHistoryByBookingId(
+        bookingId,
+        page ? parseInt(page, 10) : 1,
+        limit ? parseInt(limit, 10) : 10
+      );
 
       return res.status(200).json({
         success: true,
