@@ -138,6 +138,33 @@ export class DataService {
 
   // ---------------- Districts & Areas (sp_get_dropdown_data) ----------------
 
+  getDropdownDistricts(stateId?: number | string, search?: string): Observable<District[]> {
+    if (isPlatformServer(this.platformId)) {
+      return of([]);
+    }
+    let params = new HttpParams();
+    if (stateId) params = params.set('stateId', String(stateId));
+    if (search && search.trim()) params = params.set('search', search.trim());
+
+    return this.http.get<{ data: District[] }>(this.url('/api/dropdowns/districts'), { params }).pipe(
+      map(res => res?.data || []),
+      catchError(() => of([]))
+    );
+  }
+
+  getDropdownAreas(districtId: number | string, search?: string): Observable<AreaItem[]> {
+    if (isPlatformServer(this.platformId)) {
+      return of([]);
+    }
+    let params = new HttpParams().set('districtId', String(districtId));
+    if (search && search.trim()) params = params.set('search', search.trim());
+
+    return this.http.get<{ data: AreaItem[] }>(this.url('/api/dropdowns/areas'), { params }).pipe(
+      map(res => res?.data || []),
+      catchError(() => of([]))
+    );
+  }
+
   getDistricts(): Observable<District[]> {
     if (isPlatformServer(this.platformId)) {
       return of([]);

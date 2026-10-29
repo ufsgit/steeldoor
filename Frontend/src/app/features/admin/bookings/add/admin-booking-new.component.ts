@@ -322,10 +322,9 @@ export class BookingNewComponent implements OnInit {
   }
 
   loadDistricts(): void {
-    this.dataService.getDistricts().subscribe({
+    this.dataService.getDropdownDistricts().subscribe({
       next: dists => {
         this.districts.set(dists);
-        // Only load areas if a district is already specified (e.g. for branch head)
         if (this.districtId) {
           this.loadAreasForDistrict(this.districtId);
         }
@@ -334,7 +333,7 @@ export class BookingNewComponent implements OnInit {
   }
 
   loadAreasForDistrict(districtId: number | string): void {
-    this.dataService.getAreasByDistrict(districtId).subscribe({
+    this.dataService.getDropdownAreas(districtId).subscribe({
       next: areas => {
         this.districtAreas.set(areas);
       }

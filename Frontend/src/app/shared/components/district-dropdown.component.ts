@@ -14,14 +14,6 @@ import { DropdownComponent, DropdownOption } from './dropdown.component';
 import { DataService } from '../../core/data.service';
 import { District } from '../../core/models';
 
-function tryInject<T>(token: any): T | null {
-  try {
-    return inject(token);
-  } catch {
-    return null;
-  }
-}
-
 @Component({
   selector: 'app-district-dropdown',
   standalone: true,
@@ -52,31 +44,18 @@ function tryInject<T>(token: any): T | null {
   `
 })
 export class DistrictDropdownComponent implements OnInit, ControlValueAccessor {
-  private dataService: DataService | null;
-  private cdr: ChangeDetectorRef;
+  private dataService = inject(DataService, { optional: true });
+  private cdr = inject(ChangeDetectorRef);
 
-  constructor(dataService?: DataService, cdr?: ChangeDetectorRef) {
-    this.dataService = dataService ?? tryInject(DataService);
-    this.cdr = cdr ?? tryInject(ChangeDetectorRef) ?? ({ markForCheck: () => {} } as ChangeDetectorRef);
-  }
-
-  @Input() districts: District[] = [];
-  @Input()
-  set selectedDistrict(dist: District | null | undefined) {
-    if (dist) {
-      this.value = this.valueField === 'id' ? dist.id : dist.name;
-    } else {
-      this.value = null;
-    }
-    this.cdr.markForCheck();
-  }
-  @Input() valueField: 'name' | 'id' = 'name';
-  @Input() suffix = 'Hub';
-  @Input() placeholder = 'Select District / Hub';
+  @Input() districts?: District[];
+  @Input() placeholder = 'Select District';
   @Input() searchPlaceholder = 'Search district or area...';
   @Input() showAllOption = false;
-  @Input() allOptionLabel = 'All Districts Hubs';
+  @Input() allOptionLabel = 'All Districts';
+  @Input() suffix = '';
+  @Input() valueField: 'name' | 'id' = 'name';
   @Input() size: 'sm' | 'md' | 'lg' = 'md';
+  @Input() selectedDistrict: District | null = null;
   @Input() customClass = '';
   @Input() clearable = false;
   @Input() disabled = false;
@@ -93,8 +72,9 @@ export class DistrictDropdownComponent implements OnInit, ControlValueAccessor {
   onTouched: () => void = () => {};
 
   ngOnInit(): void {
-    if ((!this.districts || this.districts.length === 0) && this.dataService) {
-      this.dataService.getDistricts().subscribe(dists => {
+    // Only auto-fetch if the parent component did not provide a districts array
+    if (this.districts === undefined && this.dataService) {
+      this.dataService.getDropdownDistricts().subscribe((dists: District[]) => {
         this.loadedDistricts = dists;
         this.cdr.markForCheck();
       });
@@ -102,9 +82,9 @@ export class DistrictDropdownComponent implements OnInit, ControlValueAccessor {
   }
 
   get activeDistricts(): District[] {
-    return this.districts && this.districts.length > 0
-      ? this.districts
-      : this.loadedDistricts;
+    if (this.districts && this.districts.length > 0) return this.districts;
+    if (this.loadedDistricts && this.loadedDistricts.length > 0) return this.loadedDistricts;
+    return [];
   }
 
   get formattedOptions(): DropdownOption[] {

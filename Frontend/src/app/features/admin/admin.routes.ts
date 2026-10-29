@@ -51,11 +51,7 @@ export const ADMIN_ROUTES: Routes = [
       },
       {
         path: 'bookings/new',
-        component: BookingNewComponent,
-        resolve: {
-          districts: districtsResolver,
-          branchHeads: branchHeadsResolver
-        }
+        component: BookingNewComponent
       },
       {
         path: 'bookings/:id',
