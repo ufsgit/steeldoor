@@ -33,7 +33,8 @@ export const swaggerDocument = {
     { name: 'Status', description: 'Client Status Updates & History (Scheduled, Completed, Cancelled)' },
     { name: 'Dropdowns', description: 'Searchable Dropdown Select Options (Districts, Areas)' },
     { name: 'Uploads', description: 'File & Document Uploads for Bookings' },
-    { name: 'Mobile Dashboard', description: 'Fitmate Mobile App Dashboard Metrics & Statistics' }
+    { name: 'Mobile Dashboard', description: 'Fitmate Mobile App Dashboard Metrics & Statistics' },
+    { name: 'Booking History', description: 'Fitmate Mobile Booking Activity & History Log' }
   ],
   components: {
     securitySchemes: {
@@ -336,7 +337,63 @@ export const swaggerDocument = {
             }
           }
         }
-      }
+      },
+      BookingHistoryItem: {
+        type: 'object',
+        description: 'Complete booking history log record returned from booking_history table. Columns populated depend on action_type.',
+        properties: {
+          history_id: { type: 'integer', example: 28, description: 'Unique history audit record ID' },
+          booking_id: { type: 'integer', example: 23, description: 'Associated booking ID' },
+          booking_name: { type: 'string', nullable: true, example: 'test', description: 'Customer or booking name' },
+          action_type: {
+            type: 'string',
+            example: 'New Booking Created',
+            description: 'Action performed. e.g.: "New Booking Created", "Customer Notes Updated", "Status Updated", "Transfered", "Customer Name Updated from \"test 2\" to \"test 4\"", "Scheduled Date Changed from \"28-10-2026\" to \"29-10-2026\"'
+          },
+          customer_note: { type: 'string', nullable: true, example: '123', description: 'Populated on "New Booking Created" and "Customer Notes Updated"' },
+          staff_note: { type: 'string', nullable: true, example: 'Reason for reschedule', description: 'Populated on "Status Updated" and "Transfered"' },
+          old_status_id: { type: 'integer', nullable: true, example: 1, description: 'Previous status ID (Status Updated, Scheduled Date Changed)' },
+          old_status_code: { type: 'string', nullable: true, example: 'New', description: 'Previous status code' },
+          old_status_label: { type: 'string', nullable: true, example: 'New', description: 'Previous status label' },
+          old_status_color_code: { type: 'string', nullable: true, example: '#3b82f6', description: 'Previous status hex color' },
+          new_status_id: { type: 'integer', nullable: true, example: 2, description: 'New status ID (New Booking Created, Status Updated, Scheduled Date Changed)' },
+          new_status_code: { type: 'string', nullable: true, example: 'Scheduled', description: 'New status code' },
+          new_status_label: { type: 'string', nullable: true, example: 'Scheduled', description: 'New status label' },
+          new_status_color_code: { type: 'string', nullable: true, example: '#7c3aed', description: 'New status hex color' },
+          old_schedule_date: { type: 'string', format: 'date', nullable: true, example: '2026-10-28', description: 'Populated on "Scheduled Date Changed"' },
+          new_schedule_date: { type: 'string', format: 'date', nullable: true, example: '2026-10-29', description: 'Populated on "Status Updated" (to Scheduled) and "Scheduled Date Changed"' },
+          from_branch_head_id: { type: 'integer', nullable: true, example: 4, description: 'Populated on "Transfered"' },
+          from_branch_head_name: { type: 'string', nullable: true, example: 'Rajesh Menon', description: 'Populated on "Transfered"' },
+          to_branch_head_id: { type: 'integer', nullable: true, example: 8, description: 'Populated on "New Booking Created" and "Transfered"' },
+          to_branch_head_name: { type: 'string', nullable: true, example: 'K. V. Pavithran', description: 'Populated on "New Booking Created" and "Transfered"' },
+          from_assigned_head_district_id: { type: 'integer', nullable: true, example: 1, description: 'Populated on "Transfered"' },
+          from_assigned_head_district_name: { type: 'string', nullable: true, example: 'Ernakulam', description: 'Populated on "Transfered"' },
+          to_assigned_head_district_id: { type: 'integer', nullable: true, example: 5, description: 'Populated on "New Booking Created" and "Transfered"' },
+          to_assigned_head_district_name: { type: 'string', nullable: true, example: 'Kannur', description: 'Populated on "New Booking Created" and "Transfered"' },
+          action_by_id: { type: 'integer', nullable: true, example: 1, description: 'User ID of person who triggered the action' },
+          action_by_name: { type: 'string', nullable: true, example: 'SteelGuard Executive Board', description: 'Name of person who triggered the action' },
+          action_by_role_id: { type: 'integer', nullable: true, example: 1, description: 'Role ID: 1 (Admin), 2 (Coordinator), 3 (Branch Head)' },
+          created_at: { type: 'string', format: 'date-time', example: '2026-10-29T10:54:08.000Z', description: 'Timestamp when this history event occurred' }
+        }
+      },
+      BookingHistoryResponse: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean', example: true },
+          data: {
+            type: 'object',
+            properties: {
+              history: {
+                type: 'array',
+                items: { $ref: '#/components/schemas/BookingHistoryItem' }
+              },
+              page: { type: 'integer', example: 1 },
+              limit: { type: 'integer', example: 20 },
+              count: { type: 'integer', example: 1 }
+            }
+          }
+        }
+      },
     }
   },
   paths: {
@@ -1207,6 +1264,80 @@ export const swaggerDocument = {
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/DashboardMetricsResponse' }
+              }
+            }
+          },
+          500: {
+            description: 'Database or server error',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' }
+              }
+            }
+          }
+        }
+      }
+    },
+    '/api/booking-history': {
+      get: {
+        tags: ['Booking History'],
+        summary: 'Get Booking History / Mobile Activity Feed',
+        description: 'Fetch paginated booking history and mobile activity logs with filter by action type, booking name prefix search, and date range.',
+        parameters: [
+          {
+            name: 'search',
+            in: 'query',
+            schema: { type: 'string', example: 'test' },
+            description: 'Prefix search on booking customer name (booking_name LIKE search%)'
+          },
+          {
+            name: 'actionFilter',
+            in: 'query',
+            schema: {
+              type: 'string',
+              enum: [
+                'ALL',
+                'New Booking Created',
+                'Customer Notes Updated',
+                'Status Updated',
+                'Transfered',
+                'Customer Name Updated',
+                'Scheduled Date Changed'
+              ]
+            },
+            description: 'Filter by activity/action category'
+          },
+          {
+            name: 'fromDate',
+            in: 'query',
+            schema: { type: 'string', format: 'date', example: '2026-10-28' },
+            description: 'Start date (YYYY-MM-DD). If both fromDate and toDate are omitted, defaults to today.'
+          },
+          {
+            name: 'toDate',
+            in: 'query',
+            schema: { type: 'string', format: 'date', example: '2026-10-29' },
+            description: 'End date (YYYY-MM-DD). If both fromDate and toDate are omitted, defaults to today.'
+          },
+          {
+            name: 'page',
+            in: 'query',
+            schema: { type: 'integer', default: 1, example: 1 },
+            description: 'Page number for pagination'
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            schema: { type: 'integer', default: 20, example: 20 },
+            description: 'Number of history records per page'
+          }
+        ],
+        responses: {
+          200: {
+            description: 'Booking history retrieved successfully',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/BookingHistoryResponse' }
               }
             }
           },

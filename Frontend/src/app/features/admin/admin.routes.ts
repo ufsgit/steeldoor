@@ -16,7 +16,6 @@ import {
   branchHeadsResolver,
   clientsResolver,
   districtsResolver,
-  historyResolver,
   usersResolver
 } from '../../core/resolvers/data.resolvers';
 
@@ -94,10 +93,7 @@ export const ADMIN_ROUTES: Routes = [
       },
       {
         path: 'history',
-        component: AdminHistoryComponent,
-        resolve: {
-          history: historyResolver
-        }
+        component: AdminHistoryComponent
       }
     ]
   }

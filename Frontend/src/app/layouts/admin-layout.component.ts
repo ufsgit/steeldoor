@@ -34,7 +34,7 @@ import { AuthService } from '../core/auth.service';
           <!-- Subtle Vertical Divider -->
           <div class="h-4 w-px bg-gray-200 hidden sm:block"></div>
 
-          <!-- Top Navigation: Orders, Settings, Reports -->
+          <!-- Top Navigation: Orders, Settings, History -->
           <nav class="hidden sm:flex items-center gap-6 text-[14px] font-medium text-gray-600">
             <a
               routerLink="/admin"
@@ -85,40 +85,35 @@ import { AuthService } from '../core/auth.service';
               </div>
             }
 
-            <!-- Reports Link -->
-            <a
-              routerLink="/admin/reports"
-              routerLinkActive="font-bold text-gray-900"
-              (click)="closeAllDropdowns()"
-              class="hover:text-gray-900 transition-colors cursor-pointer"
-            >
-              Reports
-            </a>
+            <!-- History Link: Only visible for Company Admin (role_id === 1) -->
+            @if (canAccessHistory()) {
+              <a
+                routerLink="/admin/history"
+                routerLinkActive="font-bold text-gray-900"
+                (click)="closeAllDropdowns()"
+                class="hover:text-gray-900 transition-colors cursor-pointer"
+              >
+                History
+              </a>
+            }
           </nav>
         </div>
 
         <!-- Right: Username dropdown with Logout -->
-        <div class="relative">
+        <div class="relative flex items-center gap-3">
+          <!-- User Profile Pill -->
           <button
             type="button"
             (click)="toggleUserDropdown()"
-            class="h-9 px-3 rounded-xl text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 transition-all duration-200 flex items-center gap-2 cursor-pointer shadow-2xs group focus:outline-none"
-            [class.bg-gray-100]="userDropdownOpen()"
-            [class.border-gray-300]="userDropdownOpen()"
-            title="User Menu"
+            class="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border border-gray-200 hover:border-gray-300 bg-gray-50/70 hover:bg-gray-100/70 transition-all cursor-pointer focus:outline-none"
           >
-            <!-- User Avatar Circle -->
-            <div class="w-6 h-6 rounded-full bg-[#0f9d58]/10 text-[#0f9d58] flex items-center justify-center font-bold text-[11px] shrink-0 uppercase">
-              {{ (userName() || 'U').charAt(0) }}
+            <!-- User initial badge -->
+            <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[11px] shrink-0">
+              {{ userName().charAt(0).toUpperCase() }}
             </div>
-            
-            <span class="max-w-[130px] sm:max-w-[180px] truncate font-medium text-gray-800">
-              {{ userName() }}
-            </span>
-
-            <!-- Dropdown Chevron -->
+            <span class="text-xs font-semibold text-gray-800 max-w-[120px] truncate">{{ userName() }}</span>
             <svg
-              class="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-600 transition-transform duration-200"
+              class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200"
               [class.rotate-180]="userDropdownOpen()"
               fill="none"
               viewBox="0 0 24 24"
@@ -128,14 +123,12 @@ import { AuthService } from '../core/auth.service';
             </svg>
           </button>
 
-          <!-- Dropdown Popup -->
+          <!-- User Dropdown Menu -->
           @if (userDropdownOpen()) {
-            <div
-              class="absolute right-0 top-full mt-1.5 w-52 z-50 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 text-xs overflow-hidden animate-in fade-in duration-150"
-            >
-              <!-- User Info header -->
-              <div class="px-3.5 py-2 border-b border-gray-100 bg-gray-50/50">
-                <p class="font-semibold text-gray-900 truncate text-[13px]">{{ userName() }}</p>
+            <div class="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 text-xs z-50 overflow-hidden divide-y divide-gray-100">
+              <!-- User Info Header -->
+              <div class="px-3.5 py-2">
+                <p class="font-bold text-gray-900 truncate">{{ userName() }}</p>
                 @if (userRoleDisplay()) {
                   <p class="text-[11px] text-gray-500 font-medium capitalize mt-0.5">{{ userRoleDisplay() }}</p>
                 }
@@ -194,6 +187,14 @@ export class AdminLayoutComponent {
     if (!user) return false;
     const roleId = Number(user.roleId ?? user.dbRoleId ?? null);
     // Role 1 is company_admin (Company)
+    return roleId === 1;
+  });
+
+  // Allow only role_id === 1 to access History
+  canAccessHistory = computed(() => {
+    const user = this.auth.currentUser();
+    if (!user) return false;
+    const roleId = Number(user.roleId ?? user.dbRoleId ?? null);
     return roleId === 1;
   });
 
