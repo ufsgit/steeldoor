@@ -61,6 +61,15 @@ export class DistrictDropdownComponent implements OnInit, ControlValueAccessor {
   }
 
   @Input() districts: District[] = [];
+  @Input()
+  set selectedDistrict(dist: District | null | undefined) {
+    if (dist) {
+      this.value = this.valueField === 'id' ? dist.id : dist.name;
+    } else {
+      this.value = null;
+    }
+    this.cdr.markForCheck();
+  }
   @Input() valueField: 'name' | 'id' = 'name';
   @Input() suffix = 'Hub';
   @Input() placeholder = 'Select District / Hub';

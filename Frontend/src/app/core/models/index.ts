@@ -113,6 +113,8 @@ export interface Booking {
   mobile: string;
   address: string;
   notes?: string | null;
+  staffNotes?: string | null;
+  staff_notes?: string | null;
   status: string;
   statusId?: number | null;
   statusCode?: string | null;
@@ -254,6 +256,8 @@ export interface CreateBookingPayload {
   mobile: string;
   address: string;
   notes?: string | null;
+  staffNotes?: string | null;
+  staff_notes?: string | null;
   status?: string;
   loginRoleId?: number | null;
   login_role_id?: number | null;

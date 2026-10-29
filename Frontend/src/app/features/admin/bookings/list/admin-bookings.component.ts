@@ -680,6 +680,12 @@ import { environment } from '../../../../../environments/environment';
                       <span class="font-medium text-gray-700 max-w-[220px] text-right truncate" [title]="selectedBooking()?.notes">{{ selectedBooking()?.notes }}</span>
                     </div>
                   }
+                  @if (selectedBooking()?.staffNotes || selectedBooking()?.staff_notes) {
+                    <div class="flex justify-between">
+                      <span class="text-gray-500">Staff Notes:</span>
+                      <span class="font-medium text-gray-700 max-w-[220px] text-right truncate" [title]="selectedBooking()?.staffNotes || selectedBooking()?.staff_notes">{{ selectedBooking()?.staffNotes || selectedBooking()?.staff_notes }}</span>
+                    </div>
+                  }
                   <div class="flex justify-between">
                     <span class="text-gray-500">Email:</span>
                     <span class="font-medium text-gray-700">{{ selectedBooking()?.contactEmail || 'N/A' }}</span>
@@ -1888,6 +1894,7 @@ export class AdminBookingsComponent implements OnInit {
       status: newStatus,
       scheduleDate: scheduleDate,
       notes: notes,
+      staffNotes: notes,
       createdBy: user?.id ? String(user.id) : null,
       createdByName: user?.name || null,
       branchHeadId: matchedHeadUser?.id || matchedHead?.id || b.branchHeadId || null,
@@ -1913,7 +1920,8 @@ export class AdminBookingsComponent implements OnInit {
           assignedHeadDistrictId: returnedData.assignedHeadDistrictId ?? b.assignedHeadDistrictId,
           assignedHeadDistrictName: returnedData.assignedHeadDistrictName ?? b.assignedHeadDistrictName,
           scheduledDate: scheduleDate || b.scheduledDate,
-          notes: notes || b.notes,
+          notes: b.notes,
+          staffNotes: returnedData.staffNotes || notes || b.staffNotes,
           isDelayed: false
         };
 

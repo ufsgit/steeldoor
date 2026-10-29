@@ -356,6 +356,7 @@ export class DataService {
       areaName,
       address: b.address || '',
       notes: b.notes || '',
+      staffNotes: b.staffNotes || b.staff_notes || '',
       pincode: b.pincode || '',
       documents: docs,
       statusId: b.statusId != null ? Number(b.statusId) : (b.status_id != null ? Number(b.status_id) : 1),
@@ -375,6 +376,7 @@ export class DataService {
         doorType: 'Standard Steel Door Installation',
         quantity: 1,
         notes: b.notes || '',
+      staffNotes: b.staffNotes || b.staff_notes || '',
         documents: docs,
         images: docs
       },
@@ -429,6 +431,7 @@ export class DataService {
     status: string;
     scheduleDate?: string | null;
     notes?: string | null;
+    staffNotes?: string | null;
     createdBy?: number | string | null;
     createdByName?: string | null;
     branchHeadId?: number | string | null;
