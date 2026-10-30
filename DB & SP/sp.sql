@@ -1319,8 +1319,10 @@ BEGIN
         branch_head_name            = COALESCE(v_branch_head_name, branch_head_name),
         assigned_head_district_id   = CASE WHEN p_branch_head_id IS NOT NULL AND p_branch_head_id > 0 THEN v_branch_head_district_id ELSE assigned_head_district_id END,
         assigned_head_district_name = CASE WHEN p_branch_head_id IS NOT NULL AND p_branch_head_id > 0 THEN v_branch_head_district_name ELSE assigned_head_district_name END,
+        /*
         created_by                  = COALESCE(p_created_by, created_by),
         created_by_name             = COALESCE(v_created_by_name, created_by_name),
+        */
         updated_at                  = CURRENT_TIMESTAMP
     WHERE id = p_client_id AND is_deleted = 0;
     -- 8. Return updated booking record
