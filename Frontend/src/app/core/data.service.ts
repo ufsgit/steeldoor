@@ -509,6 +509,40 @@ export class DataService {
 
   // ---------------- History / Audit Trail ----------------
 
+  getBookingHistoryById(bookingId: string | number, page = 1, limit = 10): Observable<{ history: BookingHistoryEntry[]; count: number; page: number; limit: number }> {
+    if (isPlatformServer(this.platformId)) {
+      return of({ history: [], count: 0, page: 1, limit: 10 });
+    }
+    const params = new HttpParams()
+      .set('page', String(page))
+      .set('limit', String(limit));
+
+    return this.http.get<{ success: boolean; data: { history: any[]; count: number; page: number; limit: number } }>(
+      this.url(`/api/booking-history/${bookingId}`),
+      { params }
+    ).pipe(
+      map(res => {
+        const rawHistory = res?.data?.history || [];
+        const normalized: BookingHistoryEntry[] = rawHistory.map((item: any) => ({
+          id: String(item.id || item.history_id || Math.random()),
+          action: item.action || item.status_name || item.status || 'Status Updated',
+          status: item.status_name || item.status || 'Pending',
+          timestamp: item.created_at || item.createdAt || item.timestamp || new Date().toISOString(),
+          performedBy: item.performed_by_name || item.performedBy || item.username || item.login_name || 'System',
+          role: item.role_name || item.role || 'system',
+          notes: item.notes || item.remarks || item.comments || ''
+        }));
+        return {
+          history: normalized,
+          count: res?.data?.count ?? normalized.length,
+          page: res?.data?.page ?? page,
+          limit: res?.data?.limit ?? limit
+        };
+      }),
+      catchError(() => of({ history: [], count: 0, page: 1, limit }))
+    );
+  }
+
   getHistory(filter?: { bookingId?: string; role?: string; action?: string }): Observable<BookingHistoryEntry[]> {
     if (isPlatformServer(this.platformId)) {
       return of([]);

@@ -177,28 +177,28 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
             @for (item of historyList(); track item.history_id) {
               <div
                 (click)="openBookingTimeline(item)"
-                class="group bg-white rounded-xl border border-gray-200/80 hover:border-[#0f9d58]/50 hover:shadow-md transition-all p-4.5 cursor-pointer relative"
+                class="group bg-white rounded-xl border border-gray-200/80 hover:border-[#0f9d58]/50 hover:shadow-md transition-all p-5 sm:p-6 cursor-pointer relative overflow-hidden"
                 title="Click to view full history timeline for this booking"
               >
                 <div class="flex items-start justify-between gap-4">
                   <!-- Left side: Avatar + Title & Action Badges -->
-                  <div class="flex items-start gap-3.5">
+                  <div class="flex items-start gap-3.5 min-w-0 flex-1">
                     <!-- Avatar Initial Badge -->
                     <div class="w-10 h-10 rounded-full bg-emerald-50 text-[#0f9d58] border border-emerald-100/60 font-bold text-[14px] flex items-center justify-center shrink-0 uppercase select-none group-hover:scale-105 transition-transform">
                       {{ (item.booking_name || 'B').charAt(0) }}
                     </div>
 
-                    <div>
-                      <!-- Booking Name & Booking ID -->
-                      <div class="flex items-center gap-2 flex-wrap">
-                        <span class="text-[14px] font-bold text-gray-900 group-hover:text-[#0f9d58] transition-colors">
+                    <div class="min-w-0 flex-1">
+                      <!-- Booking Name (without #ID badge) -->
+                      <div class="flex items-center gap-2 flex-wrap min-w-0">
+                        <span
+                          class="text-[14px] font-bold text-gray-900 group-hover:text-[#0f9d58] transition-colors truncate max-w-[320px] sm:max-w-[480px] md:max-w-[600px]"
+                          [title]="item.booking_name || 'Booking'"
+                        >
                           {{ item.booking_name || 'Booking' }}
                         </span>
-                        <span class="text-[11px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                          #{{ item.booking_id }}
-                        </span>
                         <!-- Visual indicator that row is clickable -->
-                        <span class="text-[11px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity font-medium hidden sm:inline-flex items-center gap-1">
+                        <span class="text-[11px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity font-medium hidden sm:inline-flex items-center gap-1 shrink-0">
                           <span>View timeline</span>
                           <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -209,7 +209,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
                       <!-- Subtitle: Status / Action Pill + Action Performed By -->
                       <div class="flex items-center gap-2 mt-1 flex-wrap text-[12px]">
                         <span
-                          class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide"
+                          class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide shrink-0"
                           [style.backgroundColor]="getActionBadgeBg(item)"
                           [style.color]="getActionBadgeColor(item)"
                         >
@@ -217,9 +217,9 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
                         </span>
 
                         @if (item.action_by_name) {
-                          <span class="text-gray-500 text-[12px] flex items-center gap-1">
+                          <span class="text-gray-500 text-[12px] flex items-center gap-1 truncate max-w-[240px]" [title]="item.action_by_name">
                             <span>by</span>
-                            <span class="font-semibold text-gray-700">{{ item.action_by_name }}</span>
+                            <span class="font-semibold text-gray-700 truncate">{{ item.action_by_name }}</span>
                           </span>
                         }
                       </div>
@@ -238,11 +238,11 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
                 </div>
 
                 <!-- Dynamic Detail Container based on Action Type -->
-                <div class="mt-3.5 pt-3 border-t border-gray-100 text-[12px]">
+                <div class="mt-3.5 pt-3 border-t border-gray-100 text-[12px] min-w-0">
                   
                   <!-- 1. New Booking Created -->
                   @if (isNewBooking(item.action_type)) {
-                    <div class="flex items-center gap-4 flex-wrap text-gray-600 bg-gray-50/80 rounded-lg px-3.5 py-2.5 border border-gray-100">
+                    <div class="flex items-center gap-4 flex-wrap text-gray-600 bg-gray-50/80 rounded-lg px-3.5 py-2.5 border border-gray-100 break-words">
                       @if (item.to_branch_head_name) {
                         <div class="flex items-center gap-1.5">
                           <span class="text-gray-400">Assigned Branch Head:</span>
@@ -253,9 +253,9 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
                         </div>
                       }
                       @if (item.customer_note) {
-                        <div class="flex items-center gap-1.5">
-                          <span class="text-gray-400">Initial Note:</span>
-                          <span class="font-medium text-gray-700 italic">"{{ item.customer_note }}"</span>
+                        <div class="flex items-center gap-1.5 break-words max-h-24 overflow-y-auto">
+                          <span class="text-gray-400 shrink-0">Initial Note:</span>
+                          <span class="font-medium text-gray-700 italic break-words">"{{ item.customer_note }}"</span>
                         </div>
                       }
                     </div>
@@ -263,7 +263,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
 
                   <!-- 2. Status Updated -->
                   @else if (isStatusUpdated(item.action_type)) {
-                    <div class="flex flex-col gap-2 bg-gray-50/80 rounded-lg px-3.5 py-2.5 border border-gray-100">
+                    <div class="flex flex-col gap-2 bg-gray-50/80 rounded-lg px-3.5 py-2.5 border border-gray-100 break-words">
                       <div class="flex items-center gap-2 flex-wrap">
                         <span class="text-gray-400 font-medium">Transition:</span>
                         <span
@@ -273,7 +273,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
                         >
                           {{ item.old_status_label || item.old_status_code || 'Initial' }}
                         </span>
-                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                         </svg>
                         <span
@@ -291,9 +291,9 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
                         </div>
                       }
                       @if (item.staff_note) {
-                        <div class="flex items-center gap-1.5 text-gray-600">
-                          <span class="text-gray-400">Staff Note:</span>
-                          <span class="font-medium text-gray-700 italic">"{{ item.staff_note }}"</span>
+                        <div class="flex items-start gap-1.5 text-gray-600 break-words max-h-24 overflow-y-auto">
+                          <span class="text-gray-400 shrink-0">Staff Note:</span>
+                          <span class="font-medium text-gray-700 italic break-words">"{{ item.staff_note }}"</span>
                         </div>
                       }
                     </div>
@@ -301,7 +301,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
 
                   <!-- 3. Transfered -->
                   @else if (isTransfered(item.action_type)) {
-                    <div class="flex flex-col gap-1.5 bg-gray-50/80 rounded-lg px-3.5 py-2.5 border border-gray-100">
+                    <div class="flex flex-col gap-1.5 bg-gray-50/80 rounded-lg px-3.5 py-2.5 border border-gray-100 break-words">
                       <div class="flex items-center gap-2 flex-wrap">
                         <span class="text-gray-400 font-medium">Reassigned:</span>
                         <span class="font-semibold text-gray-800">
@@ -310,7 +310,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
                             <span class="text-gray-400 font-normal">({{ item.from_assigned_head_district_name }})</span>
                           }
                         </span>
-                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                         </svg>
                         <span class="font-bold text-[#0f9d58]">
@@ -321,9 +321,9 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
                         </span>
                       </div>
                       @if (item.staff_note) {
-                        <div class="flex items-center gap-1.5 text-gray-600 mt-0.5">
-                          <span class="text-gray-400">Reason / Staff Note:</span>
-                          <span class="font-medium text-gray-700 italic">"{{ item.staff_note }}"</span>
+                        <div class="flex items-start gap-1.5 text-gray-600 mt-0.5 break-words max-h-24 overflow-y-auto">
+                          <span class="text-gray-400 shrink-0">Reason / Staff Note:</span>
+                          <span class="font-medium text-gray-700 italic break-words">"{{ item.staff_note }}"</span>
                         </div>
                       }
                     </div>
@@ -331,11 +331,11 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
 
                   <!-- 4. Scheduled Date Changed -->
                   @else if (isDateChanged(item.action_type)) {
-                    <div class="flex items-center gap-2 bg-gray-50/80 rounded-lg px-3.5 py-2.5 border border-gray-100">
-                      <span class="text-gray-400 font-medium">Scheduled Date Changed:</span>
+                    <div class="flex items-center gap-2 bg-gray-50/80 rounded-lg px-3.5 py-2.5 border border-gray-100 break-words">
+                      <span class="text-gray-400 shrink-0">Scheduled Date Changed:</span>
                       @if (item.old_schedule_date && item.new_schedule_date) {
                         <span class="line-through text-gray-400 font-semibold">{{ item.old_schedule_date | date:'dd-MM-yyyy' }}</span>
-                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                         </svg>
                         <span class="font-bold text-[#7c3aed]">{{ item.new_schedule_date | date:'dd-MM-yyyy' }}</span>
@@ -347,22 +347,22 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
 
                   <!-- 5. Customer Name Updated -->
                   @else if (isNameUpdated(item.action_type)) {
-                    <div class="bg-gray-50/80 rounded-lg px-3.5 py-2.5 border border-gray-100 text-gray-700">
+                    <div class="bg-gray-50/80 rounded-lg px-3.5 py-2.5 border border-gray-100 text-gray-700 break-words max-h-24 overflow-y-auto">
                       <span class="font-medium">{{ item.action_type }}</span>
                     </div>
                   }
 
                   <!-- 6. Customer Notes Updated -->
                   @else if (isNoteUpdated(item.action_type)) {
-                    <div class="flex items-center gap-1.5 bg-gray-50/80 rounded-lg px-3.5 py-2.5 border border-gray-100 text-gray-700">
-                      <span class="text-gray-400 font-medium">Customer Note:</span>
-                      <span class="font-medium text-gray-800 italic">"{{ item.customer_note }}"</span>
+                    <div class="flex items-start gap-1.5 bg-gray-50/80 rounded-lg px-3.5 py-2.5 border border-gray-100 text-gray-700 break-words max-h-24 overflow-y-auto">
+                      <span class="text-gray-400 shrink-0">Customer Note:</span>
+                      <span class="font-medium text-gray-800 italic break-words">"{{ item.customer_note }}"</span>
                     </div>
                   }
 
                   <!-- Fallback -->
                   @else {
-                    <div class="bg-gray-50/80 rounded-lg px-3.5 py-2.5 border border-gray-100 text-gray-700">
+                    <div class="bg-gray-50/80 rounded-lg px-3.5 py-2.5 border border-gray-100 text-gray-700 break-words max-h-24 overflow-y-auto">
                       {{ item.customer_note || item.staff_note || item.action_type }}
                     </div>
                   }

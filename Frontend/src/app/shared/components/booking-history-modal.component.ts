@@ -21,21 +21,20 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
           (click)="$event.stopPropagation()"
         >
           <!-- Header -->
-          <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
-            <div class="flex items-center gap-3">
+          <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4 bg-white shrink-0">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
               <div class="w-9 h-9 rounded-full bg-emerald-50 text-[#0f9d58] border border-emerald-100 font-bold text-xs flex items-center justify-center uppercase shrink-0">
                 {{ (bookingName || 'B').charAt(0) }}
               </div>
-              <div>
-                <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                  <span>{{ bookingName || 'Booking' }}</span>
-                  <span class="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+              <div class="min-w-0 flex-1">
+                <h3 class="text-base font-bold text-gray-900 flex items-center gap-2 min-w-0">
+                  <span class="truncate max-w-[340px] sm:max-w-[440px]" [title]="bookingName || 'Booking'">
+                    {{ bookingName || 'Booking' }}
+                  </span>
+                  <span class="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">
                     #{{ bookingId }}
                   </span>
                 </h3>
-                <p class="text-[12px] text-gray-500 mt-0.5">
-                  Complete activity audit timeline for this order
-                </p>
               </div>
             </div>
 
@@ -43,7 +42,7 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
             <button
               type="button"
               (click)="close()"
-              class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
             >
               <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -89,13 +88,13 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
                     ></div>
 
                     <!-- Event Card -->
-                    <div class="bg-white rounded-xl border border-gray-200/90 p-4 shadow-2xs hover:border-gray-300 transition-all">
+                    <div class="bg-white rounded-xl border border-gray-200/90 p-4 shadow-2xs hover:border-gray-300 transition-all min-w-0 overflow-hidden">
                       <div class="flex items-start justify-between gap-3">
-                        <div>
+                        <div class="min-w-0 flex-1">
                           <!-- Action Pill & Performed By -->
                           <div class="flex items-center gap-2 flex-wrap">
                             <span
-                              class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
+                              class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold shrink-0"
                               [style.backgroundColor]="getActionBadgeBg(item)"
                               [style.color]="getActionBadgeColor(item)"
                             >
@@ -103,7 +102,7 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
                             </span>
 
                             @if (item.action_by_name) {
-                              <span class="text-gray-500 text-[11px]">
+                              <span class="text-gray-500 text-[11px] truncate max-w-[200px]" [title]="item.action_by_name">
                                 by <span class="font-semibold text-gray-800">{{ item.action_by_name }}</span>
                               </span>
                             }
@@ -122,11 +121,11 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
                       </div>
 
                       <!-- Context-Aware Details per Action -->
-                      <div class="mt-3 pt-2.5 border-t border-gray-100 text-[12px]">
+                      <div class="mt-3 pt-2.5 border-t border-gray-100 text-[12px] min-w-0">
                         
                         <!-- 1. New Booking Created -->
                         @if (isNewBooking(item.action_type)) {
-                          <div class="flex flex-col gap-1 text-[11px] text-gray-600 bg-gray-50/80 rounded-lg p-2.5 border border-gray-100">
+                          <div class="flex flex-col gap-1 text-[11px] text-gray-600 bg-gray-50/80 rounded-lg p-2.5 border border-gray-100 break-words">
                             @if (item.to_branch_head_name) {
                               <div>
                                 <span class="text-gray-400">Assigned Branch Head:</span>
@@ -137,7 +136,7 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
                               </div>
                             }
                             @if (item.customer_note) {
-                              <div>
+                              <div class="max-h-24 overflow-y-auto break-words">
                                 <span class="text-gray-400">Initial Customer Note:</span>
                                 <span class="text-gray-700 italic font-medium ml-1">"{{ item.customer_note }}"</span>
                               </div>
@@ -147,7 +146,7 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
 
                         <!-- 2. Status Updated -->
                         @else if (isStatusUpdated(item.action_type)) {
-                          <div class="flex flex-col gap-1.5 text-[11px] bg-gray-50/80 rounded-lg p-2.5 border border-gray-100">
+                          <div class="flex flex-col gap-1.5 text-[11px] bg-gray-50/80 rounded-lg p-2.5 border border-gray-100 break-words">
                             <div class="flex items-center gap-2 flex-wrap">
                               <span class="text-gray-400 font-medium">Status Changed:</span>
                               <span
@@ -157,7 +156,7 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
                               >
                                 {{ item.old_status_label || item.old_status_code || 'Initial' }}
                               </span>
-                              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                               </svg>
                               <span
@@ -175,7 +174,7 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
                               </div>
                             }
                             @if (item.staff_note) {
-                              <div class="text-gray-600">
+                              <div class="text-gray-600 max-h-24 overflow-y-auto break-words">
                                 <span class="text-gray-400">Staff Note:</span>
                                 <span class="text-gray-700 italic font-medium ml-1">"{{ item.staff_note }}"</span>
                               </div>
@@ -185,7 +184,7 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
 
                         <!-- 3. Transfered -->
                         @else if (isTransfered(item.action_type)) {
-                          <div class="flex flex-col gap-1 text-[11px] bg-gray-50/80 rounded-lg p-2.5 border border-gray-100">
+                          <div class="flex flex-col gap-1 text-[11px] bg-gray-50/80 rounded-lg p-2.5 border border-gray-100 break-words">
                             <div class="flex items-center gap-1.5 flex-wrap">
                               <span class="text-gray-400">Reassigned:</span>
                               <span class="font-semibold text-gray-800">
@@ -194,7 +193,7 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
                                   <span class="text-gray-400">({{ item.from_assigned_head_district_name }})</span>
                                 }
                               </span>
-                              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                               </svg>
                               <span class="font-bold text-[#0f9d58]">
@@ -205,7 +204,7 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
                               </span>
                             </div>
                             @if (item.staff_note) {
-                              <div class="text-gray-600">
+                              <div class="text-gray-600 max-h-24 overflow-y-auto break-words">
                                 <span class="text-gray-400">Staff Note:</span>
                                 <span class="text-gray-700 italic font-medium ml-1">"{{ item.staff_note }}"</span>
                               </div>
@@ -215,11 +214,11 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
 
                         <!-- 4. Scheduled Date Changed -->
                         @else if (isDateChanged(item.action_type)) {
-                          <div class="flex items-center gap-2 text-[11px] bg-gray-50/80 rounded-lg p-2.5 border border-gray-100">
-                            <span class="text-gray-400">Date Rescheduled:</span>
+                          <div class="flex items-center gap-2 text-[11px] bg-gray-50/80 rounded-lg p-2.5 border border-gray-100 break-words">
+                            <span class="text-gray-400 shrink-0">Date Rescheduled:</span>
                             @if (item.old_schedule_date && item.new_schedule_date) {
                               <span class="line-through text-gray-400 font-semibold">{{ item.old_schedule_date | date:'dd-MM-yyyy' }}</span>
-                              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                               </svg>
                               <span class="font-bold text-[#7c3aed]">{{ item.new_schedule_date | date:'dd-MM-yyyy' }}</span>
@@ -231,22 +230,22 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
 
                         <!-- 5. Customer Name Updated -->
                         @else if (isNameUpdated(item.action_type)) {
-                          <div class="text-[11px] bg-gray-50/80 rounded-lg p-2.5 border border-gray-100 text-gray-800 font-medium">
+                          <div class="text-[11px] bg-gray-50/80 rounded-lg p-2.5 border border-gray-100 text-gray-800 font-medium break-words max-h-24 overflow-y-auto">
                             {{ item.action_type }}
                           </div>
                         }
 
                         <!-- 6. Customer Notes Updated -->
                         @else if (isNoteUpdated(item.action_type)) {
-                          <div class="flex items-center gap-1.5 text-[11px] bg-gray-50/80 rounded-lg p-2.5 border border-gray-100 text-gray-700">
-                            <span class="text-gray-400">Note:</span>
+                          <div class="flex flex-col gap-1 text-[11px] bg-gray-50/80 rounded-lg p-2.5 border border-gray-100 text-gray-700 break-words max-h-24 overflow-y-auto">
+                            <span class="text-gray-400 font-medium text-[10px]">Note:</span>
                             <span class="font-medium text-gray-800 italic">"{{ item.customer_note }}"</span>
                           </div>
                         }
 
                         <!-- Fallback -->
                         @else {
-                          <div class="text-[11px] bg-gray-50/80 rounded-lg p-2.5 border border-gray-100 text-gray-700">
+                          <div class="text-[11px] bg-gray-50/80 rounded-lg p-2.5 border border-gray-100 text-gray-700 break-words max-h-24 overflow-y-auto">
                             {{ item.customer_note || item.staff_note || item.action_type }}
                           </div>
                         }
@@ -275,15 +274,7 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
           </div>
 
           <!-- Footer -->
-          <div class="px-6 py-3 border-t border-gray-100 bg-white flex items-center justify-between shrink-0 text-xs">
-            <div class="flex items-center gap-2">
-              <span class="text-gray-500 font-medium">
-                Loaded: <span class="font-bold text-gray-900">{{ timeline().length }}</span> events
-              </span>
-              @if (loadingMore()) {
-                <span class="inline-block animate-spin rounded-full h-3.5 w-3.5 border-2 border-[#0f9d58] border-t-transparent"></span>
-              }
-            </div>
+          <div class="px-6 py-3 border-t border-gray-100 bg-white flex items-center justify-end shrink-0 text-xs">
             <button
               type="button"
               (click)="close()"

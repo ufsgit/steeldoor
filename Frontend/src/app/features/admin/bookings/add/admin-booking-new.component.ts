@@ -43,7 +43,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
           <button
             type="button"
             (click)="saveBooking()"
-            [disabled]="isSubmitting || !name.trim() || !mobile.trim() || !address.trim()"
+            [disabled]="isSubmitting || !name.trim() || name.length > 150 || !mobile.trim() || !isNumeric(mobile) || mobile.length > 25 || address.length > 1000 || notes.length > 1000"
             class="px-5 py-2 rounded-xl bg-[#246b3f] hover:bg-[#1e5834] disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-2"
           >
             @if (isSubmitting) {
@@ -87,6 +87,9 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
                 placeholder="e.g. John Mathew"
                 class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
               />
+              @if (!name.trim() && name.length > 0) {
+                <p class="text-[10px] text-red-500 mt-1">Customer Name cannot be empty.</p>
+              }
             </div>
 
             <!-- Col 2: Mobile (mobile) -->
@@ -96,13 +99,22 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
               </label>
               <input
                 type="tel"
+                inputmode="numeric"
                 name="mobile"
                 [(ngModel)]="mobile"
+                (keypress)="allowOnlyNumbers($event)"
+                (paste)="onMobilePaste($event)"
+                (input)="onMobileInput($event)"
                 required
                 maxlength="25"
-                placeholder="e.g. +91 98470 12345"
-                class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+                placeholder="e.g. 9847012345"
+                class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58] font-mono"
               />
+              @if (!mobile.trim() && mobile.length > 0) {
+                <p class="text-[10px] text-red-500 mt-1">Mobile Number cannot be empty.</p>
+              } @else if (mobile.trim() && !isNumeric(mobile)) {
+                <p class="text-[10px] text-red-500 mt-1">Only numbers (digits) are allowed.</p>
+              }
             </div>
 
             <!-- Col 3: District Dropdown (Searchable) -->
@@ -147,6 +159,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
               name="address"
               [(ngModel)]="address"
               required
+              maxlength="1000"
               rows="2"
               placeholder="Door No, Street Name, Landmark, Post"
               class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
@@ -163,6 +176,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
           <textarea
             name="notes"
             [(ngModel)]="notes"
+            maxlength="1000"
             rows="3"
             placeholder="Fitting requirements, door specifications, masonry status, delivery notes..."
             class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
@@ -398,6 +412,38 @@ export class BookingNewComponent implements OnInit {
     }
   }
 
+  allowOnlyNumbers(event: KeyboardEvent): boolean {
+    const charCode = event.which ? event.which : event.keyCode;
+    if (event.ctrlKey || event.metaKey || event.altKey) return true;
+    if (charCode >= 48 && charCode <= 57) {
+      return true;
+    }
+    event.preventDefault();
+    return false;
+  }
+
+  onMobilePaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    const pastedText = event.clipboardData?.getData('text') || '';
+    const digitsOnly = pastedText.replace(/\D/g, '');
+    const current = this.mobile || '';
+    this.mobile = (current + digitsOnly).slice(0, 25);
+  }
+
+  onMobileInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input) {
+      const sanitized = input.value.replace(/\D/g, '');
+      this.mobile = sanitized;
+      input.value = sanitized;
+    }
+  }
+
+  isNumeric(val: string): boolean {
+    if (!val) return false;
+    return /^\d+$/.test(val.trim());
+  }
+
   goBack(): void {
     if (this.authService.isAuthenticated()) {
       this.router.navigate(['/admin/bookings']);
@@ -409,6 +455,31 @@ export class BookingNewComponent implements OnInit {
   saveBooking(): void {
     if (!this.name.trim() || !this.mobile.trim() || !this.address.trim()) {
       this.toast.error('Please fill in Name, Mobile Number, and Address.');
+      return;
+    }
+
+    if (this.name.length > 150) {
+      this.toast.error('Customer Name cannot exceed 150 characters.');
+      return;
+    }
+
+    if (this.mobile.length > 25) {
+      this.toast.error('Mobile Number cannot exceed 25 characters.');
+      return;
+    }
+
+    if (!this.isNumeric(this.mobile)) {
+      this.toast.error('Mobile Number must contain only digits.');
+      return;
+    }
+
+    if (this.address.length > 1000) {
+      this.toast.error('Full Address cannot exceed 1000 characters.');
+      return;
+    }
+
+    if (this.notes.length > 1000) {
+      this.toast.error('Notes cannot exceed 1000 characters.');
       return;
     }
 
