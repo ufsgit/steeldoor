@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, inject, signal, ElementRef, ViewChild, PLATFORM_ID } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, inject, signal, computed, ElementRef, ViewChild, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../../../../core/data.service';
@@ -6,6 +6,7 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../../../../core
 import { ToastService } from '../../../../../shared/toast/toast.service';
 import { Booking } from '../../../../../core/models';
 import { environment } from '../../../../../../environments/environment';
+import { AuthService } from '../../../../../core/auth.service';
 
 @Component({
   selector: 'app-booking-detailed',
@@ -162,48 +163,50 @@ import { environment } from '../../../../../../environments/environment';
               }
             </div>
 
-            <!-- Quick Status Change Bar -->
-            <div class="pt-3 border-t border-gray-200 space-y-2">
-              <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Update Status</span>
-              <div class="grid grid-cols-2 gap-1.5">
-                <button
-                  type="button"
-                  (click)="onStatusChange.emit('New')"
-                  class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer text-center"
-                  [class.ring-2]="booking.status.toLowerCase() === 'new'"
-                  [class.ring-gray-400]="booking.status.toLowerCase() === 'new'"
-                >
-                  New
-                </button>
-                <button
-                  type="button"
-                  (click)="onStatusChange.emit('Scheduled')"
-                  class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e8f0fe] text-[#1967d2] hover:bg-[#d2e3fc] transition-colors cursor-pointer text-center"
-                  [class.ring-2]="booking.status.toLowerCase() === 'scheduled'"
-                  [class.ring-[#1967d2]]="booking.status.toLowerCase() === 'scheduled'"
-                >
-                  Scheduled
-                </button>
-                <button
-                  type="button"
-                  (click)="onStatusChange.emit('Completed')"
-                  class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e6f4ea] text-[#0f9d58] hover:bg-[#c9eed1] transition-colors cursor-pointer text-center"
-                  [class.ring-2]="booking.status.toLowerCase() === 'completed' || booking.status.toLowerCase() === 'finished'"
-                  [class.ring-[#0f9d58]]="booking.status.toLowerCase() === 'completed' || booking.status.toLowerCase() === 'finished'"
-                >
-                  Completed
-                </button>
-                <button
-                  type="button"
-                  (click)="onStatusChange.emit('Cancelled')"
-                  class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#fce8e6] text-[#c5221f] hover:bg-[#fbd1cf] transition-colors cursor-pointer text-center"
-                  [class.ring-2]="booking.status.toLowerCase() === 'cancelled' || booking.status.toLowerCase() === 'rejected'"
-                  [class.ring-[#c5221f]]="booking.status.toLowerCase() === 'cancelled' || booking.status.toLowerCase() === 'rejected'"
-                >
-                  Cancelled
-                </button>
+            <!-- Quick Status Change Bar (Visible only for Role ID 1) -->
+            @if (canUpdateStatus()) {
+              <div class="pt-3 border-t border-gray-200 space-y-2">
+                <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Update Status</span>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    (click)="onStatusChange.emit('New')"
+                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer text-center"
+                    [class.ring-2]="booking.status.toLowerCase() === 'new'"
+                    [class.ring-gray-400]="booking.status.toLowerCase() === 'new'"
+                  >
+                    New
+                  </button>
+                  <button
+                    type="button"
+                    (click)="onStatusChange.emit('Scheduled')"
+                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e8f0fe] text-[#1967d2] hover:bg-[#d2e3fc] transition-colors cursor-pointer text-center"
+                    [class.ring-2]="booking.status.toLowerCase() === 'scheduled'"
+                    [class.ring-[#1967d2]]="booking.status.toLowerCase() === 'scheduled'"
+                  >
+                    Scheduled
+                  </button>
+                  <button
+                    type="button"
+                    (click)="onStatusChange.emit('Completed')"
+                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e6f4ea] text-[#0f9d58] hover:bg-[#c9eed1] transition-colors cursor-pointer text-center"
+                    [class.ring-2]="booking.status.toLowerCase() === 'completed' || booking.status.toLowerCase() === 'finished'"
+                    [class.ring-[#0f9d58]]="booking.status.toLowerCase() === 'completed' || booking.status.toLowerCase() === 'finished'"
+                  >
+                    Completed
+                  </button>
+                  <button
+                    type="button"
+                    (click)="onStatusChange.emit('Cancelled')"
+                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#fce8e6] text-[#c5221f] hover:bg-[#fbd1cf] transition-colors cursor-pointer text-center"
+                    [class.ring-2]="booking.status.toLowerCase() === 'cancelled' || booking.status.toLowerCase() === 'rejected'"
+                    [class.ring-[#c5221f]]="booking.status.toLowerCase() === 'cancelled' || booking.status.toLowerCase() === 'rejected'"
+                  >
+                    Cancelled
+                  </button>
+                </div>
               </div>
-            </div>
+            }
           </div>
 
           <!-- ================= COLUMN 2: BOOKING HISTORY (INFINITE SCROLL) ================= -->
@@ -550,7 +553,16 @@ export class BookingDetailedComponent implements OnInit, OnDestroy {
   private dataService = inject(DataService);
   private toastService = inject(ToastService);
   private platformId = inject(PLATFORM_ID);
+  private auth = inject(AuthService);
   private previousBodyOverflow = '';
+
+  // Only allow role_id === 1 (Company Admin) to see and change status
+  canUpdateStatus = computed(() => {
+    const user = this.auth.currentUser();
+    if (!user) return false;
+    const roleId = Number(user.roleId ?? user.dbRoleId ?? (user as any).role_id ?? null);
+    return roleId === 1;
+  });
 
   // History Timeline State with pagination
   timeline = signal<BookingHistoryRecord[]>([]);
