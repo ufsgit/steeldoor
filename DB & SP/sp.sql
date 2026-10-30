@@ -167,6 +167,30 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_available_branch_districts`(
+    IN p_user_id INT -- Pass NULL (or 0) for Add/New User, or the user's ID when Editing
+)
+BEGIN
+    SELECT 
+        d.id,
+        d.name,
+        d.code,
+        d.state_id AS stateId
+    FROM districts d
+    WHERE d.id NOT IN (
+        -- Districts already assigned to active, non-deleted branch heads
+        SELECT u.district_id 
+        FROM users u
+        WHERE u.district_id IS NOT NULL 
+          AND u.is_deleted = 0 
+          AND u.is_active = 1
+          AND (p_user_id IS NULL OR p_user_id = 0 OR u.id != p_user_id)
+    )
+    ORDER BY d.name ASC;
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_bookings_paginated`(
     IN p_page        INT,           -- Page number (e.g. 1, 2, 3...)
     IN p_limit       INT,           -- Number of records per page (default: 15)
@@ -220,6 +244,7 @@ BEGIN
         mobile,
         address,
         notes,
+        staff_notes,
         status_id,
         status_code,
         status_label,
@@ -322,6 +347,94 @@ BEGIN
           OR p_filter_role <= 0 
           OR login_role_id = p_filter_role
       );
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_booking_history`(
+    IN p_search VARCHAR(150),
+    IN p_action_filter VARCHAR(100),
+    IN p_from_date DATE,
+    IN p_to_date DATE,
+    IN p_page INT,
+    IN p_limit INT,
+	IN p_user_id INT,
+    IN p_role_id INT
+)
+BEGIN
+    DECLARE v_offset INT DEFAULT 0;
+    DECLARE v_from_date DATE;
+    DECLARE v_to_date DATE;
+
+    -- Handle pagination defaults
+    IF p_page IS NULL OR p_page < 1 THEN
+        SET p_page = 1;
+    END IF;
+    
+    IF p_limit IS NULL OR p_limit < 1 THEN
+        SET p_limit = 20;
+    END IF;
+
+    SET v_offset = (p_page - 1) * p_limit;
+
+    -- Date logic: if from/to are not passed, default to TODAY
+    IF p_from_date IS NULL AND p_to_date IS NULL THEN
+        SET v_from_date = CURDATE();
+        SET v_to_date = CURDATE();
+    ELSE
+        SET v_from_date = COALESCE(p_from_date, p_to_date);
+        SET v_to_date = COALESCE(p_to_date, p_from_date);
+    END IF;
+
+    -- Main query with search, filter, date range & pagination
+    SELECT 
+        bh.*
+    FROM `booking_history` bh
+    WHERE 
+        -- Date range filter
+        DATE(bh.created_at) BETWEEN v_from_date AND v_to_date
+
+        -- Booking name prefix search
+        AND (
+            p_search IS NULL 
+            OR TRIM(p_search) = '' 
+            OR bh.booking_name LIKE CONCAT(TRIM(p_search), '%')
+        )
+
+        -- Action type category filter
+        AND (
+            p_action_filter IS NULL 
+            OR TRIM(p_action_filter) = '' 
+            OR p_action_filter = 'ALL'
+            OR (p_action_filter = 'Customer Name Updated' AND bh.action_type LIKE 'Customer Name Updated%')
+            OR (p_action_filter = 'Scheduled Date Changed' AND bh.action_type LIKE 'Scheduled Date Changed%')
+            OR bh.action_type = p_action_filter
+        )
+                -- Role-based restriction: role 1 & 2 see all, role 3 sees only their own actions, other roles/null see nothing
+        AND (
+            (p_role_id IN (1, 2))
+            OR (p_role_id = 3 AND bh.action_by_id = p_user_id)
+        )
+    ORDER BY bh.created_at DESC, bh.history_id DESC
+    LIMIT p_limit OFFSET v_offset;
+
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_branch_heads_for_status_update`()
+BEGIN
+    SELECT 
+        u.id,
+        u.name,
+        d.id   AS district_id,
+        d.name AS district_name
+    FROM users u
+    INNER JOIN districts d ON u.district_id = d.id
+    WHERE u.role_id = 3                          -- Branch Head role
+      AND u.is_active = 1                        -- is_active = 1
+      AND u.is_deleted = 0                       -- is_deleted = 0
+    ORDER BY u.name ASC;
 END$$
 DELIMITER ;
 
@@ -455,6 +568,36 @@ BEGIN
       -- Date Filter
       AND (v_from_date IS NULL OR DATE(created_at) >= v_from_date)
       AND (v_to_date IS NULL OR DATE(created_at) <= v_to_date);
+
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_history_by_bookingid`(
+    IN p_booking_id INT,
+    IN p_page INT,
+    IN p_limit INT
+)
+BEGIN
+    DECLARE v_offset INT DEFAULT 0;
+
+    IF p_page IS NULL OR p_page < 1 THEN
+        SET p_page = 1;
+    END IF;
+
+    IF p_limit IS NULL OR p_limit < 1 THEN
+        SET p_limit = 10;
+    END IF;
+
+    SET v_offset = (p_page - 1) * p_limit;
+
+    SELECT 
+        bh.*
+    FROM `booking_history` bh
+    WHERE 
+        bh.booking_id = p_booking_id
+    ORDER BY bh.created_at DESC, bh.history_id DESC
+    LIMIT p_limit OFFSET v_offset;
 
 END$$
 DELIMITER ;
@@ -785,7 +928,7 @@ BEGIN
         u.id,
         u.name,
         u.district_id,
-        TRIM(REPLACE(d.name, ' Hub', '')) AS district_name,
+        TRIM(d.name) AS district_name,
         u.phone,
         u.email
     FROM users u
@@ -856,7 +999,7 @@ BEGIN
         IF p_role_id = 3 THEN
             SELECT 
                 d.id, 
-                TRIM(REPLACE(d.name, ' Hub', '')) AS name,
+                d.name AS name,
                 d.code,
                 d.state_id AS stateId
             FROM districts d
@@ -865,7 +1008,7 @@ BEGIN
         ELSE
             SELECT 
                 d.id, 
-                TRIM(REPLACE(d.name, ' Hub', '')) AS name,
+                d.name AS name,
                 d.code,
                 d.state_id AS stateId
             FROM districts d
@@ -1003,7 +1146,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `update_booking_status_or_branch_hea
     IN p_client_name     VARCHAR(150),
     IN p_status_input    VARCHAR(50),   -- status_id ('1','2','3') or name ('New','Scheduled','Completed','Cancelled')
     IN p_schedule_date   DATE,
-    IN p_notes           TEXT,
+    IN p_staff_notes           TEXT,
     IN p_created_by      INT,
     IN p_created_by_name VARCHAR(100),
     IN p_branch_head_id  INT
@@ -1117,7 +1260,7 @@ BEGIN
             to_assigned_head_district_id, to_assigned_head_district_name,
             action_by_id, action_by_name, action_by_role_id
         ) VALUES (
-            p_client_id, v_client_name, 'Transfered', NULLIF(TRIM(p_notes), ''),
+            p_client_id, v_client_name, 'Transfered', NULLIF(TRIM(p_staff_notes), ''),
             v_old_branch_head_id, v_old_branch_head_name,
             p_branch_head_id, v_branch_head_name,
             v_old_assigned_head_district_id, v_old_assigned_head_district_name,
@@ -1135,7 +1278,7 @@ BEGIN
             old_schedule_date, new_schedule_date,
             action_by_id, action_by_name, action_by_role_id
         ) VALUES (
-            p_client_id, v_client_name, 'Status Updated', NULLIF(TRIM(p_notes), ''),
+            p_client_id, v_client_name, 'Status Updated', NULLIF(TRIM(p_staff_notes), ''),
             v_old_status_id, v_old_status_code, v_old_status_label, v_old_status_color_code,
             v_status_id, v_status_code, v_status_label, v_status_color_code,
             v_old_schedule_date, v_clean_date,
@@ -1154,7 +1297,7 @@ BEGIN
             p_client_id, 
             v_client_name, 
             CONCAT('Scheduled Date Changed from "', COALESCE(DATE_FORMAT(v_old_schedule_date, '%d-%m-%Y'), 'None'), '" to "', DATE_FORMAT(v_clean_date, '%d-%m-%Y'), '"'),
-            NULLIF(TRIM(p_notes), ''),
+            NULLIF(TRIM(p_staff_notes), ''),
             v_old_status_id, v_old_status_code, v_old_status_label, v_old_status_color_code,
             v_status_id, v_status_code, v_status_label, v_status_color_code,
             v_old_schedule_date, v_clean_date,
@@ -1171,7 +1314,7 @@ BEGIN
         status_label                = v_status_label,
         status_color_code           = v_status_color_code,
         schedule_date               = v_clean_date,
-        notes                       = CASE WHEN p_notes IS NOT NULL AND TRIM(p_notes) != '' THEN TRIM(p_notes) ELSE notes END,
+        staff_notes = CASE WHEN p_staff_notes IS NOT NULL AND TRIM(p_staff_notes) != '' THEN TRIM(p_staff_notes) ELSE staff_notes END,
         branch_head_id              = COALESCE(p_branch_head_id, branch_head_id),
         branch_head_name            = COALESCE(v_branch_head_name, branch_head_name),
         assigned_head_district_id   = CASE WHEN p_branch_head_id IS NOT NULL AND p_branch_head_id > 0 THEN v_branch_head_district_id ELSE assigned_head_district_id END,
@@ -1191,6 +1334,7 @@ BEGIN
         b.status_color_code,
         b.schedule_date,
         b.notes,
+        b.staff_notes,
         b.assigned_head_district_id,
         b.assigned_head_district_name,
         b.branch_head_id,
