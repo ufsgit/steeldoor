@@ -7,8 +7,6 @@ const router = Router();
 // Apply optionalAuth to extract JWT user if present
 router.use(optionalAuth);
 
-// GET /api/dropdowns?type=district|area&parentId=1&search=xyz
-router.get('/', (req, res, next) => dropdownsController.getDropdown(req, res, next));
 
 // GET /api/dropdowns/districts?stateId=1&search=xyz
 router.get('/districts', (req, res, next) => dropdownsController.getDistricts(req, res, next));

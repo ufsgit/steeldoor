@@ -15,9 +15,6 @@ const handleUploads = (req, res, next) => {
   });
 };
 
-// POST /api/uploads/single (or /api/uploads)
-router.post('/single', handleUploads, (req, res, next) => uploadsController.uploadSingle(req, res, next));
-router.post('/', handleUploads, (req, res, next) => uploadsController.uploadSingle(req, res, next));
 
 // POST /api/uploads/multiple
 router.post('/multiple', handleUploads, (req, res, next) => uploadsController.uploadMultiple(req, res, next));

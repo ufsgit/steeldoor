@@ -474,6 +474,10 @@ export class DataService {
     });
   }
 
+  deleteBooking(id: string | number): Observable<any> {
+    return this.http.delete(this.url(`/api/bookings/${id}`));
+  }
+
   updateBooking(id: string | number, data: Partial<Booking>): Observable<Booking> {
     return this.http.put<Booking>(this.url(`/api/bookings/${id}`), data);
   }

@@ -48,6 +48,7 @@ router.put('/:id', optionalAuth, handleBookingUploads, (req, res, next) => booki
 router.patch('/:id/status', optionalAuth, (req, res, next) => statusController.save(req, res, next));
 router.post('/:id/status', optionalAuth, (req, res, next) => statusController.save(req, res, next));
 
+
 // DELETE /api/bookings/:id - Soft-delete booking
 router.delete('/:id', (req, res, next) => bookingsController.delete(req, res, next));
 

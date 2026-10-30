@@ -486,6 +486,25 @@ import { environment } from '../../../../../environments/environment';
                 @if (!isEditingSelected()) {
                   <button
                     type="button"
+                    (click)="openDeleteConfirmModal()"
+                    [disabled]="isDeletingBooking()"
+                    class="inline-flex items-center justify-center p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 border border-red-200/60 shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Delete Booking"
+                  >
+                    @if (isDeletingBooking()) {
+                      <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                      </svg>
+                    } @else {
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    }
+                  </button>
+
+                  <button
+                    type="button"
                     (click)="startEditingBooking()"
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-[#0f9d58] text-white hover:bg-[#0c8248] shadow-sm transition-all cursor-pointer"
                     title="Edit booking details"
@@ -1094,6 +1113,58 @@ import { environment } from '../../../../../environments/environment';
         </div>
       }
 
+      
+      <!-- Delete Booking Confirmation Modal (Elevated z-index above drawer) -->
+      @if (showDeleteConfirmModal()) {
+        <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn" (click)="closeDeleteConfirmModal()">
+          <div class="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 space-y-4 relative" (click)="$event.stopPropagation()">
+            <!-- Icon & Header -->
+            <div class="flex items-start gap-3.5">
+              <div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-base font-bold text-gray-900">Delete Booking?</h3>
+                <p class="text-xs text-gray-500 mt-1">
+                  Are you sure you want to delete <span class="font-semibold text-gray-800">Booking #{{ selectedBooking()?.id }} ({{ selectedBooking()?.clientName }})</span>?
+                </p>
+                <p class="text-[11px] text-red-500 mt-1 font-medium">This will remove the booking from active views.</p>
+              </div>
+            </div>
+
+            <!-- Action Buttons (Cancel / OK) -->
+            <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
+              <button
+                type="button"
+                (click)="closeDeleteConfirmModal()"
+                [disabled]="isDeletingBooking()"
+                class="px-4 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                (click)="confirmDeleteBooking()"
+                [disabled]="isDeletingBooking()"
+                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-red-600 hover:bg-red-700 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+              >
+                @if (isDeletingBooking()) {
+                  <svg class="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                  </svg>
+                  <span>Deleting...</span>
+                } @else {
+                  <span>OK, Delete</span>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- Status Change Confirmation & Date Picker Modal (Elevated z-index to appear directly above drawer) -->
       @if (pendingStatusChange()) {
         <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn" (click)="cancelStatusChange()">
@@ -1442,6 +1513,8 @@ export class AdminBookingsComponent implements OnInit {
 
   // Selected Booking Edit Mode state
   isEditingSelected = signal(false);
+  isDeletingBooking = signal(false);
+  showDeleteConfirmModal = signal(false);
   isSavingEdit = signal(false);
   editName = '';
   editMobile = '';
@@ -1710,6 +1783,36 @@ export class AdminBookingsComponent implements OnInit {
   openBooking(b: Booking): void {
     this.selectedBooking.set(b);
     this.isEditingSelected.set(false);
+  }
+
+  openDeleteConfirmModal(): void {
+    if (!this.selectedBooking()) return;
+    this.showDeleteConfirmModal.set(true);
+  }
+
+  closeDeleteConfirmModal(): void {
+    if (this.isDeletingBooking()) return;
+    this.showDeleteConfirmModal.set(false);
+  }
+
+  confirmDeleteBooking(): void {
+    const b = this.selectedBooking();
+    if (!b) return;
+
+    this.isDeletingBooking.set(true);
+    this.dataService.deleteBooking(b.id).subscribe({
+      next: () => {
+        this.isDeletingBooking.set(false);
+        this.showDeleteConfirmModal.set(false);
+        this.selectedBooking.set(null);
+        this.toastService.success(`Booking #${b.id} deleted successfully!`);
+        this.fetchBookingsFromApi();
+      },
+      error: (err) => {
+        this.isDeletingBooking.set(false);
+        this.toastService.error(err?.error?.error || 'Failed to delete booking. Please try again.');
+      }
+    });
   }
 
   startEditingBooking(): void {
