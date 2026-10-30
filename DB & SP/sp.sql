@@ -895,63 +895,6 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_branch_heads_dropdown`(
-    IN p_district_id INT,           -- Optional: Filter by specific district (NULL = all branch heads)
-    IN p_search      VARCHAR(100),  -- Optional: Search keyword (matches name, phone, or district)
-    IN p_page        INT,           -- Page number (default: 1)
-    IN p_limit       INT            -- Items per page (default: 50)
-)
-BEGIN
-    DECLARE v_limit INT DEFAULT 50;
-    DECLARE v_page INT DEFAULT 1;
-    DECLARE v_offset INT DEFAULT 0;
-    DECLARE v_search VARCHAR(105) DEFAULT NULL;
-
-    -- 1. Apply defaults for page and limit
-    IF p_limit IS NOT NULL AND p_limit > 0 THEN
-        SET v_limit = p_limit;
-    END IF;
-
-    IF p_page IS NOT NULL AND p_page > 0 THEN
-        SET v_page = p_page;
-    END IF;
-
-    SET v_offset = (v_page - 1) * v_limit;
-
-    -- 2. Normalize search
-    IF p_search IS NOT NULL AND TRIM(p_search) != '' THEN
-        SET v_search = TRIM(p_search);
-    END IF;
-
-    -- 3. Return active Branch Heads (role_id = 3)
-    SELECT 
-        u.id,
-        u.name,
-        u.district_id,
-        TRIM(d.name) AS district_name,
-        u.phone,
-        u.email
-    FROM users u
-    LEFT JOIN districts d ON u.district_id = d.id
-    WHERE u.role_id = 3
-      AND u.is_active = 1
-      AND u.is_deleted = 0
-      -- District filter (if provided)
-      AND (p_district_id IS NULL OR u.district_id = p_district_id)
-      -- Search filter
-      AND (
-          v_search IS NULL 
-          OR u.name LIKE CONCAT('%', v_search, '%') 
-          OR d.name LIKE CONCAT('%', v_search, '%')
-          OR u.phone LIKE CONCAT('%', v_search, '%')
-      )
-    ORDER BY u.name ASC
-    LIMIT v_limit OFFSET v_offset;
-
-END$$
-DELIMITER ;
-
-DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_dropdown_data`(
     IN p_type       VARCHAR(20),
     IN p_parent_id  INT,
@@ -1066,22 +1009,6 @@ BEGIN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Invalid p_type. Allowed values are "district" or "area".';
     END IF;
-END$$
-DELIMITER ;
-
-DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_status_options`()
-BEGIN
-    SELECT 
-        id,
-        code,
-        label,
-        color_code AS colorCode,
-        sort_order AS sortOrder,
-        is_active AS isActive
-    FROM status_options
-    WHERE is_active = 1
-    ORDER BY sort_order ASC, id ASC;
 END$$
 DELIMITER ;
 
