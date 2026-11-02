@@ -273,7 +273,7 @@ export class BookingNewComponent implements OnInit {
 
   // Branch Head assignment
   branchHeadId: number | null = null;
-  branchHeadName: string = '';
+  branchHeadName: string | null = null;
 
   // Auth context
   loginRoleId: number | null = null;
@@ -360,7 +360,8 @@ export class BookingNewComponent implements OnInit {
     this.districtId = Number(district.id) || null;
     this.areaName = '';
     this.areaId = null;
-    this.branchHeadName = district.name === 'Trivandrum' ? 'Suresh Kumar' : 'Rajesh Menon';
+    this.branchHeadName = null;
+    this.branchHeadId = null;
     this.loadAreasForDistrict(district.id);
   }
 
@@ -506,10 +507,10 @@ export class BookingNewComponent implements OnInit {
       areaName: this.areaName.trim() || undefined,
       area_name: this.areaName.trim() || undefined,
       area: this.areaName.trim() || undefined,
-      branchHeadId: this.branchHeadId,
-      branch_head_id: this.branchHeadId,
-      branchHeadName: this.branchHeadName || undefined,
-      branch_head_name: this.branchHeadName || undefined,
+      branchHeadId: this.branchHeadId ?? null,
+      branch_head_id: this.branchHeadId ?? null,
+      branchHeadName: this.branchHeadName || null,
+      branch_head_name: this.branchHeadName || null,
       documents: this.documents(),
 
       // UI compatibility aliases

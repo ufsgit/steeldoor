@@ -490,6 +490,7 @@ export class AdminUsersComponent implements OnInit {
 
   activeRoleFilter = signal<string>('all');
   searchQuery = '';
+  private searchDebounceTimer: any;
 
   filterTabs = [
     { label: 'All Users', val: 'all' },
@@ -598,7 +599,10 @@ export class AdminUsersComponent implements OnInit {
   }
 
   onSearchChange(): void {
-    this.loadUsers(1);
+    clearTimeout(this.searchDebounceTimer);
+    this.searchDebounceTimer = setTimeout(() => {
+      this.loadUsers(1);
+    }, 350);
   }
 
   prevPage(): void {

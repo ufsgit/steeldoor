@@ -421,7 +421,7 @@ export class DataService {
       statusLabel,
       statusColorCode: b.statusColorCode || b.status_color_code || '#3b82f6',
       status: (statusCode as any) || 'New',
-      branchHeadName: b.branchHeadName || (districtName === 'Trivandrum' ? 'Suresh Kumar' : 'Rajesh Menon'),
+      branchHeadName: b.branchHeadName || b.branch_head_name || null,
       branchHeadId: b.branchHeadId != null ? String(b.branchHeadId) : undefined,
       scheduledDate: b.scheduledDate || b.scheduleDate || b.scheduled_date || b.schedule_date || undefined,
       loginRoleId: b.loginRoleId != null ? Number(b.loginRoleId) : undefined,

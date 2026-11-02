@@ -150,13 +150,13 @@ import { ModalComponent } from '../../../shared/components/modal.component';
                   </button>
                 }
               </div>
-              <button
+              <!-- <button
                 type="button"
                 (click)="onSearch()"
                 class="px-3 py-1.5 rounded-lg bg-[#0f9d58] hover:bg-[#0b8043] text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-1 cursor-pointer shrink-0"
               >
                 <span>Search</span>
-              </button>
+              </button> -->
             </div>
           </div>
 

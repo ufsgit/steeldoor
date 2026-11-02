@@ -67,7 +67,7 @@ import { AuthService } from '../../../../../core/auth.service';
               </button>
             }
 
-            @if (onDelete.observed) {
+            @if (canDelete() && onDelete.observed) {
               <button
                 type="button"
                 (click)="onDelete.emit(booking)"
@@ -125,8 +125,8 @@ import { AuthService } from '../../../../../core/auth.service';
               </div>
 
               <div>
-                <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">District & Hub</span>
-                <span class="font-medium text-gray-800 break-words">{{ booking.area ? (booking.area + ', ') : '' }}{{ booking.districtName }} Hub</span>
+                <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">District</span>
+                <span class="font-medium text-gray-800 break-words">{{ booking.area ? (booking.area + ', ') : '' }}{{ booking.districtName }}</span>
               </div>
 
               <div>
@@ -558,6 +558,14 @@ export class BookingDetailedComponent implements OnInit, OnDestroy {
 
   // Only allow role_id === 1 (Company Admin) to see and change status
   canUpdateStatus = computed(() => {
+    const user = this.auth.currentUser();
+    if (!user) return false;
+    const roleId = Number(user.roleId ?? user.dbRoleId ?? (user as any).role_id ?? null);
+    return roleId === 1;
+  });
+
+  // Only allow role_id === 1 (Company Admin) to see the delete button
+  canDelete = computed(() => {
     const user = this.auth.currentUser();
     if (!user) return false;
     const roleId = Number(user.roleId ?? user.dbRoleId ?? (user as any).role_id ?? null);

@@ -25,9 +25,9 @@ import { environment } from '../../../../../environments/environment';
         <button
           type="button"
           id="tab-all-orders"
-          (click)="setStatus('')"
+          (click)="setStatus(null)"
           class="flex items-center gap-2 pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="selectedStatus() === '' ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
+          [ngClass]="selectedStatusId() === null ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
         >
           <svg class="w-4.5 h-4.5 text-[#0f9d58]" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H5v-4h7v4zm0-6H5V7h7v4zm7 6h-5v-4h5v4zm0-6h-5V7h5v4z"/>
@@ -35,46 +35,46 @@ import { environment } from '../../../../../environments/environment';
           <span class="whitespace-nowrap">All Orders</span>
         </button>
 
-        <!-- NEW -->
+        <!-- NEW (status_id = 1) -->
         <button
           type="button"
           id="tab-new"
-          (click)="setStatus('NEW')"
+          (click)="setStatus(1)"
           class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="selectedStatus() === 'NEW' ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
+          [ngClass]="selectedStatusId() === 1 ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
         >
           New
         </button>
 
-        <!-- Scheduled -->
+        <!-- Scheduled (status_id = 2) -->
         <button
           type="button"
           id="tab-scheduled"
-          (click)="setStatus('Scheduled')"
+          (click)="setStatus(2)"
           class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="selectedStatus() === 'Scheduled' ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
+          [ngClass]="selectedStatusId() === 2 ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
         >
           Scheduled
         </button>
 
-        <!-- Completed -->
+        <!-- Completed (status_id = 3) -->
         <button
           type="button"
           id="tab-completed"
-          (click)="setStatus('Completed')"
+          (click)="setStatus(3)"
           class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="selectedStatus() === 'Completed' ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
+          [ngClass]="selectedStatusId() === 3 ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
         >
           Completed
         </button>
 
-        <!-- Cancelled -->
+        <!-- Cancelled (status_id = 4) -->
         <button
           type="button"
           id="tab-cancelled"
-          (click)="setStatus('Cancelled')"
+          (click)="setStatus(4)"
           class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="selectedStatus() === 'Cancelled' ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
+          [ngClass]="selectedStatusId() === 4 ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
         >
           Cancelled
         </button>
@@ -335,7 +335,7 @@ import { environment } from '../../../../../environments/environment';
 
                   <!-- D · ASSIGNED HEAD -->
                   <td class="py-2.5 px-3.5 text-[14px] text-gray-900 whitespace-nowrap font-medium truncate border-r border-gray-200" [class.border-b]="!last" [class.border-gray-200]="!last">
-                    {{ b.branchHeadName || 'Rajesh Menon' }}
+                    {{ b.branchHeadName || b.branch_head_name || '-' }}
                   </td>
 
                   <!-- E · CREATED AT (createdAt / created_at) -->
@@ -801,7 +801,7 @@ import { environment } from '../../../../../environments/environment';
                   type="text"
                   name="head"
                   [(ngModel)]="newHead"
-                  placeholder="e.g. Rajesh Menon"
+                  placeholder="Assigned Head (optional)"
                   class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
                 />
               </div>
@@ -1152,7 +1152,7 @@ export class AdminBookingsComponent implements OnInit {
 
   // Filter signals (committed filter state applied when Search is clicked or tab changes)
   searchQuery = signal('');
-  selectedStatus = signal('');
+  selectedStatusId = signal<number | null>(null);
   selectedDistrict = signal('');
   selectedCustomerRole = signal('');
   dateFrom = signal('');
@@ -1178,8 +1178,8 @@ export class AdminBookingsComponent implements OnInit {
     const q = this.searchQuery().trim();
     if (q) filterParams.search = q;
 
-    const s = this.selectedStatus().trim();
-    if (s) filterParams.status = s;
+    const sId = this.selectedStatusId();
+    if (sId != null && sId > 0) filterParams.statusId = sId;
 
     const d = this.selectedDistrict();
     if (d) filterParams.districtId = d;
@@ -1233,7 +1233,7 @@ export class AdminBookingsComponent implements OnInit {
     this.selectedCustomerRole.set('');
     this.dateFrom.set('');
     this.dateTo.set('');
-    this.selectedStatus.set('');
+    this.selectedStatusId.set(null);
     this.currentPage.set(1);
     this.fetchBookingsFromApi();
   }
@@ -1267,7 +1267,7 @@ export class AdminBookingsComponent implements OnInit {
   });
   newDocuments = signal<string[]>([]);  // p_documents (JSON)
   isUploadingDocuments = signal(false);
-  newHead = 'Rajesh Menon';
+  newHead = '';
   isSubmitting = false;
 
   // Selected Booking Edit Mode state
@@ -1336,8 +1336,8 @@ export class AdminBookingsComponent implements OnInit {
     this.autoAssignBranchHeadForDistrict(newDist);
   }
 
-  setStatus(status: string): void {
-    this.selectedStatus.set(status);
+  setStatus(statusId: number | null): void {
+    this.selectedStatusId.set(statusId);
     this.currentPage.set(1);
     this.fetchBookingsFromApi();
   }
@@ -1392,16 +1392,13 @@ export class AdminBookingsComponent implements OnInit {
       });
     }
 
-    // Status tab filter
-    const status = this.selectedStatus();
-    if (status) {
-      if (status === 'Delayed') {
-        list = list.filter(b => b.isDelayed);
-      } else if (status === 'Pending') {
-        list = list.filter(b => (b.status === 'Pending' || b.status === 'NEW') && !b.isDelayed);
-      } else {
-        list = list.filter(b => String(b.status || '').toLowerCase() === status.toLowerCase());
-      }
+    // Status tab filter by status_id
+    const statusId = this.selectedStatusId();
+    if (statusId != null && statusId > 0) {
+      list = list.filter(b => {
+        const bStatusId = Number(b.statusId || (b as any).status_id);
+        return bStatusId === statusId;
+      });
     }
 
     // District Filter (checks districtId or districtName via matchesDistrict)
@@ -1474,8 +1471,15 @@ export class AdminBookingsComponent implements OnInit {
     this.fetchBookingsFromApi();
 
     const initialStatus = this.route.snapshot.queryParamMap.get('status');
-    if (initialStatus) {
-      this.selectedStatus.set(initialStatus);
+    const initialStatusId = this.route.snapshot.queryParamMap.get('statusId') || this.route.snapshot.queryParamMap.get('status_id');
+    if (initialStatusId && !isNaN(Number(initialStatusId))) {
+      this.selectedStatusId.set(Number(initialStatusId));
+    } else if (initialStatus) {
+      const lower = initialStatus.toLowerCase();
+      if (lower === 'new') this.selectedStatusId.set(1);
+      else if (lower === 'scheduled') this.selectedStatusId.set(2);
+      else if (lower === 'completed') this.selectedStatusId.set(3);
+      else if (lower === 'cancelled') this.selectedStatusId.set(4);
     }
 
     // If logged in as Branch Head, pre-configure their assigned district
@@ -1556,6 +1560,9 @@ export class AdminBookingsComponent implements OnInit {
   }
 
   openDeleteConfirmModal(): void {
+    const u = this.authService.currentUser();
+    const roleId = Number(u?.roleId ?? u?.dbRoleId ?? (u as any)?.role_id ?? null);
+    if (roleId !== 1) return;
     if (!this.selectedBooking()) return;
     this.showDeleteConfirmModal.set(true);
   }
@@ -1566,6 +1573,12 @@ export class AdminBookingsComponent implements OnInit {
   }
 
   confirmDeleteBooking(): void {
+    const u = this.authService.currentUser();
+    const roleId = Number(u?.roleId ?? u?.dbRoleId ?? (u as any)?.role_id ?? null);
+    if (roleId !== 1) {
+      this.toastService.error('You do not have permission to delete bookings.');
+      return;
+    }
     const b = this.selectedBooking();
     if (!b) return;
 
@@ -2076,7 +2089,10 @@ export class AdminBookingsComponent implements OnInit {
       clientType: 'customer',
       contactEmail: `${this.newClientName.toLowerCase().replace(/\s+/g, '')}@example.com`,
       pincode: '682024',
-      branchHeadName: this.newHead || 'Rajesh Menon',
+      branchHeadName: this.newHead || null,
+      branch_head_name: this.newHead || null,
+      branchHeadId: null,
+      branch_head_id: null,
       loginRoleId: roleId || (u?.role === 'admin' ? 1 : u?.role === 'coordinator' ? 2 : u?.role === 'branch_head' ? 3 : 4),
       loginId: u?.id || null,
       loginName: u?.name || null,
@@ -2141,7 +2157,10 @@ export class AdminBookingsComponent implements OnInit {
             documents: docs
           },
           status: (this.newStatus as any) || 'Pending',
-          branchHeadName: this.newHead || 'Rajesh Menon',
+          branchHeadName: this.newHead || null,
+          branch_head_name: this.newHead || null,
+          branchHeadId: null,
+          branch_head_id: null,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           history: []
@@ -2167,16 +2186,7 @@ export class AdminBookingsComponent implements OnInit {
 
   onNewDistrictSelected(dist: District | null): void {
     if (!dist) return;
-    const branchHeadMap: Record<string, string> = {
-      'Ernakulam': 'Rajesh Menon',
-      'Trivandrum': 'Suresh Kumar',
-      'Kozhikode': 'Deepa Chandran',
-      'Thrissur': 'Priya Nair',
-      'Kannur': 'Manoj Varma'
-    };
-    if (branchHeadMap[dist.name]) {
-      this.newHead = branchHeadMap[dist.name];
-    }
+    this.newHead = '';
     this.newArea = '';
     if (dist.id) {
       this.loadNewDistrictAreas(dist.id);

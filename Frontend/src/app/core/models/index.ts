@@ -144,9 +144,9 @@ export interface Booking {
   assigned_head_district_name?: string | null;
   assignedHeadDistrictName?: string | null;
   branch_head_id?: number | null;
-  branchHeadId?: string;
+  branchHeadId?: string | null;
   branch_head_name?: string | null;
-  branchHeadName?: string;
+  branchHeadName?: string | null;
   documents?: string[] | any;
   created_by?: number | null;
   createdBy?: number | string | null;

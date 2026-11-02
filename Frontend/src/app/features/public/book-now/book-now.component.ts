@@ -366,7 +366,7 @@ export class BookNowComponent implements OnInit {
   areaId: number | null = null;
   areaName = '';
   branchHeadId: number | null = null;
-  branchHeadName = 'Rajesh Menon';
+  branchHeadName: string | null = null;
   documents: string[] = [];
 
   isSubmitting = false;
@@ -401,7 +401,7 @@ export class BookNowComponent implements OnInit {
     this.districtId = Number(district.id) || null;
     this.areaName = '';
     this.areaId = null;
-    this.branchHeadName = district.name === 'Trivandrum' ? 'Suresh Kumar' : 'Rajesh Menon';
+    this.branchHeadName = null;
     this.loadAreasForDistrict(district.id);
   }
 
@@ -501,8 +501,8 @@ export class BookNowComponent implements OnInit {
       area: this.areaName.trim() || undefined,
       branchHeadId: this.branchHeadId,
       branch_head_id: this.branchHeadId,
-      branchHeadName: this.branchHeadName || undefined,
-      branch_head_name: this.branchHeadName || undefined,
+      branchHeadName: this.branchHeadName || null,
+      branch_head_name: this.branchHeadName || null,
       documents: this.documents,
 
       // UI compatibility aliases
