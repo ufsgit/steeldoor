@@ -472,11 +472,17 @@ BEGIN
         COUNT(CASE WHEN bh.new_status_id = 2 THEN 1 END) AS scheduled_count,
         COUNT(CASE WHEN bh.new_status_id = 3 THEN 1 END) AS completed_count,
         COUNT(CASE WHEN bh.new_status_id = 4 THEN 1 END) AS cancelled_count,
-        COUNT(*) AS total_activities
+        (
+			COUNT(CASE WHEN bh.new_status_id = 1 THEN 1 END) +
+			COUNT(CASE WHEN bh.new_status_id = 2 THEN 1 END) +
+			COUNT(CASE WHEN bh.new_status_id = 3 THEN 1 END) +
+			COUNT(CASE WHEN bh.new_status_id = 4 THEN 1 END)
+		) AS total_activities
 
     FROM booking_history bh
     LEFT JOIN bookings b ON b.id = bh.booking_id
     WHERE DATE(bh.created_at) BETWEEN v_from AND v_to
+		AND bh.action_type IN ('Status Updated', 'New Booking Created')
       -- Scoping strictly for Roles 1, 2, and 3
       AND (
           p_role_id IN (1, 2)                                                              -- Role 1 & 2: Full access
