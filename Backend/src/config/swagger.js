@@ -34,7 +34,8 @@ export const swaggerDocument = {
     { name: 'Dropdowns', description: 'Searchable Dropdown Select Options (Districts, Areas)' },
     { name: 'Uploads', description: 'File & Document Uploads for Bookings' },
     { name: 'Mobile Dashboard', description: 'Fitmate Mobile App Dashboard Metrics & Statistics' },
-    { name: 'Booking History', description: 'Fitmate Mobile Booking Activity & History Log' }
+    { name: 'Booking History', description: 'Fitmate Mobile Booking Activity & History Log' },
+    { name: 'Reports', description: 'Activity & Booking Reports with Dynamic Aggregation' }
   ],
   components: {
     securitySchemes: {
@@ -1406,6 +1407,67 @@ export const swaggerDocument = {
                 schema: { $ref: '#/components/schemas/ErrorResponse' }
               }
             }
+          }
+        }
+      }
+    },
+    '/api/reports/bookings': {
+      get: {
+        tags: ['Reports'],
+        summary: 'Get activity & booking report metrics',
+        description: 'Returns aggregated booking activity metrics (New, Scheduled, Completed, Cancelled) dynamically grouped by Day (<= 7 days), Week (<= 30 days), Month (<= 365 days), or Year (> 365 days) from booking_history.',
+        security: [{ BearerAuth: [] }, { CookieAuth: [] }],
+        parameters: [
+          {
+            name: 'dateFrom',
+            in: 'query',
+            schema: { type: 'string', format: 'date', example: '2026-10-25' },
+            description: 'Start date (YYYY-MM-DD)'
+          },
+          {
+            name: 'dateTo',
+            in: 'query',
+            schema: { type: 'string', format: 'date', example: '2026-11-03' },
+            description: 'End date (YYYY-MM-DD)'
+          },
+          {
+            name: 'districtId',
+            in: 'query',
+            schema: { type: 'integer', example: 7 },
+            description: 'Optional District ID (For Company / Coordinator roles)'
+          }
+        ],
+        responses: {
+          200: {
+            description: 'Report metrics retrieved successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          periodLabel: { type: 'string', example: 'Mon' },
+                          periodDate: { type: 'string', format: 'date', example: '2026-11-02' },
+                          newCount: { type: 'integer', example: 15 },
+                          scheduledCount: { type: 'integer', example: 11 },
+                          completedCount: { type: 'integer', example: 9 },
+                          cancelledCount: { type: 'integer', example: 3 },
+                          totalActivities: { type: 'integer', example: 38 }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          500: {
+            description: 'Server error'
           }
         }
       }
