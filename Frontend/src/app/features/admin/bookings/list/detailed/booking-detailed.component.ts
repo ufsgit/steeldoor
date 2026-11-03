@@ -109,7 +109,7 @@ import { AuthService } from '../../../../../core/auth.service';
             <div class="space-y-3.5 text-xs">
               <div>
                 <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Contact Phone</span>
-                <span class="font-medium text-gray-900 text-sm">{{ booking.contactPhone || booking.mobile || '-' }}</span>
+                <span class="font-medium text-gray-900 text-sm block truncate" [title]="booking.contactPhone || booking.mobile || ''">{{ booking.contactPhone || booking.mobile || '-' }}</span>
               </div>
 
               <!-- <div>
@@ -158,6 +158,15 @@ import { AuthService } from '../../../../../core/auth.service';
                   <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Customer Notes</span>
                   <p class="text-xs text-gray-700 bg-amber-50/60 border border-amber-200/80 p-2.5 rounded-lg leading-relaxed break-words max-h-28 overflow-y-auto">
                     {{ booking.notes }}
+                  </p>
+                </div>
+              }
+
+              @if (booking.staffNotes || booking.staff_notes) {
+                <div>
+                  <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Staff Notes / Status Note</span>
+                  <p class="text-xs text-gray-700 bg-blue-50/60 border border-blue-200/80 p-2.5 rounded-lg leading-relaxed break-words max-h-28 overflow-y-auto">
+                    {{ booking.staffNotes || booking.staff_notes }}
                   </p>
                 </div>
               }

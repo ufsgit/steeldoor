@@ -319,12 +319,12 @@ import { environment } from '../../../../../environments/environment';
                   </td>
 
                   <!-- A · CLIENT NAME -->
-                  <td class="py-2.5 px-3.5 font-bold text-[15px] text-gray-950 group-hover:text-[#0f9d58] transition-colors whitespace-nowrap truncate tracking-tight border-r border-gray-200" [class.border-b]="!last" [class.border-gray-200]="!last">
+                  <td class="py-2.5 px-3.5 font-bold text-[15px] text-gray-950 group-hover:text-[#0f9d58] transition-colors whitespace-nowrap truncate tracking-tight border-r border-gray-200" [title]="b.clientName || ''" [class.border-b]="!last" [class.border-gray-200]="!last">
                     {{ b.clientName }}
                   </td>
 
                   <!-- B · PHONE NUMBER -->
-                  <td class="py-2.5 px-3.5 text-[14px] text-gray-900 whitespace-nowrap font-medium border-r border-gray-200" [class.border-b]="!last" [class.border-gray-200]="!last">
+                  <td class="py-2.5 px-3.5 text-[14px] text-gray-900 whitespace-nowrap truncate font-medium border-r border-gray-200" [title]="b.contactPhone || ''" [class.border-b]="!last" [class.border-gray-200]="!last">
                     {{ b.contactPhone }}
                   </td>
 
@@ -900,7 +900,7 @@ import { environment } from '../../../../../environments/environment';
       <!-- Delete Booking Confirmation Modal (Elevated z-index above drawer) -->
       @if (showDeleteConfirmModal()) {
         <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn" (click)="closeDeleteConfirmModal()">
-          <div class="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 space-y-4 relative" (click)="$event.stopPropagation()">
+          <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 space-y-4 relative" (click)="$event.stopPropagation()">
             <!-- Icon & Header -->
             <div class="flex items-start gap-3.5">
               <div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0">
@@ -908,10 +908,10 @@ import { environment } from '../../../../../environments/environment';
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </div>
-              <div class="flex-1">
+              <div class="flex-1 min-w-0">
                 <h3 class="text-base font-bold text-gray-900">Delete Booking?</h3>
                 <p class="text-xs text-gray-500 mt-1">
-                  Are you sure you want to delete <span class="font-semibold text-gray-800">Booking #{{ selectedBooking()?.id }} ({{ selectedBooking()?.clientName }})</span>?
+                  Are you sure you want to delete <span class="font-semibold text-gray-800 whitespace-nowrap inline-flex items-baseline">Booking&nbsp;(<span class="inline-block max-w-[180px] sm:max-w-[220px] truncate align-bottom" [title]="selectedBooking()?.clientName">{{ selectedBooking()?.clientName }}</span>)</span>?
                 </p>
                 <p class="text-[11px] text-red-500 mt-1 font-medium">This will remove the booking from active views.</p>
               </div>
@@ -1046,7 +1046,7 @@ import { environment } from '../../../../../environments/environment';
               <button
                 type="button"
                 (click)="confirmStatusChange()"
-                [disabled]="isSubmittingStatus() || (pendingStatusChange() === 'Scheduled' && !statusScheduleDate)"
+                [disabled]="isSubmittingStatus() || !statusBranchHeadName || (pendingStatusChange() === 'Scheduled' && !statusScheduleDate)"
                 class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white shadow-sm transition-all cursor-pointer disabled:opacity-50"
                 [ngClass]="{
                   'bg-blue-600 hover:bg-blue-700': pendingStatusChange() === 'Scheduled',
@@ -1790,6 +1790,9 @@ export class AdminBookingsComponent implements OnInit {
     // Pre-fill Branch Head directly from the booking
     this.statusBranchHeadName = b.branchHeadName || '';
 
+    // Pre-fill status notes from existing staffNotes
+    this.statusNotes = b.staffNotes || (b as any).staff_notes || '';
+
     // If Scheduled, default to today's date formatted as YYYY-MM-DD
     if (newStatus === 'Scheduled') {
       const today = new Date().toISOString().slice(0, 10);
@@ -1797,7 +1800,6 @@ export class AdminBookingsComponent implements OnInit {
     } else {
       this.statusScheduleDate = '';
     }
-    this.statusNotes = '';
   }
 
   // Alias for backward compatibility if any cached templates call updateBookingStatus
@@ -1817,6 +1819,11 @@ export class AdminBookingsComponent implements OnInit {
     const b = this.selectedBooking();
     const newStatus = this.pendingStatusChange();
     if (!b || !newStatus) return;
+
+    if (!this.statusBranchHeadName || !this.statusBranchHeadName.trim()) {
+      this.toastService.error('Please select a Branch Head.');
+      return;
+    }
 
     if (newStatus === 'Scheduled' && !this.statusScheduleDate) {
       this.toastService.error('Please select a date for the scheduled appointment.');
