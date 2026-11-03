@@ -422,6 +422,73 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_booking_reports`(
+    IN p_role_id                   INT,          -- 1 (Company), 2 (Coordinator), 3 (Branch Head)
+    IN p_login_id                  INT,          -- Login User ID
+    IN p_assigned_head_district_id INT,          -- Branch Head Assigned District ID
+    IN p_date_from                 DATE,         -- Optional Custom Start Date
+    IN p_date_to                   DATE          -- Optional Custom End Date
+)
+BEGIN
+    DECLARE v_from DATE;
+    DECLARE v_to DATE;
+    DECLARE v_diff INT;
+    DECLARE v_granularity VARCHAR(10);
+
+    -- 1. Default date range if not provided (default: last 7 days)
+    SET v_to = COALESCE(p_date_to, CURDATE());
+    SET v_from = COALESCE(p_date_from, DATE_SUB(v_to, INTERVAL 6 DAY));
+    SET v_diff = DATEDIFF(v_to, v_from);
+
+    -- 2. Determine granularity based on difference
+    IF v_diff <= 7 THEN
+        SET v_granularity = 'DAY';
+    ELSEIF v_diff <= 30 THEN
+        SET v_granularity = 'WEEK';
+    ELSEIF v_diff <= 365 THEN
+        SET v_granularity = 'MONTH';
+    ELSE
+        SET v_granularity = 'YEAR';
+    END IF;
+
+    -- 3. Return grouped multi-status metrics using new_status_id
+    SELECT 
+        CASE 
+            WHEN v_granularity = 'DAY'   THEN DATE_FORMAT(bh.created_at, '%a')                    -- 'Mon', 'Tue'
+            WHEN v_granularity = 'WEEK'  THEN CONCAT('Week ', WEEK(bh.created_at, 1))             -- 'Week 42'
+            WHEN v_granularity = 'MONTH' THEN DATE_FORMAT(bh.created_at, '%b %Y')                 -- 'Oct 2026'
+            ELSE DATE_FORMAT(bh.created_at, '%Y')                                                 -- '2026'
+        END AS period_label,
+
+        CASE 
+            WHEN v_granularity = 'DAY'   THEN DATE(bh.created_at)
+            WHEN v_granularity = 'WEEK'  THEN STR_TO_DATE(CONCAT(YEARWEEK(bh.created_at, 1), ' Monday'), '%X%V %W')
+            WHEN v_granularity = 'MONTH' THEN DATE_FORMAT(bh.created_at, '%Y-%m-01')
+            ELSE DATE_FORMAT(bh.created_at, '%Y-01-01')
+        END AS period_date,
+
+        -- Status Counts strictly by new_status_id
+        COUNT(CASE WHEN bh.new_status_id = 1 THEN 1 END) AS new_count,
+        COUNT(CASE WHEN bh.new_status_id = 2 THEN 1 END) AS scheduled_count,
+        COUNT(CASE WHEN bh.new_status_id = 3 THEN 1 END) AS completed_count,
+        COUNT(CASE WHEN bh.new_status_id = 4 THEN 1 END) AS cancelled_count,
+        COUNT(*) AS total_activities
+
+    FROM booking_history bh
+    LEFT JOIN bookings b ON b.id = bh.booking_id
+    WHERE DATE(bh.created_at) BETWEEN v_from AND v_to
+      -- Scoping strictly for Roles 1, 2, and 3
+      AND (
+          p_role_id IN (1, 2)                                                              -- Role 1 & 2: Full access
+          OR (p_role_id = 3 AND (b.assigned_head_district_id = p_assigned_head_district_id OR b.district_id = p_assigned_head_district_id)) -- Role 3: Branch Head by assigned district
+      )
+    GROUP BY period_label, period_date
+    ORDER BY period_date ASC;
+
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_branch_heads_for_status_update`()
 BEGIN
     SELECT 
