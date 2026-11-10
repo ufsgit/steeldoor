@@ -60,6 +60,22 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `deactivate_device_token`(
+    IN p_user_id   INT,
+    IN p_fcm_token VARCHAR(500)
+)
+BEGIN
+    UPDATE user_devices
+    SET is_active = 0,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE user_id = p_user_id 
+      AND fcm_token = p_fcm_token;
+
+    SELECT 200 AS status, 'Device token deactivated.' AS message;
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `delete_booking`(
     IN p_id INT
 )
@@ -692,6 +708,23 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_user_active_tokens`(
+    IN p_user_id INT
+)
+BEGIN
+    SELECT 
+        id,
+        user_id     AS userId,
+        fcm_token   AS fcmToken,
+        device_type AS deviceType,
+        device_id   AS deviceId
+    FROM user_devices
+    WHERE user_id = p_user_id 
+      AND is_active = 1;
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `mobile_login`(
     IN p_username VARCHAR(100),
     IN p_password VARCHAR(255)
@@ -737,6 +770,47 @@ BEGIN
         WHERE u.id = v_user_id;
     ELSE
         SELECT NULL AS id WHERE 1 = 0;
+    END IF;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `register_or_update_device`(
+    IN p_user_id     INT,
+    IN p_fcm_token   VARCHAR(500),
+    IN p_device_type VARCHAR(20),
+    IN p_device_id   VARCHAR(150)
+)
+BEGIN
+    DECLARE v_device_id_found INT DEFAULT NULL;
+
+    -- Deactivate this token if previously associated with another user on the same phone
+    UPDATE user_devices
+    SET is_active = 0, updated_at = CURRENT_TIMESTAMP
+    WHERE fcm_token = p_fcm_token AND user_id != p_user_id;
+
+    -- Check if record exists for this user and token/device
+    SELECT id INTO v_device_id_found
+    FROM user_devices
+    WHERE user_id = p_user_id 
+      AND (fcm_token = p_fcm_token OR (p_device_id IS NOT NULL AND device_id = p_device_id))
+    LIMIT 1;
+
+    IF v_device_id_found IS NOT NULL THEN
+        UPDATE user_devices
+        SET fcm_token   = p_fcm_token,
+            device_type = COALESCE(p_device_type, device_type),
+            device_id   = COALESCE(p_device_id, device_id),
+            is_active   = 1,
+            updated_at  = CURRENT_TIMESTAMP
+        WHERE id = v_device_id_found;
+
+        SELECT 200 AS status, 'Device token updated.' AS message, v_device_id_found AS id;
+    ELSE
+        INSERT INTO user_devices (user_id, fcm_token, device_type, device_id, is_active)
+        VALUES (p_user_id, p_fcm_token, COALESCE(p_device_type, 'android'), p_device_id, 1);
+
+        SELECT 201 AS status, 'Device registered.' AS message, LAST_INSERT_ID() AS id;
     END IF;
 END$$
 DELIMITER ;

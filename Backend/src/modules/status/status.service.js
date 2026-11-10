@@ -1,4 +1,5 @@
 import { pool } from '../../../db.js';
+import { notificationsService } from '../notifications/notifications.service.js';
 
 export class StatusService {
   /**
@@ -123,7 +124,25 @@ export class StatusService {
     );
 
     const rows = results?.[0] || [];
-    return rows.length > 0 ? this.formatStatusRecord(rows[0]) : null;
+    const formatted = rows.length > 0 ? this.formatStatusRecord(rows[0]) : null;
+
+    // Send push notification to Branch Head when status changes
+    if (formatted && formatted.branchHeadId) {
+      notificationsService.sendToUser(formatted.branchHeadId, {
+        title: `Status: ${formatted.status}`,
+        body: `Booking for ${formatted.clientName || 'Client'} status changed to ${formatted.status}.`,
+        data: {
+          type: 'STATUS_UPDATED',
+          bookingId: formatted.clientId,
+          status: formatted.status,
+          statusCode: formatted.statusCode,
+          clientName: formatted.clientName || '',
+          scheduleDate: formatted.scheduleDate || ''
+        }
+      }).catch(err => console.error('[Notifications] Error notifying status update:', err.message));
+    }
+
+    return formatted;
   }
 
   /**

@@ -1,4 +1,5 @@
 import { pool } from '../../../db.js';
+import { notificationsService } from '../notifications/notifications.service.js';
 
 export class BookingsService {
   /**
@@ -49,7 +50,23 @@ export class BookingsService {
     );
 
     const rows = results?.[0] || [];
-    return rows.length > 0 ? this.formatBookingRecord(rows[0]) : null;
+    const formatted = rows.length > 0 ? this.formatBookingRecord(rows[0]) : null;
+
+    // Send push notification to Branch Head if assigned
+    if (formatted && formatted.branchHeadId) {
+      notificationsService.sendToUser(formatted.branchHeadId, {
+        title: 'New Booking Assigned',
+        body: `Booking for ${formatted.name || 'Client'} has been assigned to you.`,
+        data: {
+          type: 'BOOKING_ASSIGNED',
+          bookingId: formatted.id,
+          clientName: formatted.name || '',
+          district: formatted.districtName || ''
+        }
+      }).catch(err => console.error('[Notifications] Error notifying branch head:', err.message));
+    }
+
+    return formatted;
   }
 
   /**
@@ -107,7 +124,23 @@ export class BookingsService {
     );
 
     const rows = results?.[0] || [];
-    return rows.length > 0 ? this.formatBookingRecord(rows[0]) : null;
+    const formatted = rows.length > 0 ? this.formatBookingRecord(rows[0]) : null;
+
+    // Send push notification to Branch Head if assigned
+    if (formatted && formatted.branchHeadId) {
+      notificationsService.sendToUser(formatted.branchHeadId, {
+        title: 'New Booking Assigned',
+        body: `Booking for ${formatted.name || 'Client'} has been assigned to you.`,
+        data: {
+          type: 'BOOKING_ASSIGNED',
+          bookingId: formatted.id,
+          clientName: formatted.name || '',
+          district: formatted.districtName || ''
+        }
+      }).catch(err => console.error('[Notifications] Error notifying branch head:', err.message));
+    }
+
+    return formatted;
   }
 
   /**

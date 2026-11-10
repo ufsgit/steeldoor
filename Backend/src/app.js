@@ -16,6 +16,7 @@ import areasRoutes from './modules/areas/areas.routes.js';
 import mobileDashboardRoutes from './modules/mobile-dashboard/mobile-dashboard.routes.js';
 import bookingHistoryRoutes from './modules/booking-history/booking-history.routes.js';
 import reportsRoutes from './modules/reports/reports.routes.js';
+import notificationsRoutes from './modules/notifications/notifications.routes.js';
 
 dotenv.config();
 
@@ -81,6 +82,7 @@ app.use('/api/mobile-dashboard', mobileDashboardRoutes);
 app.use('/api/dashboard', mobileDashboardRoutes);
 app.use('/api/booking-history', bookingHistoryRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // ---------------- 404 Handler ----------------
 
