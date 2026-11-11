@@ -439,6 +439,42 @@ export const swaggerDocument = {
         }
       }
     },
+    '/api/auth/me': {
+      get: {
+        tags: ['Auth'],
+        summary: 'Get Current Authenticated User & Refresh Session',
+        description: 'Validates the current session token or Bearer authorization header, checks if the user is active, and returns the full user profile along with a refreshed token.',
+        security: [
+          { BearerAuth: [] },
+          { CookieAuth: [] }
+        ],
+        responses: {
+          200: {
+            description: 'User profile retrieved successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    status: { type: 'integer', example: 200 },
+                    user: { $ref: '#/components/schemas/UserResponse/properties/user' },
+                    token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }
+                  }
+                }
+              }
+            }
+          },
+          401: {
+            description: 'Unauthorized - invalid/expired token or user inactive/deleted',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' }
+              }
+            }
+          }
+        }
+      }
+    },
     '/api/auth/web-login': {
       post: {
         tags: ['Auth'],
