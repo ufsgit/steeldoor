@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
 import { DataService } from '../../../../core/data.service';
 import { AuthService } from '../../../../core/auth.service';
-import { Booking, District, BookingStatus, BranchHead, User } from '../../../../core/models';
+import { Booking, District, BookingStatus, BranchHead, User, StatusOption } from '../../../../core/models';
 import { matchesDistrict } from '../../../../core/role-utils';
 import { DistrictDropdownComponent, DropdownComponent, DropdownOption } from '../../../../shared/components';
 import { BookingDetailedComponent } from './detailed/booking-detailed.component';
@@ -27,7 +27,7 @@ import { environment } from '../../../../../environments/environment';
           id="tab-all-orders"
           (click)="setStatus(null)"
           class="flex items-center gap-2 pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="selectedStatusId() === null ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
+          [ngClass]="(selectedStatusId() === null && !isFollowupTabActive()) ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
         >
           <svg class="w-4.5 h-4.5 text-[#0f9d58]" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H5v-4h7v4zm0-6H5V7h7v4zm7 6h-5v-4h5v4zm0-6h-5V7h5v4z"/>
@@ -35,49 +35,29 @@ import { environment } from '../../../../../environments/environment';
           <span class="whitespace-nowrap">All Orders</span>
         </button>
 
-        <!-- NEW (status_id = 1) -->
+        <!-- Follow-ups Tab (is_followup = 1) -->
         <button
           type="button"
-          id="tab-new"
-          (click)="setStatus(1)"
-          class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="selectedStatusId() === 1 ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
+          id="tab-follow-ups"
+          (click)="setFollowupTab()"
+          class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+          [ngClass]="isFollowupTabActive() ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
         >
-          New
+          Follow-ups
         </button>
 
-        <!-- Scheduled (status_id = 2) -->
-        <button
-          type="button"
-          id="tab-scheduled"
-          (click)="setStatus(2)"
-          class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="selectedStatusId() === 2 ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
-        >
-          Scheduled
-        </button>
-
-        <!-- Completed (status_id = 3) -->
-        <button
-          type="button"
-          id="tab-completed"
-          (click)="setStatus(3)"
-          class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="selectedStatusId() === 3 ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
-        >
-          Completed
-        </button>
-
-        <!-- Cancelled (status_id = 4) -->
-        <button
-          type="button"
-          id="tab-cancelled"
-          (click)="setStatus(4)"
-          class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="selectedStatusId() === 4 ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
-        >
-          Cancelled
-        </button>
+        <!-- Dynamic Status Options from Database -->
+        @for (opt of statusOptionsList(); track opt.id) {
+          <button
+            type="button"
+            [id]="'tab-status-' + opt.id"
+            (click)="setStatus(opt.id)"
+            class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+            [ngClass]="(!isFollowupTabActive() && selectedStatusId() === opt.id) ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
+          >
+            {{ opt.label || opt.code }}
+          </button>
+        }
       </div>
 
       <!-- 2. Filter & Action Toolbar (Balanced, matching Image 1) -->
@@ -456,6 +436,7 @@ import { environment } from '../../../../../environments/environment';
       @if (selectedBooking()) {
         <app-booking-detailed
           [booking]="selectedBooking()!"
+          [statusOptions]="statusOptionsList()"
           (close)="selectedBooking.set(null)"
           (onEdit)="startEditingBooking()"
           (onDelete)="openDeleteConfirmModal()"
@@ -1003,7 +984,7 @@ import { environment } from '../../../../../environments/environment';
               </div>
 
               <!-- Scheduled Date Picker: Shown when status is 'Scheduled' -->
-              @if (pendingStatusChange() === 'Scheduled') {
+              @if (isDateRequiredForPendingStatus()) {
                 <div class="bg-blue-50/60 border border-blue-200 rounded-xl p-3.5 space-y-2">
                   <label class="block font-semibold text-blue-900 text-xs flex items-center gap-1.5">
                     <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1153,6 +1134,8 @@ export class AdminBookingsComponent implements OnInit {
   // Filter signals (committed filter state applied when Search is clicked or tab changes)
   searchQuery = signal('');
   selectedStatusId = signal<number | null>(null);
+  isFollowupTabActive = signal<boolean>(true);
+  statusOptionsList = signal<StatusOption[]>([]);
   selectedDistrict = signal('');
   selectedCustomerRole = signal('');
   dateFrom = signal('');
@@ -1178,8 +1161,12 @@ export class AdminBookingsComponent implements OnInit {
     const q = this.searchQuery().trim();
     if (q) filterParams.search = q;
 
-    const sId = this.selectedStatusId();
-    if (sId != null && sId > 0) filterParams.statusId = sId;
+    if (this.isFollowupTabActive()) {
+      filterParams.isFollowUp = 1;
+    } else {
+      const sId = this.selectedStatusId();
+      if (sId != null && sId > 0) filterParams.statusId = sId;
+    }
 
     const d = this.selectedDistrict();
     if (d) filterParams.districtId = d;
@@ -1337,124 +1324,24 @@ export class AdminBookingsComponent implements OnInit {
   }
 
   setStatus(statusId: number | null): void {
+    this.isFollowupTabActive.set(false);
     this.selectedStatusId.set(statusId);
     this.currentPage.set(1);
     this.fetchBookingsFromApi();
   }
 
+  setFollowupTab(): void {
+    this.selectedStatusId.set(null);
+    this.isFollowupTabActive.set(true);
+    this.currentPage.set(1);
+    this.fetchBookingsFromApi();
+  }
+
   filteredBookings = computed(() => {
-    let list = [...this.bookings()];
-
-    // 0. Enforce role-based scoping:
-    // - Role 1 (Company) & Role 2 (Coordinator): list ALL clients
-    // - Role 3 (Branch Head): display clients details by district_id
-    // - Role 4 (Dealer) & Role 5 (Customer): take list by login_id
-    const user = this.authService.currentUser();
-    const roleId = Number(user?.roleId ?? user?.dbRoleId);
-    const isRole1or2 = roleId === 1 || roleId === 2 || user?.role === 'admin' || user?.role === 'coordinator';
-    const isRole3 = roleId === 3 || user?.role === 'branch_head';
-
-    if (isRole3) {
-      const headId = String(user?.branchHeadId || user?.id);
-      list = list.filter(b => {
-        if (b.branchHeadId != null && String(b.branchHeadId) === headId) return true;
-        if (b.branch_head_id != null && String(b.branch_head_id) === headId) return true;
-        return false;
-      });
-    } else if (!isRole1or2 && user) {
-      const targetId = String(user.clientId || user.id);
-      list = list.filter(b => {
-        if (b.loginId != null && String(b.loginId) === String(user.id)) return true;
-        if (b.clientId && (String(b.clientId) === targetId || String(b.clientId) === String(user.clientId))) return true;
-        return false;
-      });
-    }
-
-    // Search query: client name and ph no
-    const q = this.searchQuery().trim().toLowerCase();
-    if (q) {
-      list = list.filter(b => {
-        const cName = (b.clientName || b.name || '').toLowerCase();
-        const cPhone = (b.contactPhone || b.mobile || '').toLowerCase();
-        const cArea = (b.area || b.areaName || '').toLowerCase();
-        const cDist = (b.districtName || '').toLowerCase();
-        const cHead = (b.branchHeadName || '').toLowerCase();
-        const cId = String(b.id || '').toLowerCase();
-
-        return (
-          cName.includes(q) ||
-          cPhone.includes(q) ||
-          cArea.includes(q) ||
-          cDist.includes(q) ||
-          cHead.includes(q) ||
-          cId.includes(q)
-        );
-      });
-    }
-
-    // Status tab filter by status_id
-    const statusId = this.selectedStatusId();
-    if (statusId != null && statusId > 0) {
-      list = list.filter(b => {
-        const bStatusId = Number(b.statusId || (b as any).status_id);
-        return bStatusId === statusId;
-      });
-    }
-
-    // District Filter (checks districtId or districtName via matchesDistrict)
-    const dist = this.selectedDistrict();
-    if (dist) {
-      const matchedDistObj = this.districts().find(d => String(d.id) === String(dist) || d.name.toLowerCase() === String(dist).toLowerCase());
-      const distName = matchedDistObj ? matchedDistObj.name : String(dist);
-      list = list.filter(b => matchesDistrict(b.districtId, b.districtName, dist, distName));
-    }
-
-    // Customer Dropdown Filter by login_role_id
-    // (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer)
-    const filterRole = this.selectedCustomerRole();
-    if (filterRole) {
-      const roleNum = Number(filterRole);
-      list = list.filter(b => {
-        const bRoleId = Number(b.loginRoleId ?? b.login_role_id);
-        if (roleNum === 1) {
-          return bRoleId === 1 || (b.clientType || '').toLowerCase() === 'company';
-        } else if (roleNum === 2) {
-          return bRoleId === 2 || (b.clientType || '').toLowerCase() === 'coordinator';
-        } else if (roleNum === 3) {
-          return bRoleId === 3 || (b.clientType || '').toLowerCase() === 'branch_head';
-        } else if (roleNum === 4) {
-          return bRoleId === 4 || (b.clientType || '').toLowerCase() === 'dealer';
-        } else if (roleNum === 5) {
-          return bRoleId === 5 || (b.clientType || '').toLowerCase() === 'customer';
-        }
-        return bRoleId === roleNum;
-      });
-    }
-
-    // Date range (checks createdAt, created_at, scheduledDate, or schedule_date)
-    const dFrom = this.dateFrom();
-    if (dFrom) {
-      const fromTime = new Date(`${dFrom}T00:00:00`).getTime();
-      list = list.filter(b => {
-        const rawDate = b.createdAt || b.created_at || b.scheduledDate || (b as any).schedule_date;
-        if (!rawDate) return false;
-        return new Date(rawDate).getTime() >= fromTime;
-      });
-    }
-    const dTo = this.dateTo();
-    if (dTo) {
-      const toTime = new Date(`${dTo}T23:59:59.999`).getTime();
-      list = list.filter(b => {
-        const rawDate = b.createdAt || b.created_at || b.scheduledDate || (b as any).schedule_date;
-        if (!rawDate) return false;
-        return new Date(rawDate).getTime() <= toTime;
-      });
-    }
-
-    return list;
+    // Server-side filtering & pagination: return the bookings signal directly
+    return this.bookings();
   });
 
-  
   paginatedBookings = computed(() => {
     return this.filteredBookings();
   });
@@ -1468,13 +1355,23 @@ export class AdminBookingsComponent implements OnInit {
       }
     });
 
-    this.fetchBookingsFromApi();
+    this.dataService.getStatusOptions().subscribe({
+      next: (options) => {
+        this.statusOptionsList.set(options || []);
+      }
+    });
 
     const initialStatus = this.route.snapshot.queryParamMap.get('status');
     const initialStatusId = this.route.snapshot.queryParamMap.get('statusId') || this.route.snapshot.queryParamMap.get('status_id');
+    const initialFollowup = this.route.snapshot.queryParamMap.get('isFollowUp');
+    if (initialFollowup === '0' || initialFollowup === 'false') {
+      this.isFollowupTabActive.set(false);
+    }
     if (initialStatusId && !isNaN(Number(initialStatusId))) {
+      this.isFollowupTabActive.set(false);
       this.selectedStatusId.set(Number(initialStatusId));
     } else if (initialStatus) {
+      this.isFollowupTabActive.set(false);
       const lower = initialStatus.toLowerCase();
       if (lower === 'new') this.selectedStatusId.set(1);
       else if (lower === 'scheduled') this.selectedStatusId.set(2);
@@ -1495,6 +1392,8 @@ export class AdminBookingsComponent implements OnInit {
         this.newHead = u.name;
       }
     }
+
+    this.fetchBookingsFromApi();
   }
 
   getEndIndex(): number {
@@ -1793,8 +1692,8 @@ export class AdminBookingsComponent implements OnInit {
     // Pre-fill status notes from existing staffNotes
     this.statusNotes = b.staffNotes || (b as any).staff_notes || '';
 
-    // If Scheduled, default to today's date formatted as YYYY-MM-DD
-    if (newStatus === 'Scheduled') {
+    // If status requires date (isDate = 1), default to today's date formatted as YYYY-MM-DD
+    if (this.isDateRequiredForPendingStatus()) {
       const today = new Date().toISOString().slice(0, 10);
       this.statusScheduleDate = b.scheduledDate ? b.scheduledDate.slice(0, 10) : today;
     } else {
@@ -1815,6 +1714,21 @@ export class AdminBookingsComponent implements OnInit {
     this.statusNotes = '';
   }
 
+  
+  isDateRequiredForPendingStatus(): boolean {
+    const s = this.pendingStatusChange();
+    if (!s) return false;
+    const opt = this.statusOptionsList().find(
+      o => (o.code && o.code.toLowerCase() === s.toLowerCase()) || 
+           (o.label && o.label.toLowerCase() === s.toLowerCase())
+    );
+    if (opt && opt.isDate != null) {
+      return Number(opt.isDate) === 1;
+    }
+    // Fallback: Scheduled by default requires date
+    return s.toLowerCase() === 'scheduled';
+  }
+
   confirmStatusChange(): void {
     const b = this.selectedBooking();
     const newStatus = this.pendingStatusChange();
@@ -1825,14 +1739,14 @@ export class AdminBookingsComponent implements OnInit {
       return;
     }
 
-    if (newStatus === 'Scheduled' && !this.statusScheduleDate) {
-      this.toastService.error('Please select a date for the scheduled appointment.');
+    if (this.isDateRequiredForPendingStatus() && !this.statusScheduleDate) {
+      this.toastService.error('Please select a date for this status.');
       return;
     }
 
     this.isSubmittingStatus.set(true);
     const user = this.authService.currentUser();
-    const scheduleDate = newStatus === 'Scheduled' ? this.statusScheduleDate : null;
+    const scheduleDate = this.isDateRequiredForPendingStatus() ? this.statusScheduleDate : null;
     const notes = this.statusNotes.trim();
     const chosenBranchHead = this.statusBranchHeadName.trim() || b.branchHeadName || '';
 

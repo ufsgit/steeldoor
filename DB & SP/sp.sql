@@ -100,37 +100,6 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `get_areas_by_district`(
-    IN p_district_id INT,
-    IN p_search VARCHAR(100)
-)
-BEGIN
-    SELECT 
-        a.id,
-        a.district_id,
-        a.name,
-        a.pincode,
-        a.is_deleted,
-        a.created_at,
-        d.name AS district_name,
-        d.state_id,
-        s.name AS state_name
-    FROM areas a
-    JOIN districts d ON a.district_id = d.id
-    JOIN states s ON d.state_id = s.id
-    WHERE a.district_id = p_district_id
-      AND a.is_deleted = 0
-      AND (
-          p_search IS NULL 
-          OR TRIM(p_search) = '' 
-          OR a.name LIKE CONCAT('%', TRIM(p_search), '%')     -- Area name search
-          OR a.pincode LIKE CONCAT('%', TRIM(p_search), '%')  -- Pincode search
-      )
-    ORDER BY a.name ASC;
-END$$
-DELIMITER ;
-
-DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_area_hierarchy`(
     IN p_district_id INT
 )
@@ -183,6 +152,37 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_areas_by_district`(
+    IN p_district_id INT,
+    IN p_search VARCHAR(100)
+)
+BEGIN
+    SELECT 
+        a.id,
+        a.district_id,
+        a.name,
+        a.pincode,
+        a.is_deleted,
+        a.created_at,
+        d.name AS district_name,
+        d.state_id,
+        s.name AS state_name
+    FROM areas a
+    JOIN districts d ON a.district_id = d.id
+    JOIN states s ON d.state_id = s.id
+    WHERE a.district_id = p_district_id
+      AND a.is_deleted = 0
+      AND (
+          p_search IS NULL 
+          OR TRIM(p_search) = '' 
+          OR a.name LIKE CONCAT('%', TRIM(p_search), '%')     -- Area name search
+          OR a.pincode LIKE CONCAT('%', TRIM(p_search), '%')  -- Pincode search
+      )
+    ORDER BY a.name ASC;
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_available_branch_districts`(
     IN p_user_id INT -- Pass NULL (or 0) for Add/New User, or the user's ID when Editing
 )
@@ -203,166 +203,6 @@ BEGIN
           AND (p_user_id IS NULL OR p_user_id = 0 OR u.id != p_user_id)
     )
     ORDER BY d.name ASC;
-END$$
-DELIMITER ;
-
-DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `get_bookings_paginated`(
-    IN p_page        INT,           -- Page number (e.g. 1, 2, 3...)
-    IN p_limit       INT,           -- Number of records per page (default: 15)
-    IN p_role_id     INT,           -- User role_id (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer)
-    IN p_login_id    INT,           -- User login ID
-    IN p_district_id INT,           -- User district ID / filter district ID
-    IN p_status_id   INT,           -- Filter by status_id (e.g. 1: New, 2: Scheduled, etc.)
-    IN p_search      VARCHAR(150),  -- Search client name or phone/mobile
-    IN p_date_from   DATE,          -- Filter created date from
-    IN p_date_to     DATE,          -- Filter created date to
-    IN p_filter_role INT            -- Filter by customer login_role_id (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer)
-)
-BEGIN
-    DECLARE v_limit INT DEFAULT 15;
-    DECLARE v_page INT DEFAULT 1;
-    DECLARE v_offset INT DEFAULT 0;
-    DECLARE v_district_id INT DEFAULT NULL;
-    DECLARE v_search VARCHAR(160) DEFAULT NULL;
-
-
-    -- Apply default limit 15 if null or <= 0
-    IF p_limit IS NOT NULL AND p_limit > 0 THEN
-        SET v_limit = p_limit;
-    END IF;
-
-    -- Apply default page 1 if null or <= 0
-    IF p_page IS NOT NULL AND p_page > 0 THEN
-        SET v_page = p_page;
-    END IF;
-
-    SET v_offset = (v_page - 1) * v_limit;
-    SET v_district_id = p_district_id;
-
-    -- If Role 3 (Branch Head) and district_id was not provided, resolve from users table
-    IF p_role_id = 3 AND (v_district_id IS NULL OR v_district_id <= 0) AND p_login_id IS NOT NULL THEN
-        SELECT district_id INTO v_district_id
-        FROM users
-        WHERE id = p_login_id AND is_deleted = 0
-        LIMIT 1;
-    END IF;
-
-    -- Format search term
-    IF p_search IS NOT NULL AND TRIM(p_search) != '' THEN
-        SET v_search = CONCAT('%', TRIM(p_search), '%');
-    END IF;
-
-    -- Query 1: Fetch paginated bookings matching role rules & search/filter parameters
-    SELECT 
-        id,
-        name,
-        mobile,
-        address,
-        notes,
-        staff_notes,
-        status_id,
-        status_code,
-        status_label,
-        status_color_code,
-        schedule_date,
-        login_role_id,
-        login_id,
-        login_name,
-        state_id,
-        state_name,
-        district_id,
-        district_name,
-        area_id,
-        area_name,
-		assigned_head_district_id,
-        assigned_head_district_name,
-        branch_head_id,
-        branch_head_name,
-        documents,
-        created_at,
-        updated_at
-    FROM bookings
-    WHERE is_deleted = 0
-      -- Role Scoping
-      AND (
-          -- Role 1 (company) & Role 2 (coordinator): list ALL clients
-          (p_role_id IN (1, 2) OR p_role_id IS NULL)
-          
-          -- Role 3 (branch_head): filter strictly by assigned_head_district_id
-          OR (p_role_id = 3 AND assigned_head_district_id = v_district_id)
-
-          -- Role 4 (dealer) & Role 5 (customer): take list by login_id
-          OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
-      )
-      -- Optional District Filter
-      AND (
-          v_district_id IS NULL 
-          OR v_district_id <= 0 
-          OR district_id = v_district_id
-          OR (p_role_id = 3) -- branch head scoping already handles district above
-      )
-      -- Search Client Name or Mobile / Phone Number
-      AND (
-          v_search IS NULL 
-          OR name LIKE v_search 
-          OR mobile LIKE v_search
-      )
-		-- Status Filter by status_id
-      AND (
-          p_status_id IS NULL 
-          OR p_status_id <= 0 
-          OR status_id = p_status_id
-      )
-      -- Date Range Filter
-      AND (p_date_from IS NULL OR DATE(created_at) >= p_date_from)
-      AND (p_date_to IS NULL OR DATE(created_at) <= p_date_to)
-      -- Customer Dropdown Filter by login_role_id:
-      -- 1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer
-      AND (
-          p_filter_role IS NULL 
-          OR p_filter_role <= 0 
-          OR login_role_id = p_filter_role
-      )
-    ORDER BY created_at DESC
-    LIMIT v_limit OFFSET v_offset;
-
-    -- Query 2: Pagination metadata matching the exact same filters
-    SELECT 
-        COUNT(*) AS total_records,
-        v_page AS current_page,
-        v_limit AS page_size,
-        CEIL(COUNT(*) / v_limit) AS total_pages
-    FROM bookings
-    WHERE is_deleted = 0
-      AND (
-          (p_role_id IN (1, 2) OR p_role_id IS NULL)
-          OR (p_role_id = 3 AND (branch_head_id = p_login_id OR (branch_head_id IS NULL AND assigned_head_district_id = v_district_id)))
-          OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
-      )
-      AND (
-          v_district_id IS NULL 
-          OR v_district_id <= 0 
-          OR district_id = v_district_id
-          OR (p_role_id = 3)
-      )
-      AND (
-          v_search IS NULL 
-          OR name LIKE v_search 
-          OR mobile LIKE v_search
-      )
-      AND (
-          p_status_id IS NULL 
-          OR p_status_id <= 0 
-          OR status_id = p_status_id
-      )
-      AND (p_date_from IS NULL OR DATE(created_at) >= p_date_from)
-      AND (p_date_to IS NULL OR DATE(created_at) <= p_date_to)
-      AND (
-          p_filter_role IS NULL 
-          OR p_filter_role <= 0 
-          OR login_role_id = p_filter_role
-      );
 END$$
 DELIMITER ;
 
@@ -507,6 +347,181 @@ BEGIN
     GROUP BY period_label, period_date
     ORDER BY period_date ASC;
 
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_bookings_paginated`(
+    IN p_page        INT,           -- Page number (e.g. 1, 2, 3...)
+    IN p_limit       INT,           -- Number of records per page (default: 15)
+    IN p_role_id     INT,           -- User role_id (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer)
+    IN p_login_id    INT,           -- User login ID
+    IN p_district_id INT,           -- User district ID / filter district ID
+    IN p_status_id   INT,           -- Filter by status_id (e.g. 1: New, 2: Scheduled, etc.)
+    IN p_search      VARCHAR(150),  -- Search client name or phone/mobile
+    IN p_date_from   DATE,          -- Filter created date from
+    IN p_date_to     DATE,          -- Filter created date to
+    IN p_filter_role INT,            -- Filter by customer login_role_id (1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer)
+    IN p_is_followup INT            -- 1: Follow-ups only (status_is_followup = 1), 0/NULL: All
+)
+BEGIN
+    DECLARE v_limit INT DEFAULT 15;
+    DECLARE v_page INT DEFAULT 1;
+    DECLARE v_offset INT DEFAULT 0;
+    DECLARE v_district_id INT DEFAULT NULL;
+    DECLARE v_search VARCHAR(160) DEFAULT NULL;
+
+
+    -- Apply default limit 15 if null or <= 0
+    IF p_limit IS NOT NULL AND p_limit > 0 THEN
+        SET v_limit = p_limit;
+    END IF;
+
+    -- Apply default page 1 if null or <= 0
+    IF p_page IS NOT NULL AND p_page > 0 THEN
+        SET v_page = p_page;
+    END IF;
+
+    SET v_offset = (v_page - 1) * v_limit;
+    SET v_district_id = p_district_id;
+
+    -- If Role 3 (Branch Head) and district_id was not provided, resolve from users table
+    IF p_role_id = 3 AND (v_district_id IS NULL OR v_district_id <= 0) AND p_login_id IS NOT NULL THEN
+        SELECT district_id INTO v_district_id
+        FROM users
+        WHERE id = p_login_id AND is_deleted = 0
+        LIMIT 1;
+    END IF;
+
+    -- Format search term
+    IF p_search IS NOT NULL AND TRIM(p_search) != '' THEN
+        SET v_search = CONCAT('%', TRIM(p_search), '%');
+    END IF;
+
+    -- Query 1: Fetch paginated bookings matching role rules & search/filter parameters
+    SELECT 
+        id,
+        name,
+        mobile,
+        address,
+        notes,
+        staff_notes,
+        status_id,
+        status_code,
+        status_label,
+        status_color_code,
+        status_is_followup,
+        schedule_date,
+        login_role_id,
+        login_id,
+        login_name,
+        state_id,
+        state_name,
+        district_id,
+        district_name,
+        area_id,
+        area_name,
+		assigned_head_district_id,
+        assigned_head_district_name,
+        branch_head_id,
+        branch_head_name,
+        documents,
+        created_at,
+        updated_at
+    FROM bookings
+    WHERE is_deleted = 0
+      -- Role Scoping
+      AND (
+          -- Role 1 (company) & Role 2 (coordinator): list ALL clients
+          (p_role_id IN (1, 2) OR p_role_id IS NULL)
+          
+          -- Role 3 (branch_head): filter strictly by assigned_head_district_id
+          OR (p_role_id = 3 AND assigned_head_district_id = v_district_id)
+
+          -- Role 4 (dealer) & Role 5 (customer): take list by login_id
+          OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
+      )
+      -- Optional District Filter
+      AND (
+          v_district_id IS NULL 
+          OR v_district_id <= 0 
+          OR district_id = v_district_id
+          OR (p_role_id = 3) -- branch head scoping already handles district above
+      )
+      -- Search Client Name or Mobile / Phone Number
+      AND (
+          v_search IS NULL 
+          OR name LIKE v_search 
+          OR mobile LIKE v_search
+      )
+		-- Status Filter by status_id
+      AND (
+          p_status_id IS NULL 
+          OR p_status_id <= 0 
+          OR status_id = p_status_id
+      )
+      -- Date Range Filter
+      AND (p_date_from IS NULL OR DATE(created_at) >= p_date_from)
+      AND (p_date_to IS NULL OR DATE(created_at) <= p_date_to)
+      -- Customer Dropdown Filter by login_role_id:
+      -- 1: company, 2: coordinator, 3: branch_head, 4: dealer, 5: customer
+      AND (
+          p_filter_role IS NULL 
+          OR p_filter_role <= 0 
+          OR login_role_id = p_filter_role
+      )
+            -- Follow-up Filter
+      AND (
+          p_is_followup IS NULL 
+          OR p_is_followup = 0 
+          OR status_is_followup = p_is_followup
+      )
+    ORDER BY created_at DESC
+    LIMIT v_limit OFFSET v_offset;
+
+    -- Query 2: Pagination metadata matching the exact same filters
+    SELECT 
+        COUNT(*) AS total_records,
+        v_page AS current_page,
+        v_limit AS page_size,
+        CEIL(COUNT(*) / v_limit) AS total_pages
+    FROM bookings
+    WHERE is_deleted = 0
+      AND (
+          (p_role_id IN (1, 2) OR p_role_id IS NULL)
+          OR (p_role_id = 3 AND (branch_head_id = p_login_id OR (branch_head_id IS NULL AND assigned_head_district_id = v_district_id)))
+          OR (p_role_id NOT IN (1, 2, 3) AND login_id = p_login_id)
+      )
+      AND (
+          v_district_id IS NULL 
+          OR v_district_id <= 0 
+          OR district_id = v_district_id
+          OR (p_role_id = 3)
+      )
+      AND (
+          v_search IS NULL 
+          OR name LIKE v_search 
+          OR mobile LIKE v_search
+      )
+      AND (
+          p_status_id IS NULL 
+          OR p_status_id <= 0 
+          OR status_id = p_status_id
+      )
+      AND (p_date_from IS NULL OR DATE(created_at) >= p_date_from)
+      AND (p_date_to IS NULL OR DATE(created_at) <= p_date_to)
+      AND (
+          p_filter_role IS NULL 
+          OR p_filter_role <= 0 
+          OR login_role_id = p_filter_role
+      )
+            -- Follow-up Filter
+      AND (
+          p_is_followup IS NULL 
+          OR p_is_followup = 0 
+          OR status_is_followup = p_is_followup
+      )
+      ;
 END$$
 DELIMITER ;
 
@@ -700,7 +715,9 @@ BEGIN
         label,
         color_code AS colorCode,
         sort_order AS sortOrder,
-        is_active AS isActive
+        is_active AS isActive,
+        is_followup AS isFollowUp,
+        is_date AS isDate
     FROM status_options
     WHERE is_active = 1
     ORDER BY sort_order ASC, id ASC;

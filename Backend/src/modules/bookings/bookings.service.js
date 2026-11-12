@@ -185,7 +185,8 @@ export class BookingsService {
     search = null,
     dateFrom = null,
     dateTo = null,
-    filterRole = null
+    filterRole = null,
+    isFollowUp = null
   } = {}) {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.max(1, parseInt(limit, 10) || 15);
@@ -201,7 +202,7 @@ export class BookingsService {
     const filterRoleNum = filterRole != null && filterRole !== '' ? parseInt(filterRole, 10) : null;
 
     const [results] = await pool.query(
-      'CALL get_bookings_paginated(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'CALL get_bookings_paginated(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         pageNum,
         limitNum,
@@ -212,7 +213,8 @@ export class BookingsService {
         cleanSearch,
         cleanDateFrom,
         cleanDateTo,
-        filterRoleNum
+        filterRoleNum,
+        isFollowUp != null && isFollowUp !== '' ? parseInt(isFollowUp, 10) : null
       ]
     );
 
@@ -270,6 +272,8 @@ export class BookingsService {
       statusCode: statusCode,
       statusLabel: statusLabel,
       statusColorCode: b.statusColorCode || b.status_color_code || '#3b82f6',
+      statusIsFollowup: b.status_is_followup ?? b.statusIsFollowup ?? 0,
+      isFollowUp: b.status_is_followup ?? b.statusIsFollowup ?? 0,
       status: statusCode, // Backward compatibility for UI
       loginRoleId: b.loginRoleId ?? b.login_role_id ?? null,
       loginId: b.loginId ?? b.login_id ?? null,

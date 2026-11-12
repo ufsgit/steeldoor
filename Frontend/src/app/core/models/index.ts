@@ -105,6 +105,8 @@ export interface StatusOption {
   colorCode?: string | null;
   sortOrder?: number;
   isActive?: number;
+  isFollowUp?: number;
+  isDate?: number;
 }
 
 export interface Booking {
@@ -120,6 +122,8 @@ export interface Booking {
   statusCode?: string | null;
   statusLabel?: string | null;
   statusColorCode?: string | null;
+  statusIsFollowup?: number;
+  isFollowUp?: number;
   login_role_id?: number | null;
   loginRoleId?: number | null;
   login_id?: number | null;
@@ -249,6 +253,7 @@ export interface BookingFilters {
   dateFrom?: string;
   dateTo?: string;
   filterRole?: number | string;
+  isFollowUp?: number;
   page?: number;
   limit?: number;
 }

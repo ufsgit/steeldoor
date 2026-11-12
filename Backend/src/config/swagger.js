@@ -981,7 +981,9 @@ export const swaggerDocument = {
                           label: { type: 'string', example: 'New' },
                           colorCode: { type: 'string', example: '#3b82f6' },
                           sortOrder: { type: 'integer', example: 1 },
-                          isActive: { type: 'integer', example: 1 }
+                          isActive: { type: 'integer', example: 1 },
+                          isFollowUp: { type: 'integer', example: 0, description: '1 if staff must call customer, 0 otherwise' },
+                          isDate: { type: 'integer', example: 0, description: '1 if status requires date, 0 otherwise' }
                         }
                       }
                     }

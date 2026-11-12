@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { DataService } from '../../../../../core/data.service';
 import { BookingHistoryService, BookingHistoryRecord } from '../../../../../core/services/booking-history.service';
 import { ToastService } from '../../../../../shared/toast/toast.service';
-import { Booking } from '../../../../../core/models';
+import { Booking, StatusOption } from '../../../../../core/models';
 import { environment } from '../../../../../../environments/environment';
 import { AuthService } from '../../../../../core/auth.service';
 
@@ -177,42 +177,54 @@ import { AuthService } from '../../../../../core/auth.service';
               <div class="pt-3 border-t border-gray-200 space-y-2">
                 <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Update Status</span>
                 <div class="grid grid-cols-2 gap-1.5">
-                  <button
-                    type="button"
-                    (click)="onStatusChange.emit('New')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer text-center"
-                    [class.ring-2]="booking.status.toLowerCase() === 'new'"
-                    [class.ring-gray-400]="booking.status.toLowerCase() === 'new'"
-                  >
-                    New
-                  </button>
-                  <button
-                    type="button"
-                    (click)="onStatusChange.emit('Scheduled')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e8f0fe] text-[#1967d2] hover:bg-[#d2e3fc] transition-colors cursor-pointer text-center"
-                    [class.ring-2]="booking.status.toLowerCase() === 'scheduled'"
-                    [class.ring-[#1967d2]]="booking.status.toLowerCase() === 'scheduled'"
-                  >
-                    Scheduled
-                  </button>
-                  <button
-                    type="button"
-                    (click)="onStatusChange.emit('Completed')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e6f4ea] text-[#0f9d58] hover:bg-[#c9eed1] transition-colors cursor-pointer text-center"
-                    [class.ring-2]="booking.status.toLowerCase() === 'completed' || booking.status.toLowerCase() === 'finished'"
-                    [class.ring-[#0f9d58]]="booking.status.toLowerCase() === 'completed' || booking.status.toLowerCase() === 'finished'"
-                  >
-                    Completed
-                  </button>
-                  <button
-                    type="button"
-                    (click)="onStatusChange.emit('Cancelled')"
-                    class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#fce8e6] text-[#c5221f] hover:bg-[#fbd1cf] transition-colors cursor-pointer text-center"
-                    [class.ring-2]="booking.status.toLowerCase() === 'cancelled' || booking.status.toLowerCase() === 'rejected'"
-                    [class.ring-[#c5221f]]="booking.status.toLowerCase() === 'cancelled' || booking.status.toLowerCase() === 'rejected'"
-                  >
-                    Cancelled
-                  </button>
+                  @if (statusOptions && statusOptions.length > 0) {
+                    @for (opt of statusOptions; track opt.id) {
+                      <button
+                        type="button"
+                        (click)="onStatusChange.emit(opt.code || opt.label)"
+                        class="py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-center border border-transparent"
+                        [style.backgroundColor]="opt.colorCode ? opt.colorCode + '18' : '#f3f4f6'"
+                        [style.color]="opt.colorCode || '#374151'"
+                        [class.ring-2]="booking.statusId === opt.id || booking.status.toLowerCase() === (opt.code || opt.label).toLowerCase()"
+                        [style.ringColor]="opt.colorCode || '#9ca3af'"
+                      >
+                        {{ opt.label || opt.code }}
+                      </button>
+                    }
+                  } @else {
+                    <button
+                      type="button"
+                      (click)="onStatusChange.emit('New')"
+                      class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer text-center"
+                      [class.ring-2]="booking.status.toLowerCase() === 'new'"
+                    >
+                      New
+                    </button>
+                    <button
+                      type="button"
+                      (click)="onStatusChange.emit('Scheduled')"
+                      class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e8f0fe] text-[#1967d2] hover:bg-[#d2e3fc] transition-colors cursor-pointer text-center"
+                      [class.ring-2]="booking.status.toLowerCase() === 'scheduled'"
+                    >
+                      Scheduled
+                    </button>
+                    <button
+                      type="button"
+                      (click)="onStatusChange.emit('Completed')"
+                      class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e6f4ea] text-[#0f9d58] hover:bg-[#c9eed1] transition-colors cursor-pointer text-center"
+                      [class.ring-2]="booking.status.toLowerCase() === 'completed'"
+                    >
+                      Completed
+                    </button>
+                    <button
+                      type="button"
+                      (click)="onStatusChange.emit('Cancelled')"
+                      class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#fce8e6] text-[#c5221f] hover:bg-[#fbd1cf] transition-colors cursor-pointer text-center"
+                      [class.ring-2]="booking.status.toLowerCase() === 'cancelled'"
+                    >
+                      Cancelled
+                    </button>
+                  }
                 </div>
               </div>
             }
@@ -551,6 +563,7 @@ import { AuthService } from '../../../../../core/auth.service';
 })
 export class BookingDetailedComponent implements OnInit, OnDestroy {
   @Input({ required: true }) booking!: Booking;
+  @Input() statusOptions: StatusOption[] = [];
   @Output() close = new EventEmitter<void>();
   @Output() onEdit = new EventEmitter<Booking>();
   @Output() onDelete = new EventEmitter<Booking>();

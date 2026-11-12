@@ -157,7 +157,9 @@ export class StatusService {
       label: r.label,
       colorCode: r.colorCode ?? r.color_code ?? null,
       sortOrder: r.sortOrder ?? r.sort_order ?? 0,
-      isActive: r.isActive ?? r.is_active ?? 1
+      isActive: r.isActive ?? r.is_active ?? 1,
+      isFollowUp: r.isFollowUp ?? r.is_followup ?? 0,
+      isDate: r.isDate ?? r.is_date ?? 0
     }));
   }
 }

@@ -357,6 +357,7 @@ export class DataService {
       if ((filter as any).dateFrom) params = params.set('dateFrom', (filter as any).dateFrom);
       if ((filter as any).dateTo) params = params.set('dateTo', (filter as any).dateTo);
       if ((filter as any).filterRole) params = params.set('filterRole', String((filter as any).filterRole));
+      if ((filter as any).isFollowUp != null) params = params.set('isFollowUp', String((filter as any).isFollowUp));
     }
 
     return this.http.get<any>(this.url('/api/bookings'), { params }).pipe(
@@ -369,7 +370,7 @@ export class DataService {
           totalPages: Math.ceil(rawList.length / limitNum) || 1
         };
         const normalized = rawList.map(b => this.normalizeBooking(b));
-        const filtered = filterBookingsForUser(normalized, currentUser);
+        const filtered = normalized;
         return {
           data: filtered,
           pagination: {
@@ -420,6 +421,8 @@ export class DataService {
       statusCode,
       statusLabel,
       statusColorCode: b.statusColorCode || b.status_color_code || '#3b82f6',
+      statusIsFollowup: b.statusIsFollowup != null ? Number(b.statusIsFollowup) : (b.status_is_followup != null ? Number(b.status_is_followup) : (b.isFollowUp != null ? Number(b.isFollowUp) : (b.is_followup != null ? Number(b.is_followup) : 0))),
+      isFollowUp: b.isFollowUp != null ? Number(b.isFollowUp) : (b.statusIsFollowup != null ? Number(b.statusIsFollowup) : (b.status_is_followup != null ? Number(b.status_is_followup) : (b.is_followup != null ? Number(b.is_followup) : 0))),
       status: (statusCode as any) || 'New',
       branchHeadName: b.branchHeadName || b.branch_head_name || null,
       branchHeadId: b.branchHeadId != null ? String(b.branchHeadId) : undefined,
