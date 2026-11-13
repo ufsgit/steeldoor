@@ -3,50 +3,87 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { LoginModalComponent } from '../shared/components/login-modal.component';
+import { SITE_CONFIG } from '../core/site-config';
 
 @Component({
   selector: 'app-public-layout',
   standalone: true,
   imports: [CommonModule, RouterModule, LoginModalComponent],
+  styles: [`
+    .nav-link {
+      color: var(--nav-text);
+    }
+    .nav-link:hover {
+      color: var(--nav-text-hover);
+      background-color: color-mix(in srgb, var(--nav-text-hover) 12%, transparent);
+    }
+    .nav-link.active-link {
+      color: var(--nav-text-hover);
+      font-weight: 700;
+      background-color: color-mix(in srgb, var(--nav-text-hover) 14%, transparent);
+    }
+    .nav-book-btn {
+      background-color: var(--book-btn-bg);
+      color: var(--book-btn-text);
+      transition: all 0.2s ease;
+    }
+    .nav-book-btn:hover {
+      background-color: var(--book-btn-hover-bg);
+    }
+    .nav-login-btn {
+      background-color: var(--login-btn-bg);
+      color: var(--login-btn-text);
+      border-color: var(--login-btn-border);
+      transition: all 0.2s ease;
+    }
+    .nav-login-btn:hover {
+      background-color: var(--login-btn-hover-bg);
+    }
+  `],
   template: `
     <div class="min-h-screen flex flex-col bg-background text-text selection:bg-accent/20 relative">
       <!-- Navigation Bar (Directly aligned with page content: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8) -->
       <header
-        class="sticky top-0 z-50 w-full bg-surface/95 backdrop-blur-xl border-b border-border shadow-xs transition-all duration-300"
+        class="sticky top-0 z-50 w-full backdrop-blur-xl border-b border-border shadow-xs transition-all duration-300"
+        [style.backgroundColor]="siteConfig.navbarColor"
+        [style.--nav-text]="siteConfig.navbarTextColor"
+        [style.--nav-text-hover]="siteConfig.navbarTextHoverColor"
+        [style.--book-btn-bg]="siteConfig.bookBtnBg"
+        [style.--book-btn-hover-bg]="siteConfig.bookBtnHoverBg"
+        [style.--book-btn-text]="siteConfig.bookBtnText"
+        [style.--login-btn-bg]="siteConfig.loginBtnBg"
+        [style.--login-btn-hover-bg]="siteConfig.loginBtnHoverBg"
+        [style.--login-btn-text]="siteConfig.loginBtnText"
+        [style.--login-btn-border]="siteConfig.loginBtnBorder"
       >
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 sm:h-22 flex items-center justify-between">
           <!-- Logo (Left) -->
           <a routerLink="/" class="flex items-center gap-3 group shrink-0">
-            <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-primary flex items-center justify-center text-text-inverted shadow-soft group-hover:scale-105 transition-transform">
-              <svg class="w-5.5 sm:w-6 h-5.5 sm:h-6 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="4" y="2" width="16" height="20" rx="2" stroke="currentColor"/>
-                <circle cx="16" cy="12" r="1.5" fill="currentColor"/>
-              </svg>
-            </div>
-            <span class="text-xl sm:text-2xl font-black tracking-tight text-primary">SteelGuard</span>
+            <img [src]="siteConfig.logo" [alt]="siteConfig.brandName" class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl object-cover shadow-soft group-hover:scale-105 transition-transform" />
+            <span class="text-xl sm:text-2xl font-black tracking-tight" [style.color]="siteConfig.navbarTextColor">{{ siteConfig.brandName }}</span>
           </a>
 
           <!-- Desktop Navigation Links (Centered) -->
           <nav class="hidden md:flex items-center gap-1 lg:gap-2 text-sm font-semibold">
             <a
               routerLink="/"
-              routerLinkActive="bg-primary/10 text-primary font-bold"
+              routerLinkActive="active-link"
               [routerLinkActiveOptions]="{ exact: true }"
-              class="h-10 px-4 rounded-xl text-text-muted hover:text-primary hover:bg-surface-muted transition-all inline-flex items-center justify-center"
+              class="h-10 px-4 rounded-xl transition-all inline-flex items-center justify-center nav-link"
             >
               Home
             </a>
             <a
               routerLink="/about"
-              routerLinkActive="bg-primary/10 text-primary font-bold"
-              class="h-10 px-4 rounded-xl text-text-muted hover:text-primary hover:bg-surface-muted transition-all inline-flex items-center justify-center"
+              routerLinkActive="active-link"
+              class="h-10 px-4 rounded-xl transition-all inline-flex items-center justify-center nav-link"
             >
               About
             </a>
             <a
               routerLink="/contact"
-              routerLinkActive="bg-primary/10 text-primary font-bold"
-              class="h-10 px-4 rounded-xl text-text-muted hover:text-primary hover:bg-surface-muted transition-all inline-flex items-center justify-center"
+              routerLinkActive="active-link"
+              class="h-10 px-4 rounded-xl transition-all inline-flex items-center justify-center nav-link"
             >
               Contact Us
             </a>
@@ -57,10 +94,10 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
             <!-- Book Installation CTA Button -->
             <a
               routerLink="/bookings/new"
-              class="h-10 px-5 rounded-xl text-xs sm:text-sm font-bold bg-primary hover:bg-primary-hover text-text-inverted shadow-soft transition-all transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2 group cursor-pointer"
+              class="nav-book-btn h-10 px-5 rounded-xl text-xs sm:text-sm font-bold shadow-soft transition-all transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2 group cursor-pointer"
             >
               <span>Book Installation</span>
-              <svg class="w-4 h-4 text-accent group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
               </svg>
             </a>
@@ -69,11 +106,11 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
             <button
               type="button"
               (click)="isLoginModalOpen.set(true)"
-              class="h-10 px-5 rounded-xl text-xs sm:text-sm font-bold border border-primary/30 hover:border-primary text-primary hover:text-primary-hover bg-surface hover:bg-primary/5 shadow-xs hover:shadow-soft transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2 group cursor-pointer"
+              class="nav-login-btn h-10 px-5 rounded-xl text-xs sm:text-sm font-bold border shadow-xs hover:shadow-soft transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2 group cursor-pointer"
               id="nav-login-button"
               title="Sign in to Admin, Branch Head, Customer, Company, or Dealer Portal"
             >
-              <svg class="w-4 h-4 text-primary group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <svg class="w-4 h-4 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
               </svg>
               <span>Login</span>
@@ -84,7 +121,8 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
           <button
             type="button"
             (click)="mobileMenuOpen.set(!mobileMenuOpen())"
-            class="md:hidden w-11 h-11 rounded-xl text-text hover:bg-surface-muted border border-border transition-colors flex items-center justify-center cursor-pointer"
+            class="md:hidden w-11 h-11 rounded-xl border border-current/20 transition-colors flex items-center justify-center cursor-pointer"
+            [style.color]="siteConfig.navbarTextColor"
             aria-label="Toggle navigation menu"
           >
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -128,9 +166,8 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
               </a>
               <a
                 routerLink="/bookings/new"
-                routerLinkActive="bg-primary/10 text-primary font-bold"
                 (click)="mobileMenuOpen.set(false)"
-                class="px-4 py-2.5 rounded-xl border border-transparent text-text hover:bg-surface-muted transition-colors flex items-center justify-between font-bold text-primary"
+                class="nav-book-btn px-4 py-2.5 rounded-xl font-bold flex items-center justify-between text-xs"
               >
                 <span>Book Installation</span>
               </a>
@@ -141,7 +178,7 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
               <button
                 type="button"
                 (click)="isLoginModalOpen.set(true); mobileMenuOpen.set(false)"
-                class="w-full text-center py-2.5 rounded-xl bg-primary text-text-inverted text-xs font-bold shadow-soft flex items-center justify-center gap-2 cursor-pointer"
+                class="nav-login-btn w-full text-center py-2.5 rounded-xl border text-xs font-bold shadow-soft flex items-center justify-center gap-2 cursor-pointer"
               >
                 <svg class="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
@@ -165,16 +202,11 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
             <!-- Col 1: Brand & Tagline -->
             <div class="space-y-4">
               <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-accent flex items-center justify-center text-primary font-bold shadow-soft">
-                  <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <rect x="4" y="2" width="16" height="20" rx="2"/>
-                    <circle cx="16" cy="12" r="1.5" fill="currentColor"/>
-                  </svg>
-                </div>
-                <span class="text-xl font-black text-text-inverted tracking-tight">SteelGuard</span>
+                <img [src]="siteConfig.logo" [alt]="siteConfig.brandName" class="w-9 h-9 rounded-xl object-cover shadow-soft" />
+                <span class="text-xl font-black text-text-inverted tracking-tight">{{ siteConfig.brandName }}</span>
               </div>
               <p class="text-xs text-text-inverted/70 leading-relaxed">
-                South India's premier precision steel door supply and certified fitting service network. ISO standard security architectures.
+                {{ siteConfig.footerAbout }}
               </p>
             </div>
 
@@ -218,14 +250,14 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
               </p>
               <div class="p-3 rounded-xl bg-surface/5 border border-surface/10 space-y-1">
                 <div class="text-[11px] text-text-inverted/60 font-medium">Customer Support Desk</div>
-                <div class="text-xs font-bold text-accent">+91 1800-425-DOOR</div>
-                <div class="text-[10px] text-text-inverted/60">Mon - Sat: 8:00 AM - 7:00 PM</div>
+                <div class="text-xs font-bold text-accent">{{ siteConfig.phone }}</div>
+                <div class="text-[10px] text-text-inverted/60">{{ siteConfig.workingHours }}</div>
               </div>
             </div>
           </div>
 
           <div class="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-text-inverted/60">
-            <p>© {{ currentYear }} SteelGuard. All rights reserved.</p>
+            <p>© {{ currentYear }} {{ siteConfig.copyright }}</p>
             <div class="flex items-center gap-4 text-xs">
               <span class="hover:text-text-inverted transition-colors cursor-pointer">Privacy Policy</span>
               <span class="hover:text-text-inverted transition-colors cursor-pointer">Terms of Service</span>
@@ -244,6 +276,7 @@ import { LoginModalComponent } from '../shared/components/login-modal.component'
   `
 })
 export class PublicLayoutComponent implements OnInit, OnDestroy {
+  readonly siteConfig = SITE_CONFIG;
   private platformId = inject(PLATFORM_ID);
   private cdr = inject(ChangeDetectorRef);
   private ngZone = inject(NgZone);

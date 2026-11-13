@@ -115,6 +115,8 @@ export interface Booking {
   mobile: string;
   address: string;
   notes?: string | null;
+  mapLink?: string | null;
+  map_link?: string | null;
   staffNotes?: string | null;
   staff_notes?: string | null;
   status: string;
@@ -263,6 +265,8 @@ export interface CreateBookingPayload {
   mobile: string;
   address: string;
   notes?: string | null;
+  mapLink?: string | null;
+  map_link?: string | null;
   staffNotes?: string | null;
   staff_notes?: string | null;
   status?: string;

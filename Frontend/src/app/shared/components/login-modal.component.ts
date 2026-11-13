@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ToastService } from '../toast/toast.service';
+import { SITE_CONFIG } from '../../core/site-config';
 
 @Component({
   selector: 'app-login-modal',
@@ -26,14 +27,9 @@ import { ToastService } from '../toast/toast.service';
           <!-- Header with Close Button -->
           <div class="p-5 sm:p-6 border-b border-border bg-surface-muted/30 flex items-center justify-between shrink-0">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center text-accent shadow-soft shrink-0">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="4" y="2" width="16" height="20" rx="2"/>
-                  <circle cx="16" cy="12" r="1.5" fill="currentColor"/>
-                </svg>
-              </div>
+              <img [src]="siteConfig.logo" [alt]="siteConfig.brandName" class="w-10 h-10 rounded-2xl object-cover shadow-soft shrink-0" />
               <div>
-                <h2 class="text-base sm:text-lg font-black text-text leading-tight">Sign In to SteelGuard</h2>
+                <h2 class="text-base sm:text-lg font-black text-text leading-tight">Sign In to {{ siteConfig.brandName }}</h2>
                 <p class="text-xs text-text-muted">Enter your registered username and password.</p>
               </div>
             </div>
@@ -129,6 +125,7 @@ import { ToastService } from '../toast/toast.service';
   `
 })
 export class LoginModalComponent implements OnInit {
+  readonly siteConfig = SITE_CONFIG;
   @Input() isOpen = false;
   @Output() closeModal = new EventEmitter<void>();
 

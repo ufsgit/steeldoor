@@ -2,11 +2,41 @@ import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../core/auth.service';
+import { SITE_CONFIG } from '../core/site-config';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
   imports: [CommonModule, RouterModule],
+  styles: [`
+    .admin-nav-link {
+      color: var(--nav-text);
+      opacity: 0.85;
+      transition: all 0.2s ease;
+    }
+    .admin-nav-link:hover {
+      color: var(--nav-text-hover);
+      opacity: 1;
+    }
+    .admin-nav-link.admin-active {
+      color: var(--nav-text);
+      font-weight: 700;
+      opacity: 1;
+    }
+    .admin-profile-btn {
+      background-color: var(--profile-btn-bg);
+      color: var(--profile-btn-text);
+      border-color: var(--profile-btn-border);
+      transition: all 0.2s ease;
+    }
+    .admin-profile-btn:hover {
+      background-color: var(--profile-btn-hover-bg);
+    }
+    .admin-profile-badge {
+      background-color: var(--profile-badge-bg);
+      color: var(--profile-badge-text);
+    }
+  `],
   template: `
     <div class="min-h-screen w-full bg-white text-gray-900 flex flex-col select-none font-sans">
       <!-- Outside click dismissal backdrop -->
@@ -15,32 +45,38 @@ import { AuthService } from '../core/auth.service';
       }
 
       <!-- Top Header Row (Full Screen Edge-to-Edge) -->
-      <header class="w-full bg-white border-b border-gray-200 px-7 sm:px-10 py-3.5 flex items-center justify-between gap-4 shrink-0 sticky top-0 z-40">
+      <header
+        class="w-full border-b border-gray-200 px-7 sm:px-10 py-3.5 flex items-center justify-between gap-4 shrink-0 sticky top-0 z-40 transition-colors"
+        [style.backgroundColor]="siteConfig.navbarColor"
+        [style.--nav-text]="siteConfig.navbarTextColor"
+        [style.--nav-text-hover]="siteConfig.navbarTextHoverColor"
+        [style.--profile-btn-bg]="siteConfig.adminProfileBtnBg"
+        [style.--profile-btn-hover-bg]="siteConfig.adminProfileBtnHoverBg"
+        [style.--profile-btn-text]="siteConfig.adminProfileBtnText"
+        [style.--profile-btn-border]="siteConfig.adminProfileBtnBorder"
+        [style.--profile-badge-bg]="siteConfig.adminProfileBadgeBg"
+        [style.--profile-badge-text]="siteConfig.adminProfileBadgeText"
+      >
         
         <!-- Left: Google Sheets Green Icon + App Title + Top Menus -->
         <div class="flex items-center gap-6 shrink-0">
           <a routerLink="/admin" class="flex items-center gap-2.5 group cursor-pointer">
-            <!-- Google Sheets Icon -->
-            <div class="w-8 h-8 rounded-[6px] bg-[#0f9d58] flex items-center justify-center text-white shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-              <svg class="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H5v-4h7v4zm0-6H5V7h7v4zm7 6h-5v-4h5v4zm0-6h-5V7h5v4z"/>
-              </svg>
-            </div>
-            <span class="text-[18px] font-bold tracking-tight text-gray-900">
-              SteelGuard Orders Sheet
+            <img [src]="siteConfig.logo" [alt]="siteConfig.brandName" class="w-8 h-8 rounded-[6px] object-cover shadow-2xs group-hover:scale-105 transition-transform shrink-0" />
+            <span class="text-[18px] font-bold tracking-tight" [style.color]="siteConfig.navbarTextColor">
+              {{ siteConfig.adminTitle }}
             </span>
           </a>
 
           <!-- Subtle Vertical Divider -->
-          <div class="h-4 w-px bg-gray-200 hidden sm:block"></div>
+          <div class="h-4 w-px bg-current/20 hidden sm:block"></div>
 
           <!-- Top Navigation: Orders, Settings, History -->
-          <nav class="hidden sm:flex items-center gap-6 text-[14px] font-medium text-gray-600">
+          <nav class="hidden sm:flex items-center gap-6 text-[14px] font-medium">
             <a
               routerLink="/admin"
               [routerLinkActiveOptions]="{ exact: true }"
-              routerLinkActive="font-bold text-gray-900"
-              class="hover:text-gray-900 transition-colors cursor-pointer"
+              routerLinkActive="admin-active"
+              class="admin-nav-link cursor-pointer"
             >
               Orders
             </a>
@@ -50,13 +86,12 @@ import { AuthService } from '../core/auth.service';
               <div class="relative group py-1">
                 <button
                   type="button"
-                  class="flex items-center hover:text-gray-900 transition-colors cursor-pointer focus:outline-none"
+                  class="admin-nav-link flex items-center cursor-pointer focus:outline-none"
                   (click)="toggleSettings()"
                 >
                   <span
-                    class="group-hover:text-gray-900 transition-colors"
+                    class="transition-colors"
                     [class.font-bold]="settingsOpen()"
-                    [class.text-gray-900]="settingsOpen()"
                   >Settings</span>
                 </button>
 
@@ -89,9 +124,9 @@ import { AuthService } from '../core/auth.service';
             @if (canAccessHistory()) {
               <a
                 routerLink="/admin/history"
-                routerLinkActive="font-bold text-gray-900"
+                routerLinkActive="admin-active"
                 (click)="closeAllDropdowns()"
-                class="hover:text-gray-900 transition-colors cursor-pointer"
+                class="admin-nav-link cursor-pointer"
               >
                 History
               </a>
@@ -105,15 +140,16 @@ import { AuthService } from '../core/auth.service';
           <button
             type="button"
             (click)="toggleUserDropdown()"
-            class="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border border-gray-200 hover:border-gray-300 bg-gray-50/70 hover:bg-gray-100/70 transition-all cursor-pointer focus:outline-none"
+            class="admin-profile-btn flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border shadow-2xs transition-all cursor-pointer focus:outline-none"
           >
             <!-- User initial badge -->
-            <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[11px] shrink-0">
+            <div class="admin-profile-badge w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] shrink-0">
               {{ userName().charAt(0).toUpperCase() }}
             </div>
-            <span class="text-xs font-semibold text-gray-800 max-w-[120px] truncate">{{ userName() }}</span>
+            <span class="text-xs font-semibold max-w-[120px] truncate" [style.color]="siteConfig.adminProfileBtnText">{{ userName() }}</span>
             <svg
-              class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200"
+              class="w-3.5 h-3.5 transition-transform duration-200"
+              [style.color]="siteConfig.adminProfileBtnText"
               [class.rotate-180]="userDropdownOpen()"
               fill="none"
               viewBox="0 0 24 24"
@@ -166,6 +202,7 @@ import { AuthService } from '../core/auth.service';
 })
 export class AdminLayoutComponent {
   auth = inject(AuthService);
+  readonly siteConfig = SITE_CONFIG;
   settingsOpen = signal(false);
   userDropdownOpen = signal(false);
 

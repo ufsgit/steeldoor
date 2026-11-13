@@ -534,12 +534,12 @@ import { environment } from '../../../../../environments/environment';
                 </div>
 
                 <div>
-                  <label class="block font-semibold text-gray-700 mb-1">Customer Notes</label>
+                  <label class="block font-semibold text-gray-700 mb-1">Installation Description</label>
                   <textarea
                     rows="3"
                     maxlength="1000"
                     [(ngModel)]="editNotes"
-                    placeholder="Fitting notes, measurements, delivery notes..."
+                    placeholder="Fitting requirements, door specifications, masonry status, delivery notes..."
                     class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
                   ></textarea>
                 </div>
@@ -763,9 +763,9 @@ import { environment } from '../../../../../environments/environment';
                 ></textarea>
               </div>
 
-              <!-- p_notes: Notes -->
+              <!-- p_notes: Installation Description -->
               <div>
-                <label class="block font-medium text-gray-700 mb-1">Notes / Instructions </label>
+                <label class="block font-medium text-gray-700 mb-1">Installation Description / Instructions</label>
                 <textarea
                   name="notes"
                   rows="2"

@@ -234,17 +234,17 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
             </div>
           </div>
 
-          <!-- Section 2: Notes & Instructions (4 Columns) -->
+          <!-- Section 2: Installation Description (4 Columns) -->
           <div>
             <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
-              <span>Notes</span>
+              <span>Installation Description</span>
             </h2>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div class="sm:col-span-2 lg:col-span-4">
                 <label class="block text-xs font-bold text-gray-700 mb-1.5">
-                  Notes / Instructions
+                  Installation Description / Instructions
                 </label>
                 <textarea
                   name="notes"
@@ -253,6 +253,42 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
                   placeholder="Fitting requirements, door specifications, masonry status, delivery notes..."
                   class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
                 ></textarea>
+              </div>
+
+              <!-- Google Map Link -->
+              <div class="sm:col-span-2 lg:col-span-4">
+                <label class="block text-xs font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                  <span class="flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Google Map Link
+                  </span>
+                  <span class="text-[11px] font-normal text-gray-400">Optional</span>
+                </label>
+                <div class="relative">
+                  <input
+                    type="url"
+                    name="mapLink"
+                    [(ngModel)]="mapLink"
+                    placeholder="Paste Google Maps URL (e.g. https://maps.app.goo.gl/... or https://maps.google.com/?q=...)"
+                    class="w-full text-xs px-3.5 py-2.5 pr-24 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+                  />
+                  @if (mapLink.trim()) {
+                    <a
+                      [href]="mapLink.trim()"
+                      target="_blank"
+                      rel="noopener"
+                      class="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-[#0f9d58] hover:text-[#0b8043] font-bold flex items-center gap-1 bg-[#0f9d58]/10 hover:bg-[#0f9d58]/20 px-2 py-1 rounded-lg transition-colors"
+                    >
+                      <span>Open Map</span>
+                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  }
+                </div>
               </div>
             </div>
           </div>
@@ -355,6 +391,7 @@ export class BookNowComponent implements OnInit {
   mobile = '';
   address = '';
   notes = '';
+  mapLink = '';
   status = 'NEW';
   loginRoleId: number | null = 5;
   loginId: number | null = null;
@@ -484,12 +521,19 @@ export class BookNowComponent implements OnInit {
   }
 
   private executeCreateBooking(uploadedUrls: string[]): void {
+    const trimmedNotes = this.notes.trim();
+    const trimmedMap = this.mapLink.trim();
+    const combinedNotes = trimmedMap
+      ? (trimmedNotes ? `${trimmedNotes}\n\nMap: ${trimmedMap}` : `Map: ${trimmedMap}`)
+      : (trimmedNotes || null);
+
     // DDL matching payload
     const payload: CreateBookingPayload = {
       name: this.name.trim(),
       mobile: this.mobile.trim(),
       address: this.address.trim(),
-      notes: this.notes.trim() || null,
+      notes: combinedNotes,
+      mapLink: trimmedMap || null,
       status: this.status || 'NEW',
       loginRoleId: 5,
       loginId: null,

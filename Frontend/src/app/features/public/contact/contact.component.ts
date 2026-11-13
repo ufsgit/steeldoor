@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { Title, Meta } from '@angular/platform-browser';
 import { District } from '../../../core/models';
+import { SITE_CONFIG } from '../../../core/site-config';
 
 @Component({
   selector: 'app-contact',
@@ -34,10 +35,10 @@ import { District } from '../../../core/models';
             <p class="text-xs text-text-muted mt-1">Direct assistance for booking and schedules.</p>
           </div>
           <div class="pt-2">
-            <a href="tel:18004253667" class="text-base font-extrabold text-primary hover:text-primary-hover flex items-center gap-1.5">
-              <span>+91 1800-425-DOOR</span>
+            <a [href]="'tel:' + siteConfig.phone" class="text-base font-extrabold text-primary hover:text-primary-hover flex items-center gap-1.5">
+              <span>{{ siteConfig.phone }}</span>
             </a>
-            <span class="text-[11px] text-text-muted block mt-0.5">Mon - Sat: 8:00 AM - 7:00 PM</span>
+            <span class="text-[11px] text-text-muted block mt-0.5">{{ siteConfig.workingHours }}</span>
           </div>
         </div>
 
@@ -53,8 +54,8 @@ import { District } from '../../../core/models';
             <p class="text-xs text-text-muted mt-1">Send photos and dimensions for quick estimates.</p>
           </div>
           <div class="pt-2">
-            <a href="https://wa.me/919847012345" target="_blank" rel="noopener" class="text-base font-extrabold text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5">
-              <span>+91 98470 12345</span>
+            <a [href]="siteConfig.whatsappLink" target="_blank" rel="noopener" class="text-base font-extrabold text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5">
+              <span>{{ siteConfig.whatsapp }}</span>
             </a>
             <span class="text-[11px] text-text-muted block mt-0.5">Quick response</span>
           </div>
@@ -72,8 +73,8 @@ import { District } from '../../../core/models';
             <p class="text-xs text-text-muted mt-1">Central coordination and management.</p>
           </div>
           <div class="pt-2">
-            <span class="text-xs font-semibold text-text block">SteelGuard Systems Pvt Ltd</span>
-            <span class="text-[11px] text-text-muted block leading-snug">Infopark Expressway, Kakkanad, Ernakulam, Kerala 682030</span>
+            <span class="text-xs font-semibold text-text block">{{ siteConfig.companyName }}</span>
+            <span class="text-[11px] text-text-muted block leading-snug">{{ siteConfig.address }}</span>
           </div>
         </div>
       </div>
@@ -100,6 +101,7 @@ import { District } from '../../../core/models';
   `
 })
 export class ContactComponent implements OnInit {
+  readonly siteConfig = SITE_CONFIG;
   private route = inject(ActivatedRoute);
   private titleService = inject(Title);
   private metaService = inject(Meta);
@@ -107,10 +109,10 @@ export class ContactComponent implements OnInit {
   districts: District[] = [];
 
   ngOnInit(): void {
-    this.titleService.setTitle('Contact Us | SteelGuard');
+    this.titleService.setTitle(`Contact Us | ${this.siteConfig.brandName}`);
     this.metaService.updateTag({
       name: 'description',
-      content: 'Get in touch with SteelGuard customer support and Kerala district installation hubs.'
+      content: `Get in touch with ${this.siteConfig.brandName} customer support and district installation hubs.`
     });
 
     const d = this.route.snapshot.data['districts'];
