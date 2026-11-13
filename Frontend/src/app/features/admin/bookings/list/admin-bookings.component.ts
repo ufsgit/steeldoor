@@ -1529,7 +1529,7 @@ export class AdminBookingsComponent implements OnInit {
       next: res => {
         this.isUploadingEditDocs.set(false);
         const updatedDocs = res?.documents || (
-          res?.urls ? [...this.editDocuments(), ...res.urls] : [...this.editDocuments(), ...files.map(f => `/uploads/${f.name}`)]
+          res?.urls ? [...this.editDocuments(), ...res.urls] : this.editDocuments()
         );
         this.editDocuments.set(updatedDocs);
 
@@ -1540,9 +1540,9 @@ export class AdminBookingsComponent implements OnInit {
           this.selectedBooking.update(curr => curr ? { ...curr, documents: updatedDocs } : curr);
         }
       },
-      error: () => {
+      error: (err) => {
         this.isUploadingEditDocs.set(false);
-        this.toastService.error('Failed to upload document.');
+        this.toastService.error(err?.error?.error || 'Failed to upload document.');
       }
     });
     input.value = '';
@@ -1852,15 +1852,11 @@ export class AdminBookingsComponent implements OnInit {
         this.isUploadingDocuments.set(false);
         if (res && res.urls && res.urls.length > 0) {
           this.newDocuments.update(prev => [...prev, ...res.urls]);
-        } else {
-          const fallbackUrls = files.map(f => `/uploads/${f.name}`);
-          this.newDocuments.update(prev => [...prev, ...fallbackUrls]);
         }
       },
-      error: () => {
+      error: (err) => {
         this.isUploadingDocuments.set(false);
-        const fallbackUrls = files.map(f => `/uploads/${f.name}`);
-        this.newDocuments.update(prev => [...prev, ...fallbackUrls]);
+        this.toastService.error(err?.error?.error || 'Failed to upload document.');
       }
     });
     input.value = '';

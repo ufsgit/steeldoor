@@ -218,15 +218,15 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
               </div>
             }
 
-            @if (documents().length > 0) {
+            @if (selectedFiles().length > 0) {
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-2">
-                @for (doc of documents(); track doc; let i = $index) {
+                @for (file of selectedFiles(); track file.name; let i = $index) {
                   <div class="flex items-center justify-between p-2.5 rounded-xl border border-gray-200 bg-white text-xs">
                     <div class="flex items-center gap-2 truncate">
                       <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                       </svg>
-                      <span class="truncate font-medium text-gray-800">{{ getFilename(doc) }}</span>
+                      <span class="truncate font-medium text-gray-800">{{ file.name }}</span>
                     </div>
                     <button
                       type="button"
@@ -281,7 +281,8 @@ export class BookingNewComponent implements OnInit {
   loginName: string | null = null;
 
   // Documents
-  documents = signal<string[]>([]);
+  selectedFiles = signal<File[]>([]);
+  documents = computed(() => this.selectedFiles().map(f => f.name));
   isUploading = signal(false);
   isSubmitting = false;
 
@@ -378,29 +379,13 @@ export class BookingNewComponent implements OnInit {
     if (!input.files || input.files.length === 0) return;
 
     const files = Array.from(input.files);
-    this.isUploading.set(true);
-
-    this.dataService.uploadDocuments(files).subscribe({
-      next: res => {
-        this.isUploading.set(false);
-        if (res && res.urls && res.urls.length > 0) {
-          this.documents.update(prev => [...prev, ...res.urls]);
-        } else {
-          const fallback = files.map(f => `/uploads/${f.name}`);
-          this.documents.update(prev => [...prev, ...fallback]);
-        }
-      },
-      error: () => {
-        this.isUploading.set(false);
-        const fallback = files.map(f => `/uploads/${f.name}`);
-        this.documents.update(prev => [...prev, ...fallback]);
-      }
-    });
+    const combined = [...this.selectedFiles(), ...files].slice(0, 10);
+    this.selectedFiles.set(combined);
     input.value = '';
   }
 
   removeDoc(index: number): void {
-    this.documents.update(prev => prev.filter((_, i) => i !== index));
+    this.selectedFiles.update(prev => prev.filter((_, i) => i !== index));
   }
 
   getFilename(url: string): string {
@@ -486,6 +471,27 @@ export class BookingNewComponent implements OnInit {
 
     this.isSubmitting = true;
 
+    const filesToUpload = this.selectedFiles();
+    if (filesToUpload.length > 0) {
+      this.isUploading.set(true);
+      this.dataService.uploadDocuments(filesToUpload).subscribe({
+        next: (res) => {
+          this.isUploading.set(false);
+          const urls = (res && res.urls && res.urls.length > 0) ? res.urls : [];
+          this.executeCreateBooking(urls);
+        },
+        error: (err) => {
+          this.isUploading.set(false);
+          this.isSubmitting = false;
+          this.toast.error(err?.error?.error || 'Failed to upload document.');
+        }
+      });
+    } else {
+      this.executeCreateBooking([]);
+    }
+  }
+
+  private executeCreateBooking(uploadedUrls: string[]): void {
     // DDL matching payload
     const payload: CreateBookingPayload = {
       name: this.name.trim(),
@@ -511,7 +517,7 @@ export class BookingNewComponent implements OnInit {
       branch_head_id: this.branchHeadId ?? null,
       branchHeadName: this.branchHeadName || null,
       branch_head_name: this.branchHeadName || null,
-      documents: this.documents(),
+      documents: uploadedUrls,
 
       // UI compatibility aliases
       clientName: this.name.trim(),

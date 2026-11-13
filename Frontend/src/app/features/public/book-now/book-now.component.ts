@@ -284,14 +284,14 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
               </div>
             </div>
 
-            @if (documents.length > 0) {
+            @if (selectedFiles.length > 0) {
               <div class="flex flex-wrap gap-2 mt-3">
-                @for (doc of documents; track $index) {
+                @for (file of selectedFiles; track $index) {
                   <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 border border-gray-200 text-xs text-gray-800">
                     <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
-                    <span class="truncate max-w-[200px] font-medium">{{ getFilename(doc) }}</span>
+                    <span class="truncate max-w-[200px] font-medium">{{ file.name }}</span>
                     <button
                       type="button"
                       (click)="removeDoc($index)"
@@ -367,6 +367,7 @@ export class BookNowComponent implements OnInit {
   areaName = '';
   branchHeadId: number | null = null;
   branchHeadName: string | null = null;
+  selectedFiles: File[] = [];
   documents: string[] = [];
 
   isSubmitting = false;
@@ -418,25 +419,12 @@ export class BookNowComponent implements OnInit {
     if (!input.files || input.files.length === 0) return;
 
     const files = Array.from(input.files);
-    this.dataService.uploadDocuments(files).subscribe({
-      next: res => {
-        if (res && res.urls && res.urls.length > 0) {
-          this.documents = [...this.documents, ...res.urls];
-        } else {
-          const fallback = files.map(f => `/uploads/${f.name}`);
-          this.documents = [...this.documents, ...fallback];
-        }
-      },
-      error: () => {
-        const fallback = files.map(f => `/uploads/${f.name}`);
-        this.documents = [...this.documents, ...fallback];
-      }
-    });
+    this.selectedFiles = [...this.selectedFiles, ...files].slice(0, 10);
     input.value = '';
   }
 
   removeDoc(index: number): void {
-    this.documents.splice(index, 1);
+    this.selectedFiles.splice(index, 1);
   }
 
   getFilename(url: string): string {
@@ -466,6 +454,7 @@ export class BookNowComponent implements OnInit {
     this.districtName = '';
     this.areaId = null;
     this.areaName = '';
+    this.selectedFiles = [];
     this.documents = [];
     this.submittedBooking.set(null);
   }
@@ -478,6 +467,23 @@ export class BookNowComponent implements OnInit {
 
     this.isSubmitting = true;
 
+    if (this.selectedFiles.length > 0) {
+      this.dataService.uploadDocuments(this.selectedFiles).subscribe({
+        next: (res) => {
+          const urls = (res && res.urls && res.urls.length > 0) ? res.urls : [];
+          this.executeCreateBooking(urls);
+        },
+        error: (err) => {
+          this.isSubmitting = false;
+          this.toast.error(err?.error?.error || 'Failed to upload document.');
+        }
+      });
+    } else {
+      this.executeCreateBooking([]);
+    }
+  }
+
+  private executeCreateBooking(uploadedUrls: string[]): void {
     // DDL matching payload
     const payload: CreateBookingPayload = {
       name: this.name.trim(),
@@ -503,7 +509,7 @@ export class BookNowComponent implements OnInit {
       branch_head_id: this.branchHeadId,
       branchHeadName: this.branchHeadName || null,
       branch_head_name: this.branchHeadName || null,
-      documents: this.documents,
+      documents: uploadedUrls,
 
       // UI compatibility aliases
       clientName: this.name.trim(),

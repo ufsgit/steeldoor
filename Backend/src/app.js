@@ -97,6 +97,11 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
   console.error('[Error Handler]', err);
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({
+      error: 'File size exceeds maximum allowed limit'
+    });
+  }
   const status = err.status || 500;
   res.status(status).json({
     error: err.message || 'Internal Server Error'

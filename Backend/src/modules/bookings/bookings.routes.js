@@ -1,8 +1,9 @@
 import { Router } from 'express';
+import fs from 'fs';
 import { bookingsController } from './bookings.controller.js';
 import { statusController } from '../status/status.controller.js';
 import { optionalAuth } from '../auth/jwt.util.js';
-import { upload } from '../uploads/uploads.middleware.js';
+import { upload, validateUploadedFiles, MAX_FILE_SIZE_ERROR } from '../uploads/uploads.middleware.js';
 
 const router = Router();
 
@@ -20,7 +21,12 @@ const handleBookingUploads = (req, res, next) => {
     { name: 'file', maxCount: 1 },
     { name: 'document', maxCount: 1 }
   ])(req, res, (err) => {
-    if (err) return next(err);
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: MAX_FILE_SIZE_ERROR });
+      }
+      return res.status(400).json({ error: err.message || 'File upload failed' });
+    }
 
     const collected = [];
     if (req.files) {
@@ -31,6 +37,18 @@ const handleBookingUploads = (req, res, next) => {
       }
     }
     req.files = collected;
+
+    // Validate each file against its category limit from .env
+    const limitError = validateUploadedFiles(req.files);
+    if (limitError) {
+      req.files.forEach(f => {
+        if (f.path) {
+          try { fs.unlinkSync(f.path); } catch {}
+        }
+      });
+      return res.status(400).json({ error: limitError });
+    }
+
     next();
   });
 };
