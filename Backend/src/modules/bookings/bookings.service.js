@@ -10,6 +10,7 @@ export class BookingsService {
     const mobile = data.mobile;
     const address = data.address;
     const notes = data.notes ?? null;
+    const mapLink = data.mapLink ?? data.map_link ?? null;
     const status = data.status || 'NEW';
     const loginRoleId = data.loginRoleId ?? data.login_role_id ?? null;
     const loginId = data.loginId ?? data.login_id ?? null;
@@ -27,13 +28,14 @@ export class BookingsService {
     const docsJson = typeof documents === 'string' ? documents : JSON.stringify(documents);
 
     const [results] = await pool.query(
-      `CALL save_booking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `CALL save_booking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         null, // p_id: NULL for CREATE
         name,
         mobile,
         address,
         notes,
+        mapLink,
         loginRoleId,
         loginId,
         loginName,
@@ -82,6 +84,7 @@ export class BookingsService {
     const mobile = data.mobile ?? null;
     const address = data.address ?? null;
     const notes = data.notes ?? null;
+    const mapLink = data.mapLink !== undefined ? data.mapLink : (data.map_link !== undefined ? data.map_link : null);
     const loginRoleId = data.loginRoleId ?? data.login_role_id ?? null;
     const loginId = data.loginId ?? data.login_id ?? null;
     const loginName = data.loginName ?? data.login_name ?? null;
@@ -101,13 +104,14 @@ export class BookingsService {
     }
 
     const [results] = await pool.query(
-      `CALL save_booking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `CALL save_booking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         bookingId, // p_id: valid ID for UPDATE
         name,
         mobile,
         address,
         notes,
+        mapLink,
         loginRoleId,
         loginId,
         loginName,
@@ -221,6 +225,28 @@ export class BookingsService {
     const rows = results?.[0] || [];
     const meta = results?.[1]?.[0] || {};
 
+    // If get_bookings_paginated SP does not return map_link yet, backfill it from bookings table
+    if (rows.length > 0 && rows[0].map_link === undefined && rows[0].mapLink === undefined) {
+      try {
+        const ids = rows.map(r => r.id).filter(Boolean);
+        if (ids.length > 0) {
+          const [mapRows] = await pool.query(
+            `SELECT id, map_link FROM bookings WHERE id IN (?)`,
+            [ids]
+          );
+          const mapDict = new Map();
+          for (const m of mapRows) {
+            mapDict.set(m.id, m.map_link);
+          }
+          for (const r of rows) {
+            r.map_link = mapDict.get(r.id) || null;
+          }
+        }
+      } catch (_) {
+        // If map_link column doesn't exist yet, ignore
+      }
+    }
+
     const formattedRows = rows.map(b => this.formatBookingRecord(b));
     const total = Number(meta.total_records ?? formattedRows.length);
 
@@ -257,6 +283,10 @@ export class BookingsService {
     const statusCode = b.statusCode || b.status_code || b.status || 'New';
     const statusLabel = b.statusLabel || b.status_label || statusCode;
 
+    const mapRegex = /(?:Map(?: Link)?:\s*)?(https?:\/\/(?:www\.)?(?:google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl\/maps)[^\s\n]*)/i;
+    const mapMatch = (typeof b.notes === 'string') ? b.notes.match(mapRegex) : null;
+    const mapLink = b.map_link || b.mapLink || (mapMatch ? mapMatch[1] : null);
+
     return {
       id: b.id,
       name: b.name,
@@ -267,6 +297,8 @@ export class BookingsService {
       clientType: 'customer',
       address: b.address,
       notes: b.notes || null,
+      mapLink: mapLink,
+      map_link: mapLink,
       staffNotes: b.staff_notes ?? b.staffNotes ?? null,
       statusId: b.statusId ?? b.status_id ?? 1,
       statusCode: statusCode,

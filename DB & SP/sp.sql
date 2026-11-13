@@ -405,6 +405,7 @@ BEGIN
         mobile,
         address,
         notes,
+        map_link,
         staff_notes,
         status_id,
         status_code,

@@ -256,16 +256,13 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
               </div>
 
               <!-- Google Map Link -->
-              <div class="sm:col-span-2 lg:col-span-4">
-                <label class="block text-xs font-bold text-gray-700 mb-1.5 flex items-center justify-between">
-                  <span class="flex items-center gap-1.5">
-                    <svg class="w-4 h-4 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    Google Map Link
+              <div class="sm:col-span-2 lg:col-span-4 mt-2">
+                <label class="block text-xs font-bold text-gray-900 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                  <span class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+                    <span>GOOGLE MAP LINK</span>
                   </span>
-                  <span class="text-[11px] font-normal text-gray-400">Optional</span>
+                  <span class="text-[11px] font-normal normal-case text-gray-400">Optional</span>
                 </label>
                 <div class="relative">
                   <input
@@ -521,19 +518,13 @@ export class BookNowComponent implements OnInit {
   }
 
   private executeCreateBooking(uploadedUrls: string[]): void {
-    const trimmedNotes = this.notes.trim();
-    const trimmedMap = this.mapLink.trim();
-    const combinedNotes = trimmedMap
-      ? (trimmedNotes ? `${trimmedNotes}\n\nMap: ${trimmedMap}` : `Map: ${trimmedMap}`)
-      : (trimmedNotes || null);
-
     // DDL matching payload
     const payload: CreateBookingPayload = {
       name: this.name.trim(),
       mobile: this.mobile.trim(),
       address: this.address.trim(),
-      notes: combinedNotes,
-      mapLink: trimmedMap || null,
+      notes: this.notes.trim() || null,
+      mapLink: this.mapLink.trim() || null,
       status: this.status || 'NEW',
       loginRoleId: 5,
       loginId: null,

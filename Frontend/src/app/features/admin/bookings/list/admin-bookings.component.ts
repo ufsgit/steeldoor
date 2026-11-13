@@ -543,6 +543,38 @@ import { environment } from '../../../../../environments/environment';
                     class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
                   ></textarea>
                 </div>
+
+                <!-- Google Map Link -->
+                <div>
+                  <label class="block font-semibold text-gray-700 uppercase tracking-wider text-[11px] mb-1 flex items-center justify-between">
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+                      <span>GOOGLE MAP LINK</span>
+                    </span>
+                    <span class="text-[10px] font-normal normal-case text-gray-400">Optional</span>
+                  </label>
+                  <div class="relative">
+                    <input
+                      type="url"
+                      [(ngModel)]="editMapLink"
+                      placeholder="Paste Google Maps link (e.g. https://maps.app.goo.gl/...)"
+                      class="w-full px-3 py-2 pr-20 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
+                    />
+                    @if (editMapLink.trim()) {
+                      <a
+                        [href]="editMapLink.trim()"
+                        target="_blank"
+                        rel="noopener"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[#0f9d58] hover:text-[#0b8043] font-bold flex items-center gap-1 bg-[#0f9d58]/10 px-2 py-0.5 rounded"
+                      >
+                        <span>Open</span>
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    }
+                  </div>
+                </div>
               </div>
 
               <!-- Column 2: Documents & Attachments Management -->
@@ -773,6 +805,38 @@ import { environment } from '../../../../../environments/environment';
                   placeholder="e.g. Frame measurement needed, double steel door specification..."
                   class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
                 ></textarea>
+              </div>
+
+              <!-- Google Map Link -->
+              <div>
+                <label class="block font-medium text-gray-700 uppercase tracking-wider text-[11px] mb-1 flex items-center justify-between">
+                  <span class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+                    <span>GOOGLE MAP LINK</span>
+                  </span>
+                  <span class="text-[11px] font-normal normal-case text-gray-400">Optional</span>
+                </label>
+                <div class="relative">
+                  <input
+                    type="url"
+                    [(ngModel)]="newMapLink"
+                    placeholder="https://maps.app.goo.gl/... or https://maps.google.com/?q=..."
+                    class="w-full px-3 py-2 pr-20 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
+                  />
+                  @if (newMapLink.trim()) {
+                    <a
+                      [href]="newMapLink.trim()"
+                      target="_blank"
+                      rel="noopener"
+                      class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[#0f9d58] hover:text-[#0b8043] font-bold flex items-center gap-1 bg-[#0f9d58]/10 px-2 py-0.5 rounded"
+                    >
+                      <span>Open</span>
+                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  }
+                </div>
               </div>
 
               <!-- Assigned Head -->
@@ -1240,6 +1304,7 @@ export class AdminBookingsComponent implements OnInit {
   newPhone = '';                // p_mobile (VARCHAR 25)
   newAddress = '';              // p_address (TEXT)
   newNotes = '';                // p_notes (TEXT)
+  newMapLink = '';              // Google Map URL
   newStatus: BookingStatus = 'Pending'; // p_status (VARCHAR 50)
   newDistrict = 'Ernakulam';    // p_district_name (VARCHAR 100)
   newArea = '';                 // p_area_name (VARCHAR 100)
@@ -1266,6 +1331,7 @@ export class AdminBookingsComponent implements OnInit {
   editMobile = '';
   editAddress = '';
   editNotes = '';
+  editMapLink = '';
   editDocuments = signal<string[]>([]);
   isUploadingEditDocs = signal(false);
 
@@ -1503,7 +1569,9 @@ export class AdminBookingsComponent implements OnInit {
     this.editName = b.clientName || b.name || '';
     this.editMobile = b.contactPhone || b.mobile || '';
     this.editAddress = b.address || '';
-    this.editNotes = b.notes || '';
+    const parsed = this.extractMapLink(b.notes);
+    this.editNotes = parsed.cleanNotes;
+    this.editMapLink = (b as any).mapLink || (b as any).map_link || parsed.mapLink || '';
     this.editDocuments.set([...this.getBookingDocuments(b)]);
     this.isEditingSelected.set(true);
   }
@@ -1626,6 +1694,7 @@ export class AdminBookingsComponent implements OnInit {
       contactPhone: this.editMobile.trim(),
       address: this.editAddress.trim(),
       notes: this.editNotes.trim() || null,
+      mapLink: this.editMapLink.trim() || null,
       documents: updatedDocs
     };
 
@@ -1996,7 +2065,8 @@ export class AdminBookingsComponent implements OnInit {
       mobile: this.newPhone,
       contactPhone: this.newPhone,
       address: this.newAddress,
-      notes: this.newNotes || null,
+      notes: this.newNotes.trim() || null,
+      mapLink: this.newMapLink.trim() || null,
       status: this.newStatus || 'Pending',
       districtId,
       districtName: this.newDistrict,
@@ -2096,9 +2166,31 @@ export class AdminBookingsComponent implements OnInit {
     this.newPhone = '';
     this.newAddress = '';
     this.newNotes = '';
+    this.newMapLink = '';
     this.newStatus = 'Pending';
     this.newArea = '';
     this.newDocuments.set([]);
+  }
+
+  extractMapLink(notes?: string | null): { cleanNotes: string; mapLink: string } {
+    if (!notes) return { cleanNotes: '', mapLink: '' };
+    const mapRegex = /(?:Map(?: Link)?:\s*)?(https?:\/\/(?:www\.)?(?:google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl\/maps)[^\s\n]*)/i;
+    const match = notes.match(mapRegex);
+    if (match) {
+      const mapLink = match[1];
+      const cleanNotes = notes.replace(match[0], '').replace(/\n\s*\n/g, '\n').trim();
+      return { cleanNotes, mapLink };
+    }
+    return { cleanNotes: notes, mapLink: '' };
+  }
+
+  combineNotesAndMap(notes: string, mapLink: string): string | null {
+    const trimmedNotes = notes.trim();
+    const trimmedMap = mapLink.trim();
+    if (trimmedMap) {
+      return trimmedNotes ? `${trimmedNotes}\n\nMap: ${trimmedMap}` : `Map: ${trimmedMap}`;
+    }
+    return trimmedNotes || null;
   }
 
   onNewDistrictSelected(dist: District | null): void {
