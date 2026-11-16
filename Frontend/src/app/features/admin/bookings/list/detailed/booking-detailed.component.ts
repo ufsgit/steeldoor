@@ -124,6 +124,35 @@ import { AuthService } from '../../../../../core/auth.service';
                 </p>
               </div>
 
+              <!-- Google Map Location Link -->
+              <div>
+                <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#0f9d58]"></span>
+                  <span>Google Map Location</span>
+                </span>
+                @if (getMapLink()) {
+                  <a
+                    [href]="getFormattedMapUrl(getMapLink())"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    (click)="$event.stopPropagation()"
+                    class="inline-flex items-center gap-2 text-xs font-semibold text-[#0f9d58] hover:text-[#0b8043] bg-[#e6f4ea] hover:bg-[#d8eedf] border border-[#0f9d58]/30 px-3 py-2 rounded-lg transition-colors break-all w-full group shadow-2xs"
+                    title="Open location in Google Maps"
+                  >
+                    <svg class="w-4 h-4 text-[#0f9d58] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span class="truncate flex-1 font-medium">{{ getMapLink() }}</span>
+                    <svg class="w-3.5 h-3.5 text-[#0f9d58]/70 shrink-0 ml-auto group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                } @else {
+                  <span class="text-xs text-gray-400 italic font-medium">Not provided</span>
+                }
+              </div>
+
               <div>
                 <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">District</span>
                 <span class="font-medium text-gray-800 break-words">{{ booking.area ? (booking.area + ', ') : '' }}{{ booking.districtName }}</span>
@@ -153,11 +182,11 @@ import { AuthService } from '../../../../../core/auth.service';
                 </span>
               </div>
 
-              @if (booking.notes) {
+              @if (getCleanNotes()) {
                 <div>
-                  <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Customer Notes</span>
+                  <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Installation Description</span>
                   <p class="text-xs text-gray-700 bg-amber-50/60 border border-amber-200/80 p-2.5 rounded-lg leading-relaxed break-words max-h-28 overflow-y-auto">
-                    {{ booking.notes }}
+                    {{ getCleanNotes() }}
                   </p>
                 </div>
               }
@@ -872,6 +901,40 @@ export class BookingDetailedComponent implements OnInit, OnDestroy {
     } catch {
       return dateStr;
     }
+  }
+
+  getMapLink(): string {
+    if (!this.booking) return '';
+    const b = this.booking as any;
+    const direct = (b.mapLink || b.map_link || b.locationUrl || b.location_url || '').trim();
+    if (direct) return direct;
+    if (b.notes) {
+      const match = String(b.notes).match(/(?:(?:Google )?Maps? Link:\s*)?(https?:\/\/[^\s\n]+)/i);
+      if (match) return match[1].trim();
+    }
+    return '';
+  }
+
+  getFormattedMapUrl(link: string): string {
+    if (!link) return '';
+    const trimmed = link.trim();
+    if (/^https?:\/\//i.test(trimmed)) {
+      return trimmed;
+    }
+    if (/^(maps\.app\.goo\.gl|goo\.gl\/maps|(www\.)?google\.[a-z.]+\/maps)/i.test(trimmed)) {
+      return `https://${trimmed}`;
+    }
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trimmed)}`;
+  }
+
+  getCleanNotes(): string {
+    if (!this.booking?.notes) return '';
+    const notes = String(this.booking.notes);
+    const match = notes.match(/(?:(?:Google )?Maps? Link:\s*)?(https?:\/\/[^\s\n]+)/i);
+    if (match) {
+      return notes.replace(match[0], '').replace(/\n\s*\n/g, '\n').trim();
+    }
+    return notes;
   }
 }
 

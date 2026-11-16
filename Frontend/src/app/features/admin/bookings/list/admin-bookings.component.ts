@@ -553,26 +553,13 @@ import { environment } from '../../../../../environments/environment';
                     </span>
                     <span class="text-[10px] font-normal normal-case text-gray-400">Optional</span>
                   </label>
-                  <div class="relative">
+                  <div>
                     <input
                       type="url"
                       [(ngModel)]="editMapLink"
                       placeholder="Paste Google Maps link (e.g. https://maps.app.goo.gl/...)"
-                      class="w-full px-3 py-2 pr-20 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
+                      class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
                     />
-                    @if (editMapLink.trim()) {
-                      <a
-                        [href]="editMapLink.trim()"
-                        target="_blank"
-                        rel="noopener"
-                        class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[#0f9d58] hover:text-[#0b8043] font-bold flex items-center gap-1 bg-[#0f9d58]/10 px-2 py-0.5 rounded"
-                      >
-                        <span>Open</span>
-                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </a>
-                    }
                   </div>
                 </div>
               </div>
@@ -816,26 +803,14 @@ import { environment } from '../../../../../environments/environment';
                   </span>
                   <span class="text-[11px] font-normal normal-case text-gray-400">Optional</span>
                 </label>
-                <div class="relative">
+                <div>
                   <input
                     type="url"
+                    name="newMapLink"
                     [(ngModel)]="newMapLink"
                     placeholder="https://maps.app.goo.gl/... or https://maps.google.com/?q=..."
-                    class="w-full px-3 py-2 pr-20 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
                   />
-                  @if (newMapLink.trim()) {
-                    <a
-                      [href]="newMapLink.trim()"
-                      target="_blank"
-                      rel="noopener"
-                      class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[#0f9d58] hover:text-[#0b8043] font-bold flex items-center gap-1 bg-[#0f9d58]/10 px-2 py-0.5 rounded"
-                    >
-                      <span>Open</span>
-                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </a>
-                  }
                 </div>
               </div>
 
@@ -1571,7 +1546,7 @@ export class AdminBookingsComponent implements OnInit {
     this.editAddress = b.address || '';
     const parsed = this.extractMapLink(b.notes);
     this.editNotes = parsed.cleanNotes;
-    this.editMapLink = (b as any).mapLink || (b as any).map_link || parsed.mapLink || '';
+    this.editMapLink = (b as any).mapLink || (b as any).map_link || (b as any).locationUrl || (b as any).location_url || parsed.mapLink || '';
     this.editDocuments.set([...this.getBookingDocuments(b)]);
     this.isEditingSelected.set(true);
   }
@@ -1695,6 +1670,9 @@ export class AdminBookingsComponent implements OnInit {
       address: this.editAddress.trim(),
       notes: this.editNotes.trim() || null,
       mapLink: this.editMapLink.trim() || null,
+      map_link: this.editMapLink.trim() || null,
+      locationUrl: this.editMapLink.trim() || null,
+      location_url: this.editMapLink.trim() || null,
       documents: updatedDocs
     };
 
@@ -2067,6 +2045,9 @@ export class AdminBookingsComponent implements OnInit {
       address: this.newAddress,
       notes: this.newNotes.trim() || null,
       mapLink: this.newMapLink.trim() || null,
+      map_link: this.newMapLink.trim() || null,
+      locationUrl: this.newMapLink.trim() || null,
+      location_url: this.newMapLink.trim() || null,
       status: this.newStatus || 'Pending',
       districtId,
       districtName: this.newDistrict,
@@ -2097,6 +2078,10 @@ export class AdminBookingsComponent implements OnInit {
         const fullBooking: Booking = {
           ...payload,
           id: created?.id || `BK-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+          mapLink: created?.mapLink || created?.map_link || payload.mapLink,
+          map_link: created?.map_link || created?.mapLink || payload.map_link,
+          locationUrl: created?.locationUrl || payload.locationUrl,
+          location_url: created?.location_url || payload.location_url,
           status: (this.newStatus as any) || 'Pending',
           createdAt: created?.createdAt || new Date().toISOString(),
           updatedAt: created?.updatedAt || new Date().toISOString(),
@@ -2118,6 +2103,7 @@ export class AdminBookingsComponent implements OnInit {
         this.isSubmitting = false;
         this.newEnquiryModalOpen.set(false);
         this.toastService.success('Enquiry and booking created successfully!');
+        this.fetchBookingsFromApi();
       },
       error: () => {
         const localBooking: Booking = {
@@ -2134,6 +2120,10 @@ export class AdminBookingsComponent implements OnInit {
           areaName: this.newArea || 'Edapally',
           address: this.newAddress,
           notes: this.newNotes,
+          mapLink: this.newMapLink.trim() || null,
+          map_link: this.newMapLink.trim() || null,
+          locationUrl: this.newMapLink.trim() || null,
+          location_url: this.newMapLink.trim() || null,
           pincode: '682024',
           documents: docs,
           doorDetails: {
@@ -2157,6 +2147,7 @@ export class AdminBookingsComponent implements OnInit {
         this.isSubmitting = false;
         this.newEnquiryModalOpen.set(false);
         this.toastService.success('Enquiry saved successfully!');
+        this.fetchBookingsFromApi();
       }
     });
   }

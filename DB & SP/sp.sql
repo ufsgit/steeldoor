@@ -100,6 +100,37 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_areas_by_district`(
+    IN p_district_id INT,
+    IN p_search VARCHAR(100)
+)
+BEGIN
+    SELECT 
+        a.id,
+        a.district_id,
+        a.name,
+        a.pincode,
+        a.is_deleted,
+        a.created_at,
+        d.name AS district_name,
+        d.state_id,
+        s.name AS state_name
+    FROM areas a
+    JOIN districts d ON a.district_id = d.id
+    JOIN states s ON d.state_id = s.id
+    WHERE a.district_id = p_district_id
+      AND a.is_deleted = 0
+      AND (
+          p_search IS NULL 
+          OR TRIM(p_search) = '' 
+          OR a.name LIKE CONCAT('%', TRIM(p_search), '%')     -- Area name search
+          OR a.pincode LIKE CONCAT('%', TRIM(p_search), '%')  -- Pincode search
+      )
+    ORDER BY a.name ASC;
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_area_hierarchy`(
     IN p_district_id INT
 )
@@ -152,37 +183,6 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `get_areas_by_district`(
-    IN p_district_id INT,
-    IN p_search VARCHAR(100)
-)
-BEGIN
-    SELECT 
-        a.id,
-        a.district_id,
-        a.name,
-        a.pincode,
-        a.is_deleted,
-        a.created_at,
-        d.name AS district_name,
-        d.state_id,
-        s.name AS state_name
-    FROM areas a
-    JOIN districts d ON a.district_id = d.id
-    JOIN states s ON d.state_id = s.id
-    WHERE a.district_id = p_district_id
-      AND a.is_deleted = 0
-      AND (
-          p_search IS NULL 
-          OR TRIM(p_search) = '' 
-          OR a.name LIKE CONCAT('%', TRIM(p_search), '%')     -- Area name search
-          OR a.pincode LIKE CONCAT('%', TRIM(p_search), '%')  -- Pincode search
-      )
-    ORDER BY a.name ASC;
-END$$
-DELIMITER ;
-
-DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_available_branch_districts`(
     IN p_user_id INT -- Pass NULL (or 0) for Add/New User, or the user's ID when Editing
 )
@@ -203,150 +203,6 @@ BEGIN
           AND (p_user_id IS NULL OR p_user_id = 0 OR u.id != p_user_id)
     )
     ORDER BY d.name ASC;
-END$$
-DELIMITER ;
-
-DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `get_booking_history`(
-    IN p_search VARCHAR(150),
-    IN p_action_filter VARCHAR(100),
-    IN p_from_date DATE,
-    IN p_to_date DATE,
-    IN p_page INT,
-    IN p_limit INT,
-	IN p_user_id INT,
-    IN p_role_id INT
-)
-BEGIN
-    DECLARE v_offset INT DEFAULT 0;
-    DECLARE v_from_date DATE;
-    DECLARE v_to_date DATE;
-
-    -- Handle pagination defaults
-    IF p_page IS NULL OR p_page < 1 THEN
-        SET p_page = 1;
-    END IF;
-    
-    IF p_limit IS NULL OR p_limit < 1 THEN
-        SET p_limit = 20;
-    END IF;
-
-    SET v_offset = (p_page - 1) * p_limit;
-
-    -- Date logic: if from/to are not passed, default to TODAY
-    IF p_from_date IS NULL AND p_to_date IS NULL THEN
-        SET v_from_date = CURDATE();
-        SET v_to_date = CURDATE();
-    ELSE
-        SET v_from_date = COALESCE(p_from_date, p_to_date);
-        SET v_to_date = COALESCE(p_to_date, p_from_date);
-    END IF;
-
-    -- Main query with search, filter, date range & pagination
-    SELECT 
-        bh.*
-    FROM `booking_history` bh
-    WHERE 
-        -- Date range filter
-        DATE(bh.created_at) BETWEEN v_from_date AND v_to_date
-
-        -- Booking name prefix search
-        AND (
-            p_search IS NULL 
-            OR TRIM(p_search) = '' 
-            OR bh.booking_name LIKE CONCAT(TRIM(p_search), '%')
-        )
-
-        -- Action type category filter
-        AND (
-            p_action_filter IS NULL 
-            OR TRIM(p_action_filter) = '' 
-            OR p_action_filter = 'ALL'
-            OR (p_action_filter = 'Customer Name Updated' AND bh.action_type LIKE 'Customer Name Updated%')
-            OR (p_action_filter = 'Scheduled Date Changed' AND bh.action_type LIKE 'Scheduled Date Changed%')
-            OR bh.action_type = p_action_filter
-        )
-                -- Role-based restriction: role 1 & 2 see all, role 3 sees only their own actions, other roles/null see nothing
-        AND (
-            (p_role_id IN (1, 2))
-            OR (p_role_id = 3 AND bh.action_by_id = p_user_id)
-        )
-    ORDER BY bh.created_at DESC, bh.history_id DESC
-    LIMIT p_limit OFFSET v_offset;
-
-END$$
-DELIMITER ;
-
-DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `get_booking_reports`(
-    IN p_role_id                   INT,          -- 1 (Company), 2 (Coordinator), 3 (Branch Head)
-    IN p_login_id                  INT,          -- Login User ID
-    IN p_assigned_head_district_id INT,          -- Branch Head Assigned District ID
-    IN p_date_from                 DATE,         -- Optional Custom Start Date
-    IN p_date_to                   DATE          -- Optional Custom End Date
-)
-BEGIN
-    DECLARE v_from DATE;
-    DECLARE v_to DATE;
-    DECLARE v_diff INT;
-    DECLARE v_granularity VARCHAR(10);
-
-    -- 1. Default date range if not provided (default: last 7 days)
-    SET v_to = COALESCE(p_date_to, CURDATE());
-    SET v_from = COALESCE(p_date_from, DATE_SUB(v_to, INTERVAL 6 DAY));
-    SET v_diff = DATEDIFF(v_to, v_from);
-
-    -- 2. Determine granularity based on difference
-    IF v_diff <= 7 THEN
-        SET v_granularity = 'DAY';
-    ELSEIF v_diff <= 30 THEN
-        SET v_granularity = 'WEEK';
-    ELSEIF v_diff <= 365 THEN
-        SET v_granularity = 'MONTH';
-    ELSE
-        SET v_granularity = 'YEAR';
-    END IF;
-
-    -- 3. Return grouped multi-status metrics using new_status_id
-    SELECT 
-        CASE 
-            WHEN v_granularity = 'DAY'   THEN DATE_FORMAT(bh.created_at, '%a')                    -- 'Mon', 'Tue'
-            WHEN v_granularity = 'WEEK'  THEN CONCAT('Week ', WEEK(bh.created_at, 1))             -- 'Week 42'
-            WHEN v_granularity = 'MONTH' THEN DATE_FORMAT(bh.created_at, '%b %Y')                 -- 'Oct 2026'
-            ELSE DATE_FORMAT(bh.created_at, '%Y')                                                 -- '2026'
-        END AS period_label,
-
-        CASE 
-            WHEN v_granularity = 'DAY'   THEN DATE(bh.created_at)
-            WHEN v_granularity = 'WEEK'  THEN STR_TO_DATE(CONCAT(YEARWEEK(bh.created_at, 1), ' Monday'), '%X%V %W')
-            WHEN v_granularity = 'MONTH' THEN DATE_FORMAT(bh.created_at, '%Y-%m-01')
-            ELSE DATE_FORMAT(bh.created_at, '%Y-01-01')
-        END AS period_date,
-
-        -- Status Counts strictly by new_status_id
-        COUNT(CASE WHEN bh.new_status_id = 1 THEN 1 END) AS new_count,
-        COUNT(CASE WHEN bh.new_status_id = 2 THEN 1 END) AS scheduled_count,
-        COUNT(CASE WHEN bh.new_status_id = 3 THEN 1 END) AS completed_count,
-        COUNT(CASE WHEN bh.new_status_id = 4 THEN 1 END) AS cancelled_count,
-        (
-			COUNT(CASE WHEN bh.new_status_id = 1 THEN 1 END) +
-			COUNT(CASE WHEN bh.new_status_id = 2 THEN 1 END) +
-			COUNT(CASE WHEN bh.new_status_id = 3 THEN 1 END) +
-			COUNT(CASE WHEN bh.new_status_id = 4 THEN 1 END)
-		) AS total_activities
-
-    FROM booking_history bh
-    LEFT JOIN bookings b ON b.id = bh.booking_id
-    WHERE DATE(bh.created_at) BETWEEN v_from AND v_to
-		AND bh.action_type IN ('Status Updated', 'New Booking Created')
-      -- Scoping strictly for Roles 1, 2, and 3
-      AND (
-          p_role_id IN (1, 2)                                                              -- Role 1 & 2: Full access
-          OR (p_role_id = 3 AND (b.assigned_head_district_id = p_assigned_head_district_id OR b.district_id = p_assigned_head_district_id)) -- Role 3: Branch Head by assigned district
-      )
-    GROUP BY period_label, period_date
-    ORDER BY period_date ASC;
-
 END$$
 DELIMITER ;
 
@@ -523,6 +379,150 @@ BEGIN
           OR status_is_followup = p_is_followup
       )
       ;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_booking_history`(
+    IN p_search VARCHAR(150),
+    IN p_action_filter VARCHAR(100),
+    IN p_from_date DATE,
+    IN p_to_date DATE,
+    IN p_page INT,
+    IN p_limit INT,
+	IN p_user_id INT,
+    IN p_role_id INT
+)
+BEGIN
+    DECLARE v_offset INT DEFAULT 0;
+    DECLARE v_from_date DATE;
+    DECLARE v_to_date DATE;
+
+    -- Handle pagination defaults
+    IF p_page IS NULL OR p_page < 1 THEN
+        SET p_page = 1;
+    END IF;
+    
+    IF p_limit IS NULL OR p_limit < 1 THEN
+        SET p_limit = 20;
+    END IF;
+
+    SET v_offset = (p_page - 1) * p_limit;
+
+    -- Date logic: if from/to are not passed, default to TODAY
+    IF p_from_date IS NULL AND p_to_date IS NULL THEN
+        SET v_from_date = CURDATE();
+        SET v_to_date = CURDATE();
+    ELSE
+        SET v_from_date = COALESCE(p_from_date, p_to_date);
+        SET v_to_date = COALESCE(p_to_date, p_from_date);
+    END IF;
+
+    -- Main query with search, filter, date range & pagination
+    SELECT 
+        bh.*
+    FROM `booking_history` bh
+    WHERE 
+        -- Date range filter
+        DATE(bh.created_at) BETWEEN v_from_date AND v_to_date
+
+        -- Booking name prefix search
+        AND (
+            p_search IS NULL 
+            OR TRIM(p_search) = '' 
+            OR bh.booking_name LIKE CONCAT(TRIM(p_search), '%')
+        )
+
+        -- Action type category filter
+        AND (
+            p_action_filter IS NULL 
+            OR TRIM(p_action_filter) = '' 
+            OR p_action_filter = 'ALL'
+            OR (p_action_filter = 'Customer Name Updated' AND bh.action_type LIKE 'Customer Name Updated%')
+            OR (p_action_filter = 'Scheduled Date Changed' AND bh.action_type LIKE 'Scheduled Date Changed%')
+            OR bh.action_type = p_action_filter
+        )
+                -- Role-based restriction: role 1 & 2 see all, role 3 sees only their own actions, other roles/null see nothing
+        AND (
+            (p_role_id IN (1, 2))
+            OR (p_role_id = 3 AND bh.action_by_id = p_user_id)
+        )
+    ORDER BY bh.created_at DESC, bh.history_id DESC
+    LIMIT p_limit OFFSET v_offset;
+
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_booking_reports`(
+    IN p_role_id                   INT,          -- 1 (Company), 2 (Coordinator), 3 (Branch Head)
+    IN p_login_id                  INT,          -- Login User ID
+    IN p_assigned_head_district_id INT,          -- Branch Head Assigned District ID
+    IN p_date_from                 DATE,         -- Optional Custom Start Date
+    IN p_date_to                   DATE          -- Optional Custom End Date
+)
+BEGIN
+    DECLARE v_from DATE;
+    DECLARE v_to DATE;
+    DECLARE v_diff INT;
+    DECLARE v_granularity VARCHAR(10);
+
+    -- 1. Default date range if not provided (default: last 7 days)
+    SET v_to = COALESCE(p_date_to, CURDATE());
+    SET v_from = COALESCE(p_date_from, DATE_SUB(v_to, INTERVAL 6 DAY));
+    SET v_diff = DATEDIFF(v_to, v_from);
+
+    -- 2. Determine granularity based on difference
+    IF v_diff <= 7 THEN
+        SET v_granularity = 'DAY';
+    ELSEIF v_diff <= 30 THEN
+        SET v_granularity = 'WEEK';
+    ELSEIF v_diff <= 365 THEN
+        SET v_granularity = 'MONTH';
+    ELSE
+        SET v_granularity = 'YEAR';
+    END IF;
+
+    -- 3. Return grouped multi-status metrics using new_status_id
+    SELECT 
+        CASE 
+            WHEN v_granularity = 'DAY'   THEN DATE_FORMAT(bh.created_at, '%a')                    -- 'Mon', 'Tue'
+            WHEN v_granularity = 'WEEK'  THEN CONCAT('Week ', WEEK(bh.created_at, 1))             -- 'Week 42'
+            WHEN v_granularity = 'MONTH' THEN DATE_FORMAT(bh.created_at, '%b %Y')                 -- 'Oct 2026'
+            ELSE DATE_FORMAT(bh.created_at, '%Y')                                                 -- '2026'
+        END AS period_label,
+
+        CASE 
+            WHEN v_granularity = 'DAY'   THEN DATE(bh.created_at)
+            WHEN v_granularity = 'WEEK'  THEN STR_TO_DATE(CONCAT(YEARWEEK(bh.created_at, 1), ' Monday'), '%X%V %W')
+            WHEN v_granularity = 'MONTH' THEN DATE_FORMAT(bh.created_at, '%Y-%m-01')
+            ELSE DATE_FORMAT(bh.created_at, '%Y-01-01')
+        END AS period_date,
+
+        -- Status Counts strictly by new_status_id
+        COUNT(CASE WHEN bh.new_status_id = 1 THEN 1 END) AS new_count,
+        COUNT(CASE WHEN bh.new_status_id = 2 THEN 1 END) AS scheduled_count,
+        COUNT(CASE WHEN bh.new_status_id = 3 THEN 1 END) AS completed_count,
+        COUNT(CASE WHEN bh.new_status_id = 4 THEN 1 END) AS cancelled_count,
+        (
+			COUNT(CASE WHEN bh.new_status_id = 1 THEN 1 END) +
+			COUNT(CASE WHEN bh.new_status_id = 2 THEN 1 END) +
+			COUNT(CASE WHEN bh.new_status_id = 3 THEN 1 END) +
+			COUNT(CASE WHEN bh.new_status_id = 4 THEN 1 END)
+		) AS total_activities
+
+    FROM booking_history bh
+    LEFT JOIN bookings b ON b.id = bh.booking_id
+    WHERE DATE(bh.created_at) BETWEEN v_from AND v_to
+		AND bh.action_type IN ('Status Updated', 'New Booking Created')
+      -- Scoping strictly for Roles 1, 2, and 3
+      AND (
+          p_role_id IN (1, 2)                                                              -- Role 1 & 2: Full access
+          OR (p_role_id = 3 AND (b.assigned_head_district_id = p_assigned_head_district_id OR b.district_id = p_assigned_head_district_id)) -- Role 3: Branch Head by assigned district
+      )
+    GROUP BY period_label, period_date
+    ORDER BY period_date ASC;
+
 END$$
 DELIMITER ;
 
@@ -840,6 +840,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `save_booking`(
     IN p_mobile           VARCHAR(25),
     IN p_address          TEXT,
     IN p_notes            TEXT,
+    IN p_map_link         TEXT,
     IN p_login_role_id    INT,
     IN p_login_id         INT,
     IN p_login_name       VARCHAR(150),
@@ -917,15 +918,15 @@ BEGIN
         WHERE id = 1 LIMIT 1;
 
         INSERT INTO bookings (
-            name, mobile, address, notes,
-            status_id, status_code, status_label, status_color_code,
+            name, mobile, address, notes, map_link,
+            status_id, status_code, status_label, status_color_code, status_is_followup,
             login_role_id, login_id, login_name,
             state_id, state_name, district_id, district_name,
             area_id, area_name, assigned_head_district_id, assigned_head_district_name, branch_head_id, branch_head_name,
             documents
         ) VALUES (
-            p_name, p_mobile, p_address, p_notes,
-            v_status_id, v_status_code, v_status_label, v_status_color_code,
+            p_name, p_mobile, p_address, p_notes, p_map_link,
+            v_status_id, v_status_code, v_status_label, v_status_color_code, 1,
             p_login_role_id, p_login_id, p_login_name,
             p_state_id, v_state_name, p_district_id, v_district_name,
             p_area_id, v_area_name, p_district_id, v_district_name, v_branch_head_id, v_branch_head_name,
@@ -937,7 +938,7 @@ BEGIN
         INSERT INTO booking_history (
             booking_id, booking_name,action_type, 
             customer_note, staff_note,
-            new_status_id, new_status_code, new_status_label, new_status_color_code,
+            new_status_id, new_status_code, new_status_label, new_status_color_code, 
             to_branch_head_id, to_branch_head_name,
             to_assigned_head_district_id, to_assigned_head_district_name,
             action_by_id, action_by_name, action_by_role_id
@@ -967,7 +968,8 @@ BEGIN
             name             = COALESCE(p_name, name),
             mobile           = COALESCE(p_mobile, mobile),
             address          = COALESCE(p_address, address),
-            notes            = COALESCE(p_notes, notes),
+            notes            = COALESCE(p_notes, notes), 
+            map_link         = COALESCE(p_map_link, map_link),
             login_role_id    = COALESCE(p_login_role_id, login_role_id),
             login_id         = COALESCE(p_login_id, login_id),
             login_name       = COALESCE(p_login_name, login_name),
@@ -1025,7 +1027,7 @@ BEGIN
     -- RETURN THE SAVED / UPDATED RECORD
     -- =========================================================================
     SELECT 
-		id, name, mobile, address, notes,
+		id, name, mobile, address, notes, map_link,
         status_id, status_code, status_label, status_color_code, schedule_date,
         login_role_id, login_id, login_name,
         state_id, state_name, district_id, district_name,

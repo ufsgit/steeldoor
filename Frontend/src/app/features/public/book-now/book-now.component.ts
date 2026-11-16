@@ -264,27 +264,14 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
                   </span>
                   <span class="text-[11px] font-normal normal-case text-gray-400">Optional</span>
                 </label>
-                <div class="relative">
+                <div>
                   <input
                     type="url"
                     name="mapLink"
                     [(ngModel)]="mapLink"
                     placeholder="Paste Google Maps URL (e.g. https://maps.app.goo.gl/... or https://maps.google.com/?q=...)"
-                    class="w-full text-xs px-3.5 py-2.5 pr-24 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+                    class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
                   />
-                  @if (mapLink.trim()) {
-                    <a
-                      [href]="mapLink.trim()"
-                      target="_blank"
-                      rel="noopener"
-                      class="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-[#0f9d58] hover:text-[#0b8043] font-bold flex items-center gap-1 bg-[#0f9d58]/10 hover:bg-[#0f9d58]/20 px-2 py-1 rounded-lg transition-colors"
-                    >
-                      <span>Open Map</span>
-                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </a>
-                  }
                 </div>
               </div>
             </div>
