@@ -131,6 +131,18 @@ import { SITE_CONFIG } from '../core/site-config';
                 History
               </a>
             }
+
+            <!-- Brochure Docs Link: Only visible for Company Admin (role_id === 1) -->
+            @if (canAccessBrochures()) {
+              <a
+                routerLink="/admin/brochures"
+                routerLinkActive="admin-active"
+                (click)="closeAllDropdowns()"
+                class="admin-nav-link cursor-pointer"
+              >
+                Brochure Docs
+              </a>
+            }
           </nav>
         </div>
 
@@ -229,6 +241,14 @@ export class AdminLayoutComponent {
 
   // Allow only role_id === 1 to access History
   canAccessHistory = computed(() => {
+    const user = this.auth.currentUser();
+    if (!user) return false;
+    const roleId = Number(user.roleId ?? user.dbRoleId ?? null);
+    return roleId === 1;
+  });
+
+  // Allow only role_id === 1 to access Brochure Docs
+  canAccessBrochures = computed(() => {
     const user = this.auth.currentUser();
     if (!user) return false;
     const roleId = Number(user.roleId ?? user.dbRoleId ?? null);

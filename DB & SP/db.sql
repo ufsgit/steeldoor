@@ -415,3 +415,29 @@ UNLOCK TABLES;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2026-11-13 18:00:06
+
+
+--
+-- Table structure for table `brochures`
+--
+
+DROP TABLE IF EXISTS `brochures`;
+CREATE TABLE `brochures` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `original_name` varchar(255) NOT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `file_size` bigint unsigned DEFAULT NULL,
+  `mime_type` varchar(100) DEFAULT 'application/pdf',
+  `uploaded_by` int DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_brochures_status` (`is_deleted`,`is_active`,`created_at` DESC),
+  KEY `idx_brochures_uploaded_by` (`uploaded_by`),
+  CONSTRAINT `fk_brochures_uploaded_by` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

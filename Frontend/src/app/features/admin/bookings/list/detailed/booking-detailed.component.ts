@@ -7,6 +7,7 @@ import { ToastService } from '../../../../../shared/toast/toast.service';
 import { Booking, StatusOption } from '../../../../../core/models';
 import { environment } from '../../../../../../environments/environment';
 import { AuthService } from '../../../../../core/auth.service';
+import { BrochuresService, Brochure } from '../../../../../core/services/brochures.service';
 
 @Component({
   selector: 'app-booking-detailed',
@@ -54,6 +55,72 @@ import { AuthService } from '../../../../../core/auth.service';
 
           <!-- Header Action Buttons -->
           <div class="flex items-center gap-2">
+            <!-- Share Dropdown Button -->
+            <div class="relative inline-block text-left" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                (click)="toggleShareDropdown()"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 hover:text-[#0f9d58] hover:border-[#0f9d58]/40 shadow-2xs transition-all cursor-pointer"
+                title="Share Options"
+              >
+                <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                <span>Share</span>
+                <svg class="w-3 h-3 text-gray-400 transition-transform duration-200" [class.rotate-180]="shareDropdownOpen()" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              @if (shareDropdownOpen()) {
+                <div
+                  class="fixed inset-0 z-40"
+                  (click)="shareDropdownOpen.set(false)"
+                ></div>
+
+                <div
+                  class="absolute right-0 mt-1.5 w-72 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-50 animate-fadeIn"
+                  (click)="$event.stopPropagation()"
+                >
+                  <!-- Option 1: Normal Share -->
+                  <button
+                    type="button"
+                    (click)="openNormalShareModal()"
+                    class="w-full px-3.5 py-2.5 text-left text-xs hover:bg-emerald-50/60 flex items-start gap-2.5 transition-colors cursor-pointer group"
+                  >
+                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-[#0f9d58] group-hover:bg-[#0f9d58] group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <span class="font-bold text-gray-900 group-hover:text-[#0f9d58] transition-colors block">Share Booking Details</span>
+                      <span class="text-[11px] text-gray-500 block leading-tight mt-0.5">Name, number, location, notes & attached documents</span>
+                    </div>
+                  </button>
+
+                  <div class="h-px bg-gray-100 my-1"></div>
+
+                  <!-- Option 2: Brochure Sharing -->
+                  <button
+                    type="button"
+                    (click)="openBrochureShareModal()"
+                    class="w-full px-3.5 py-2.5 text-left text-xs hover:bg-blue-50/60 flex items-start gap-2.5 transition-colors cursor-pointer group"
+                  >
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <span class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors block">Share Brochures / Catalogue</span>
+                      <span class="text-[11px] text-gray-500 block leading-tight mt-0.5">Select PDF brochures from checklist to send to enquiry</span>
+                    </div>
+                  </button>
+                </div>
+              }
+            </div>
+
             @if (onEdit.observed) {
               <button
                 type="button"
@@ -587,6 +654,376 @@ import { AuthService } from '../../../../../core/auth.service';
 
         </div>
       </div>
+
+      <!-- ================= MODAL 1: SHARE BOOKING DETAILS ================= -->
+      @if (showNormalShareModal()) {
+        <div
+          class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn"
+          (click)="showNormalShareModal.set(false)"
+        >
+          <div
+            class="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col max-h-[88vh] overflow-hidden animate-modalIn"
+            (click)="$event.stopPropagation()"
+          >
+            <!-- Modal Header -->
+            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 bg-gray-50/50">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-emerald-50 text-[#0f9d58] flex items-center justify-center shrink-0">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-gray-900">Share Booking Details</h3>
+                  <p class="text-[11px] text-gray-500">
+                    {{ booking.clientName || 'Customer' }} ({{ booking.contactPhone || booking.mobile || 'No Phone' }})
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                (click)="showNormalShareModal.set(false)"
+                class="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+                title="Close"
+              >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-5 overflow-y-auto space-y-4 flex-1">
+              <!-- Mode Selector Tabs -->
+              <div class="flex items-center justify-between gap-2 pb-1 border-b border-gray-100">
+                <div class="flex items-center gap-1 p-1 bg-gray-100 rounded-xl">
+                  <button
+                    type="button"
+                    (click)="normalShareMode.set('full')"
+                    class="px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+                    [ngClass]="normalShareMode() === 'full' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
+                  >
+                    Full Details
+                  </button>
+                  @if (documentsList().length > 0) {
+                    <button
+                      type="button"
+                      (click)="normalShareMode.set('docsOnly')"
+                      class="px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+                      [ngClass]="normalShareMode() === 'docsOnly' ? 'bg-white text-[#0f9d58] shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
+                    >
+                      Document Link(s) Only
+                    </button>
+                  }
+                </div>
+
+                <span class="text-[11px] text-gray-400 font-medium">
+                  {{ normalShareMode() === 'docsOnly' ? 'Sending direct file link' : 'Sending complete details' }}
+                </span>
+              </div>
+
+              <!-- Include Docs Checkbox (Only when Full Details mode is active) -->
+              @if (normalShareMode() === 'full' && documentsList().length > 0) {
+                <label class="flex items-center gap-2.5 text-xs font-semibold text-gray-700 select-none cursor-pointer p-3 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                  <input
+                    type="checkbox"
+                    [checked]="includeDocsInNormalShare()"
+                    (change)="includeDocsInNormalShare.set(!includeDocsInNormalShare())"
+                    class="rounded text-[#0f9d58] focus:ring-[#0f9d58] h-4 w-4 cursor-pointer"
+                  />
+                  <div class="flex-1">
+                    <span class="text-gray-900 font-bold block">Include Attached Documents & Media</span>
+                    <span class="text-[11px] text-gray-500 font-normal">Append links to {{ documentsList().length }} attached file{{ documentsList().length === 1 ? '' : 's' }}</span>
+                  </div>
+                </label>
+              }
+
+              <!-- Message Preview Box -->
+              <div>
+                <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Formatted Message Preview</span>
+                <div class="bg-gray-50 rounded-xl border border-gray-200 p-3.5 text-xs text-gray-800 font-mono whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto select-all">
+                  {{ getNormalShareText(includeDocsInNormalShare()) }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-5 py-3.5 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between gap-3 shrink-0">
+              <button
+                type="button"
+                (click)="showNormalShareModal.set(false)"
+                class="px-3.5 py-1.5 rounded-lg border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  (click)="copyText(getNormalShareText(includeDocsInNormalShare()), 'Booking details copied to clipboard!')"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <svg class="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span>Copy Text</span>
+                </button>
+
+                <button
+                  type="button"
+                  (click)="sendWhatsApp(getNormalShareText(includeDocsInNormalShare()), booking.contactPhone || booking.mobile)"
+                  class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                >
+                  <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                  </svg>
+                  <span>Share on WhatsApp</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ================= MODAL 2: SHARE BROCHURES (CHECKLIST) ================= -->
+      @if (showBrochureShareModal()) {
+        <div
+          class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn"
+          (click)="showBrochureShareModal.set(false)"
+        >
+          <div
+            class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col max-h-[90vh] overflow-hidden animate-modalIn"
+            (click)="$event.stopPropagation()"
+          >
+            <!-- Modal Header -->
+            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 bg-gray-50/50">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-gray-900">Share Brochures to Enquiry</h3>
+                  <p class="text-[11px] text-gray-500">
+                    Send selected catalogue documents to {{ booking.clientName || 'Customer' }} ({{ booking.contactPhone || booking.mobile || 'No Phone' }})
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                (click)="showBrochureShareModal.set(false)"
+                class="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+                title="Close"
+              >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-5 overflow-y-auto space-y-4 flex-1">
+              <!-- Mode Selector Tabs: Complete Message vs Direct Link(s) Only -->
+              <div class="flex items-center justify-between gap-2 pb-1 border-b border-gray-100">
+                <div class="flex items-center gap-1 p-1 bg-gray-100 rounded-xl">
+                  <button
+                    type="button"
+                    (click)="brochureShareMode.set('full')"
+                    class="px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+                    [ngClass]="brochureShareMode() === 'full' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
+                  >
+                    Complete Message
+                  </button>
+                  <button
+                    type="button"
+                    (click)="brochureShareMode.set('linksOnly')"
+                    class="px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+                    [ngClass]="brochureShareMode() === 'linksOnly' ? 'bg-white text-[#0f9d58] shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
+                  >
+                    Direct Link(s) Only
+                  </button>
+                </div>
+
+                <span class="text-[11px] text-gray-400 font-medium">
+                  {{ brochureShareMode() === 'linksOnly' ? 'Sending direct public link' : 'Sending message with links' }}
+                </span>
+              </div>
+
+              <!-- Search & Selection Control Toolbar -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
+                <div class="relative flex-1 sm:max-w-xs">
+                  <svg class="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    type="text"
+                    [ngModel]="brochureSearchQuery()"
+                    (ngModelChange)="brochureSearchQuery.set($event)"
+                    placeholder="Search brochures..."
+                    class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]/20 focus:border-[#0f9d58] transition-colors"
+                  />
+                </div>
+
+                <div class="flex items-center gap-2 self-end sm:self-auto">
+                  <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                    {{ selectedBrochureIds().size }} of {{ availableBrochures().length }} Selected
+                  </span>
+                  <button
+                    type="button"
+                    (click)="selectAllBrochures()"
+                    class="text-xs text-[#0f9d58] hover:text-[#0b8043] font-semibold hover:underline cursor-pointer"
+                  >
+                    Select All
+                  </button>
+                  <span class="text-gray-300">•</span>
+                  <button
+                    type="button"
+                    (click)="clearAllBrochures()"
+                    class="text-xs text-gray-500 hover:text-gray-700 font-medium hover:underline cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+
+              <!-- Brochure Checklist Items -->
+              @if (isLoadingBrochures()) {
+                <div class="py-10 text-center text-xs text-gray-400 flex flex-col items-center gap-2">
+                  <svg class="animate-spin w-5 h-5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                  </svg>
+                  <span>Loading available brochures...</span>
+                </div>
+              } @else if (filteredBrochures().length === 0) {
+                <div class="py-8 text-center text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200 p-4">
+                  @if (availableBrochures().length === 0) {
+                    <span>No brochure documents have been uploaded yet. Please add brochures under <strong>Brochure Docs</strong>.</span>
+                  } @else {
+                    <span>No brochures matched your search "{{ brochureSearchQuery() }}".</span>
+                  }
+                </div>
+              } @else {
+                <div class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  @for (b of filteredBrochures(); track b.id) {
+                    @let badge = getFileTypeBadge(b.file_name || b.original_name, b.mime_type || '');
+                    @let isChecked = selectedBrochureIds().has(b.id);
+                    <div
+                      (click)="toggleBrochureSelection(b.id)"
+                      class="flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer select-none"
+                      [ngClass]="isChecked 
+                        ? 'border-[#0f9d58]/60 bg-emerald-50/30 shadow-2xs' 
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/50 bg-white'"
+                    >
+                      <!-- Checkbox -->
+                      <input
+                        type="checkbox"
+                        [checked]="isChecked"
+                        (click)="$event.stopPropagation()"
+                        (change)="toggleBrochureSelection(b.id)"
+                        class="rounded text-[#0f9d58] focus:ring-[#0f9d58] h-4 w-4 cursor-pointer shrink-0"
+                      />
+
+                      <!-- Type Badge -->
+                      <div
+                        class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-[10px] shrink-0 border"
+                        [ngClass]="[badge.bg, badge.text, badge.border]"
+                      >
+                        {{ badge.label }}
+                      </div>
+
+                      <!-- Info -->
+                      <div class="flex-1 min-w-0">
+                        <p class="text-xs font-bold text-gray-900 truncate" [title]="b.title">{{ b.title }}</p>
+                        <p class="text-[11px] text-gray-500 truncate mt-0.5">
+                          {{ b.description || b.original_name }}
+                        </p>
+                      </div>
+
+                      <!-- Size & Date -->
+                      <div class="text-right shrink-0">
+                        <span class="text-[11px] font-medium text-gray-500 block">{{ formatFileSize(b.file_size) }}</span>
+                        <span class="text-[10px] text-gray-400 block">{{ b.created_at | date:'dd MMM yyyy' }}</span>
+                      </div>
+
+                      <!-- Copy Direct Link Button -->
+                      <button
+                        type="button"
+                        (click)="copySingleBrochureLink(b, $event)"
+                        class="p-1.5 rounded-lg border border-gray-200 hover:border-[#0f9d58] hover:text-[#0f9d58] hover:bg-emerald-50 text-gray-500 transition-colors cursor-pointer shrink-0 ml-1"
+                        [title]="'Copy direct public link: ' + b.title"
+                      >
+                        @if (copiedBrochureId() === b.id) {
+                          <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                          </svg>
+                        } @else {
+                          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                        }
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- Message Preview Box -->
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider">WhatsApp Message Preview</span>
+                  <span class="text-[11px] text-gray-400">
+                    {{ brochureShareMode() === 'linksOnly' ? 'Direct clickable link' : 'Message with clickable links' }}
+                  </span>
+                </div>
+                <div class="bg-gray-50 rounded-xl border border-gray-200 p-3.5 text-xs text-gray-800 font-mono whitespace-pre-wrap leading-relaxed max-h-44 overflow-y-auto select-all">
+                  {{ getBrochureShareText() }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-5 py-3.5 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between gap-3 shrink-0">
+              <button
+                type="button"
+                (click)="showBrochureShareModal.set(false)"
+                class="px-3.5 py-1.5 rounded-lg border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  (click)="copyText(getBrochureShareText(), 'Brochure links copied to clipboard!')"
+                  [disabled]="selectedBrochureIds().size === 0"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold text-gray-700 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <svg class="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span>Copy Message</span>
+                </button>
+
+                <button
+                  type="button"
+                  (click)="sendWhatsApp(getBrochureShareText(), booking.contactPhone || booking.mobile)"
+                  [disabled]="selectedBrochureIds().size === 0"
+                  class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#20ba5a] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                >
+                  <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                  </svg>
+                  <span>Share on WhatsApp</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `
 })
@@ -605,7 +1042,33 @@ export class BookingDetailedComponent implements OnInit, OnDestroy {
   private toastService = inject(ToastService);
   private platformId = inject(PLATFORM_ID);
   private auth = inject(AuthService);
+  private brochuresService = inject(BrochuresService);
   private previousBodyOverflow = '';
+
+  // Share Dropdown & Modals State
+  shareDropdownOpen = signal<boolean>(false);
+  showNormalShareModal = signal<boolean>(false);
+  showBrochureShareModal = signal<boolean>(false);
+  includeDocsInNormalShare = signal<boolean>(true);
+  normalShareMode = signal<'full' | 'docsOnly'>('full');
+  brochureShareMode = signal<'full' | 'linksOnly'>('full');
+  copiedBrochureId = signal<number | null>(null);
+
+  // Brochure Checklist State
+  availableBrochures = signal<Brochure[]>([]);
+  isLoadingBrochures = signal<boolean>(false);
+  selectedBrochureIds = signal<Set<number>>(new Set<number>());
+  brochureSearchQuery = signal<string>('');
+
+  filteredBrochures = computed(() => {
+    const query = this.brochureSearchQuery().toLowerCase().trim();
+    if (!query) return this.availableBrochures();
+    return this.availableBrochures().filter(b =>
+      (b.title && b.title.toLowerCase().includes(query)) ||
+      (b.description && b.description.toLowerCase().includes(query)) ||
+      (b.original_name && b.original_name.toLowerCase().includes(query))
+    );
+  });
 
   // Only allow role_id === 1 (Company Admin) to see and change status
   canUpdateStatus = computed(() => {
@@ -820,10 +1283,42 @@ export class BookingDetailedComponent implements OnInit, OnDestroy {
 
   getFullFileUrl(doc: string): string {
     if (!doc) return '';
-    if (doc.startsWith('http://') || doc.startsWith('https://')) return doc;
+    if (doc.startsWith('http://') || doc.startsWith('https://')) return encodeURI(doc);
     const cleanDoc = doc.startsWith('/') ? doc.slice(1) : doc;
     const baseApi = environment.apiUrl ? environment.apiUrl.replace(/\/api\/?$/, '') : '';
-    return `${baseApi}/${cleanDoc}`;
+    return encodeURI(`${baseApi}/${cleanDoc}`);
+  }
+
+  getPublicShareFileUrl(doc: string): string {
+    if (!doc) return '';
+    let cleanDoc = doc.startsWith('/') ? doc.slice(1) : doc;
+    cleanDoc = cleanDoc.replace(/^https?:\/\/[^\/]+\//, '');
+
+    let base = environment.fileUrl || 'http://localhost:5000';
+    if (!environment.production) {
+      if (typeof window !== 'undefined' && window.location?.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        const h = window.location.hostname;
+        const domainHost = /^\d+\.\d+\.\d+\.\d+$/.test(h) ? `${h}.sslip.io` : h;
+        base = `http://${domainHost}:5000`;
+      } else {
+        base = 'http://192.168.2.147.sslip.io:5000';
+      }
+    }
+
+    base = base.replace(/\/+$/, '');
+    return encodeURI(`${base}/${cleanDoc}`);
+  }
+
+  copySingleBrochureLink(b: Brochure, event: Event): void {
+    event.stopPropagation();
+    const url = this.brochuresService.getShareUrl(b);
+    this.copyText(url, `Copied link for "${b.title}"!`);
+    this.copiedBrochureId.set(b.id);
+    setTimeout(() => {
+      if (this.copiedBrochureId() === b.id) {
+        this.copiedBrochureId.set(null);
+      }
+    }, 2500);
   }
 
   downloadFile(doc: string, event: Event): void {
@@ -935,6 +1430,267 @@ export class BookingDetailedComponent implements OnInit, OnDestroy {
       return notes.replace(match[0], '').replace(/\n\s*\n/g, '\n').trim();
     }
     return notes;
+  }
+
+  // ================= SHARE FUNCTIONALITY =================
+
+  toggleShareDropdown(): void {
+    this.shareDropdownOpen.set(!this.shareDropdownOpen());
+  }
+
+  openNormalShareModal(): void {
+    this.shareDropdownOpen.set(false);
+    this.showNormalShareModal.set(true);
+  }
+
+  openBrochureShareModal(): void {
+    this.shareDropdownOpen.set(false);
+    this.showBrochureShareModal.set(true);
+    this.loadActiveBrochures();
+  }
+
+  loadActiveBrochures(): void {
+    this.isLoadingBrochures.set(true);
+    this.brochuresService.getBrochures('', 1, 100).subscribe({
+      next: (res) => {
+        const list = res.data || [];
+        this.availableBrochures.set(list);
+        if (list.length > 0 && this.selectedBrochureIds().size === 0) {
+          this.selectedBrochureIds.set(new Set(list.map(b => b.id)));
+        }
+        this.isLoadingBrochures.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to load brochures for sharing:', err);
+        this.isLoadingBrochures.set(false);
+      }
+    });
+  }
+
+  toggleBrochureSelection(id: number): void {
+    this.selectedBrochureIds.update(set => {
+      const next = new Set(set);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  selectAllBrochures(): void {
+    this.selectedBrochureIds.set(new Set(this.availableBrochures().map(b => b.id)));
+  }
+
+  clearAllBrochures(): void {
+    this.selectedBrochureIds.set(new Set());
+  }
+
+  getNormalShareText(includeDocs = true): string {
+    const b = this.booking;
+    if (!b) return '';
+    const clientName = b.clientName || b.name || 'Customer';
+    const docs = this.documentsList();
+
+    // Mode: Document Links Only
+    if (this.normalShareMode() === 'docsOnly') {
+      if (docs.length === 0) {
+        return `No attached documents for ${clientName}.`;
+      }
+      if (docs.length === 1) {
+        // Return purely the link itself
+        return this.getPublicShareFileUrl(docs[0]);
+      }
+      const lines: string[] = [
+        `📎 *Attached Documents for ${clientName}:*`,
+        ``
+      ];
+      docs.forEach((doc, idx) => {
+        const name = this.getDocumentName(doc);
+        const url = this.getPublicShareFileUrl(doc);
+        lines.push(`${idx + 1}. *${name}*`);
+        lines.push(url);
+        lines.push(``);
+      });
+      return lines.join('\n').trim();
+    }
+
+    // Mode: Full Details
+    const phone = b.contactPhone || b.mobile || 'Not provided';
+    const address = b.address || 'Not provided';
+    const mapLink = this.getMapLink();
+    const districtParts = [b.area, b.districtName].filter(Boolean);
+    const district = districtParts.join(', ') || 'Not specified';
+    const assignedHead = b.branchHeadName || 'Unassigned';
+    const scheduledDate = b.scheduledDate ? this.formatScheduledDate(b.scheduledDate) : 'Pending';
+    const status = b.status || 'New';
+    const notes = this.getCleanNotes();
+    const staffNotes = b.staffNotes || (b as any).staff_notes;
+
+    const lines: string[] = [
+      `📋 *BOOKING DETAILS*`,
+      `━━━━━━━━━━━━━━━━━━━━`,
+      `👤 *Client Name:* ${clientName}`,
+      `📞 *Contact Number:* ${phone}`,
+      `📍 *Full Address:* ${address}`
+    ];
+
+    if (mapLink) {
+      lines.push(`🗺️ *Google Maps:* ${this.getFormattedMapUrl(mapLink)}`);
+    }
+
+    lines.push(`🏙️ *District:* ${district}`);
+    lines.push(`👔 *Assigned Head:* ${assignedHead}`);
+    lines.push(`📅 *Scheduled Date:* ${scheduledDate}`);
+    lines.push(`⚡ *Current Status:* ${status}`);
+
+    if (notes) {
+      lines.push(`📝 *Customer Notes:* ${notes}`);
+    }
+
+    if (staffNotes) {
+      lines.push(`💬 *Staff Note:* ${staffNotes}`);
+    }
+
+    if (includeDocs) {
+      lines.push(``);
+      if (docs.length > 0) {
+        lines.push(`📎 *Attached Documents & Media (${docs.length}):*`);
+        docs.forEach((doc, idx) => {
+          const name = this.getDocumentName(doc);
+          const url = this.getPublicShareFileUrl(doc);
+          lines.push(`${idx + 1}. *${name}*`);
+          lines.push(url);
+          lines.push(``);
+        });
+      } else {
+        lines.push(`📎 *Attached Documents:* None`);
+      }
+    }
+
+    lines.push(`━━━━━━━━━━━━━━━━━━━━`);
+    lines.push(`Shared via FitMate`);
+
+    return lines.join('\n');
+  }
+
+  getBrochureShareText(): string {
+    const clientName = this.booking?.clientName || this.booking?.name || 'Customer';
+    const selected = this.availableBrochures().filter(b => this.selectedBrochureIds().has(b.id));
+
+    if (selected.length === 0) {
+      return `Hello ${clientName},\n\nThank you for reaching out to FitMate Steel Doors!`;
+    }
+
+    // Mode: Direct Links Only
+    if (this.brochureShareMode() === 'linksOnly') {
+      if (selected.length === 1) {
+        // Return directly the link itself
+        return this.brochuresService.getShareUrl(selected[0]);
+      }
+      const lines: string[] = [];
+      selected.forEach((b, index) => {
+        const url = this.brochuresService.getShareUrl(b);
+        lines.push(`${index + 1}. *${b.title}*`);
+        lines.push(url);
+        lines.push(``);
+      });
+      return lines.join('\n').trim();
+    }
+
+    // Mode: Complete Formatted Message
+    const lines: string[] = [
+      `Hello ${clientName},`,
+      ``,
+      `Thank you for your enquiry with *FitMate Steel Doors*! Here are the product catalogues and brochure documents you requested:`,
+      ``
+    ];
+
+    selected.forEach((b, index) => {
+      const url = this.brochuresService.getShareUrl(b);
+      lines.push(`${index + 1}. *${b.title}*`);
+      if (b.description) {
+        lines.push(`_${b.description}_`);
+      }
+      lines.push(url);
+      lines.push(``);
+    });
+
+    lines.push(`Please let us know if you have any questions or would like to schedule a site measurement.`);
+    lines.push(`Best regards,`);
+    lines.push(`*FitMate Team*`);
+
+    return lines.join('\n');
+  }
+
+  sendWhatsApp(text: string, phone?: string): void {
+    const cleanPhone = (phone || '').replace(/\D/g, '');
+    const encodedText = encodeURIComponent(text);
+
+    // Check if phone has at least 10 digits and is not all zeroes (placeholder)
+    const isValidPhone = cleanPhone.length >= 10 && !/^0+$/.test(cleanPhone);
+
+    let targetUrl = '';
+    if (isValidPhone) {
+      const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+      targetUrl = `https://wa.me/${formattedPhone}?text=${encodedText}`;
+    } else {
+      // Direct general WhatsApp share
+      targetUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
+    }
+
+    if (isPlatformBrowser(this.platformId)) {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    }
+  }
+
+  copyText(text: string, successMessage = 'Copied to clipboard!'): void {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        this.toastService.success(successMessage);
+      }).catch(() => {
+        this.fallbackCopy(text, successMessage);
+      });
+    } else {
+      this.fallbackCopy(text, successMessage);
+    }
+  }
+
+  private fallbackCopy(text: string, successMessage: string): void {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      this.toastService.success(successMessage);
+    } catch {
+      this.toastService.error('Could not copy automatically.');
+    }
+    document.body.removeChild(textarea);
+  }
+
+  getFileTypeBadge(filename = '', mimetype = ''): { label: string; bg: string; text: string; border: string } {
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    if (ext === 'pdf' || mimetype === 'application/pdf') {
+      return { label: 'PDF', bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200' };
+    }
+    if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(ext) || mimetype.startsWith('image/')) {
+      return { label: 'IMG', bg: 'bg-emerald-50', text: 'text-[#0f9d58]', border: 'border-emerald-200' };
+    }
+    if (['doc', 'docx'].includes(ext) || mimetype.includes('word') || mimetype.includes('officedocument')) {
+      return { label: 'DOC', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200' };
+    }
+    return { label: 'DOC', bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200' };
+  }
+
+  formatFileSize(bytes?: number): string {
+    if (!bytes || bytes === 0) return '0 KB';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
 }
 

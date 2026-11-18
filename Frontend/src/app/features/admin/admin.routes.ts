@@ -9,6 +9,7 @@ import { AdminClientsComponent } from './clients/clients.component';
 import { AdminAreasComponent } from './areas/areas.component';
 import { AdminUsersComponent } from './users/admin-users.component';
 import { AdminHistoryComponent } from './history/history.component';
+import { AdminBrochuresComponent } from './brochures/admin-brochures.component';
 import { authGuard } from '../../core/guards/auth.guard';
 import {
   bookingDetailResolver,
@@ -82,6 +83,10 @@ export const ADMIN_ROUTES: Routes = [
       {
         path: 'history',
         component: AdminHistoryComponent
+      },
+      {
+        path: 'brochures',
+        component: AdminBrochuresComponent
       }
     ]
   }

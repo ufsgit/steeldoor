@@ -2,8 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerDocument } from './config/swagger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Import module routes
 import authRoutes from './modules/auth/auth.routes.js';
@@ -17,6 +21,7 @@ import mobileDashboardRoutes from './modules/mobile-dashboard/mobile-dashboard.r
 import bookingHistoryRoutes from './modules/booking-history/booking-history.routes.js';
 import reportsRoutes from './modules/reports/reports.routes.js';
 import notificationsRoutes from './modules/notifications/notifications.routes.js';
+import brochuresRoutes from './modules/brochures/brochures.routes.js';
 
 dotenv.config();
 
@@ -65,6 +70,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // Static files serving (for uploaded documents and images)
+const uploadsDir = path.resolve(__dirname, '..', 'uploads');
+app.use('/uploads', express.static(uploadsDir));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use('/uploads', express.static(path.join(process.cwd(), 'Backend', 'uploads')));
 
@@ -83,6 +90,7 @@ app.use('/api/dashboard', mobileDashboardRoutes);
 app.use('/api/booking-history', bookingHistoryRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/brochures', brochuresRoutes);
 
 // ---------------- 404 Handler ----------------
 

@@ -35,7 +35,8 @@ export const swaggerDocument = {
     { name: 'Uploads', description: 'File & Document Uploads for Bookings' },
     { name: 'Mobile Dashboard', description: 'Fitmate Mobile App Dashboard Metrics & Statistics' },
     { name: 'Booking History', description: 'Fitmate Mobile Booking Activity & History Log' },
-    { name: 'Reports', description: 'Activity & Booking Reports with Dynamic Aggregation' }
+    { name: 'Reports', description: 'Activity & Booking Reports with Dynamic Aggregation' },
+    { name: 'Brochures', description: 'Brochure Documents Management & Customer Sharing' }
   ],
   components: {
     securitySchemes: {
