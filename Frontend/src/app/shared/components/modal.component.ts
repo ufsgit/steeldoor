@@ -16,11 +16,12 @@ import { CommonModule } from '@angular/common';
       <!-- Modal Dialog -->
       <div class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
         <div
-          class="relative w-full max-w-lg bg-surface rounded-2xl border border-border shadow-elevated transition-all overflow-hidden"
+          class="relative w-full max-w-lg bg-surface rounded-2xl border border-border shadow-elevated transition-all"
+          [ngClass]="overflowVisible ? 'overflow-visible' : 'overflow-hidden'"
           (click)="$event.stopPropagation()"
         >
           <!-- Header -->
-          <div class="flex items-center justify-between p-5 border-b border-border bg-surface-muted/30">
+          <div class="flex items-center justify-between p-5 border-b border-border bg-surface-muted/30 rounded-t-2xl">
             <h3 class="text-base font-bold text-text">{{ title }}</h3>
             <button
               type="button"
@@ -46,6 +47,7 @@ import { CommonModule } from '@angular/common';
 export class ModalComponent {
   @Input() isOpen = false;
   @Input() title = '';
+  @Input() overflowVisible = false;
   @Output() closeModal = new EventEmitter<void>();
 
   close(): void {

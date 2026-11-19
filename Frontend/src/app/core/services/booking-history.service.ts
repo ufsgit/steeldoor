@@ -55,9 +55,22 @@ export interface BookingHistoryByBookingIdResponse {
   };
 }
 
+export interface ActionTypeRecord {
+  id: number;
+  code: string;
+  name: string;
+  colorCode?: string;
+  sortOrder?: number;
+  isActive?: number;
+}
+
 export interface BookingHistoryFilterParams {
   search?: string;
   actionFilter?: string;
+  actionTypeId?: number;
+  statusFilter?: string;
+  statusId?: number;
+  newStatusId?: number;
   fromDate?: string;
   toDate?: string;
   page?: number;
@@ -71,11 +84,27 @@ export class BookingHistoryService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/booking-history`;
 
+  getActionTypes(): Observable<{ success: boolean; data: ActionTypeRecord[] }> {
+    return this.http.get<{ success: boolean; data: ActionTypeRecord[] }>(`${environment.apiUrl}/action-types`, {
+      withCredentials: true
+    });
+  }
+
   getBookingHistory(params: BookingHistoryFilterParams): Observable<BookingHistoryResponse> {
     let httpParams = new HttpParams();
 
     if (params.search && params.search.trim()) {
       httpParams = httpParams.set('search', params.search.trim());
+    }
+    if (params.actionTypeId != null && params.actionTypeId !== 0) {
+      httpParams = httpParams.set('actionTypeId', params.actionTypeId.toString());
+    }
+    if (params.statusFilter && params.statusFilter !== 'ALL') {
+      httpParams = httpParams.set('statusFilter', params.statusFilter);
+    }
+    const sId = params.statusId ?? params.newStatusId;
+    if (sId != null && sId !== 0) {
+      httpParams = httpParams.set('statusId', sId.toString());
     }
     if (params.actionFilter && params.actionFilter !== 'ALL') {
       httpParams = httpParams.set('actionFilter', params.actionFilter);

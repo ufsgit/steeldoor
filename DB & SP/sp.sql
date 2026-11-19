@@ -100,6 +100,22 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_action_types`()
+BEGIN
+    SELECT 
+        id,
+        code,
+        name,
+        color_code AS colorCode,
+        sort_order AS sortOrder,
+        is_active AS isActive
+    FROM `action_types`
+    WHERE is_active = 1
+    ORDER BY sort_order ASC, name ASC;
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_areas_by_district`(
     IN p_district_id INT,
     IN p_search VARCHAR(100)
@@ -385,7 +401,8 @@ DELIMITER ;
 DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_booking_history`(
     IN p_search VARCHAR(150),
-    IN p_action_filter VARCHAR(100),
+    IN p_action_type_id INT,       
+    IN p_new_status_id INT,
     IN p_from_date DATE,
     IN p_to_date DATE,
     IN p_page INT,
@@ -395,8 +412,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `get_booking_history`(
 )
 BEGIN
     DECLARE v_offset INT DEFAULT 0;
-    DECLARE v_from_date DATE;
-    DECLARE v_to_date DATE;
 
     -- Handle pagination defaults
     IF p_page IS NULL OR p_page < 1 THEN
@@ -409,22 +424,27 @@ BEGIN
 
     SET v_offset = (p_page - 1) * p_limit;
 
-    -- Date logic: if from/to are not passed, default to TODAY
-    IF p_from_date IS NULL AND p_to_date IS NULL THEN
-        SET v_from_date = CURDATE();
-        SET v_to_date = CURDATE();
-    ELSE
-        SET v_from_date = COALESCE(p_from_date, p_to_date);
-        SET v_to_date = COALESCE(p_to_date, p_from_date);
-    END IF;
-
     -- Main query with search, filter, date range & pagination
     SELECT 
         bh.*
     FROM `booking_history` bh
     WHERE 
-        -- Date range filter
-        DATE(bh.created_at) BETWEEN v_from_date AND v_to_date
+        -- Date range filter: if both from and to are NULL, include all dates (All Time)
+        (
+            (p_from_date IS NULL AND p_to_date IS NULL)
+            OR (
+                p_from_date IS NOT NULL AND p_to_date IS NOT NULL 
+                AND DATE(bh.created_at) BETWEEN p_from_date AND p_to_date
+            )
+            OR (
+                p_from_date IS NOT NULL AND p_to_date IS NULL 
+                AND DATE(bh.created_at) >= p_from_date
+            )
+            OR (
+                p_from_date IS NULL AND p_to_date IS NOT NULL 
+                AND DATE(bh.created_at) <= p_to_date
+            )
+        )
 
         -- Booking name prefix search
         AND (
@@ -433,16 +453,26 @@ BEGIN
             OR bh.booking_name LIKE CONCAT(TRIM(p_search), '%')
         )
 
-        -- Action type category filter
+        -- Action Type ID filter (0 or NULL = ALL)
         AND (
-            p_action_filter IS NULL 
-            OR TRIM(p_action_filter) = '' 
-            OR p_action_filter = 'ALL'
-            OR (p_action_filter = 'Customer Name Updated' AND bh.action_type LIKE 'Customer Name Updated%')
-            OR (p_action_filter = 'Scheduled Date Changed' AND bh.action_type LIKE 'Scheduled Date Changed%')
-            OR bh.action_type = p_action_filter
+            p_action_type_id IS NULL 
+            OR p_action_type_id = 0 
+            OR bh.action_type_id = p_action_type_id
         )
-                -- Role-based restriction: role 1 & 2 see all, role 3 sees only their own actions, other roles/null see nothing
+
+        -- Status ID filter: Checks by status ID only on new_status_id
+        -- 0 or NULL = ALL
+        -- 3 = Completed
+        -- -1 = Not Completed (new_status_id != 3 or NULL)
+        -- other = specific status ID
+        AND (
+            p_new_status_id IS NULL 
+            OR p_new_status_id = 0 
+            OR (p_new_status_id = -1 AND (bh.new_status_id IS NULL OR bh.new_status_id != 3))
+            OR bh.new_status_id = p_new_status_id
+        )
+
+        -- Role-based restriction: role 1 & 2 see all, role 3 sees only their own actions, other roles/null see nothing
         AND (
             (p_role_id IN (1, 2))
             OR (p_role_id = 3 AND bh.action_by_id = p_user_id)
@@ -1041,6 +1071,29 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `soft_delete_action_type`(
+    IN p_id INT
+)
+BEGIN
+    DECLARE v_affected_rows INT DEFAULT 0;
+
+    UPDATE action_types
+    SET is_deleted = 1,
+        is_active = 0,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = p_id AND is_deleted = 0;
+
+    SET v_affected_rows = ROW_COUNT();
+
+    IF v_affected_rows > 0 THEN
+        SELECT 200 AS status, 'Action type deleted successfully.' AS message;
+    ELSE
+        SELECT 404 AS status, 'Action type not found or already deleted.' AS message;
+    END IF;
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `soft_delete_area`(
     IN p_area_id INT
 )
@@ -1057,6 +1110,144 @@ BEGIN
         SELECT 200 AS status, 'Area deleted successfully.' AS message;
     ELSE
         SELECT 404 AS status, 'Area not found or already deleted.' AS message;
+    END IF;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_add_action_type_id_column`()
+BEGIN
+    -- Check if column already exists
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_schema = DATABASE() 
+          AND table_name = 'booking_history' 
+          AND column_name = 'action_type_id'
+    ) THEN
+        -- Add column after booking_name
+        ALTER TABLE `booking_history`
+        ADD COLUMN `action_type_id` INT DEFAULT NULL AFTER `booking_name`,
+        ADD KEY `idx_bh_action_type_id` (`action_type_id`),
+        ADD CONSTRAINT `fk_bh_action_type` 
+            FOREIGN KEY (`action_type_id`) 
+            REFERENCES `action_types` (`id`) 
+            ON DELETE SET NULL 
+            ON UPDATE CASCADE;
+
+        -- Populate action_type_id for existing rows
+        UPDATE `booking_history` bh
+        JOIN `action_types` at ON (
+            bh.action_type = at.name 
+            OR (at.code = 'CUSTOMER_NAME_UPDATED' AND bh.action_type LIKE 'Customer Name Updated%')
+            OR (at.code = 'SCHEDULED_DATE_CHANGED' AND bh.action_type LIKE 'Scheduled Date Changed%')
+        )
+        SET bh.action_type_id = at.id;
+
+        SELECT 200 AS status, 'Column action_type_id added and existing records updated successfully.' AS message;
+    ELSE
+        SELECT 200 AS status, 'Column action_type_id already exists in booking_history.' AS message;
+    END IF;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_assign_user_area`(
+    IN p_user_id INT,
+    IN p_area_id INT
+)
+BEGIN
+    DECLARE v_user_name VARCHAR(150);
+    DECLARE v_district_id INT;
+    DECLARE v_district_name VARCHAR(100);
+    DECLARE v_area_name VARCHAR(100);
+    DECLARE v_area_pincode VARCHAR(10);
+    DECLARE v_existing_user_id INT DEFAULT NULL;
+    DECLARE v_existing_user_name VARCHAR(150) DEFAULT NULL;
+    DECLARE v_new_id INT DEFAULT NULL;
+
+    -- Step 1: Input Validation
+    IF p_user_id IS NULL OR p_area_id IS NULL THEN
+        SELECT 400 AS status, 'user_id and area_id are required.' AS message, NULL AS id;
+    ELSE
+        -- Step 2: Fetch and verify User
+        SELECT name INTO v_user_name
+        FROM users
+        WHERE id = p_user_id AND is_deleted = 0
+        LIMIT 1;
+
+        IF v_user_name IS NULL THEN
+            SELECT 404 AS status, 'User not found or is inactive.' AS message, NULL AS id;
+        ELSE
+            -- Step 3: Fetch and verify Area from your areas table + District info
+            SELECT a.name, a.pincode, a.district_id, d.name
+            INTO v_area_name, v_area_pincode, v_district_id, v_district_name
+            FROM areas a
+            INNER JOIN districts d ON d.id = a.district_id
+            WHERE a.id = p_area_id AND a.is_deleted = 0
+            LIMIT 1;
+
+            IF v_area_name IS NULL THEN
+                SELECT 404 AS status, 'Area not found or has been deleted.' AS message, NULL AS id;
+            ELSE
+                -- Step 4: Strict Uniqueness Check on area_id
+                SELECT user_id, user_name
+                INTO v_existing_user_id, v_existing_user_name
+                FROM area_assigned
+                WHERE area_id = p_area_id
+                LIMIT 1;
+
+                IF v_existing_user_id IS NOT NULL THEN
+                    IF v_existing_user_id = p_user_id THEN
+                        SELECT 409 AS status, 
+                               'This area is already assigned to this user.' AS message, 
+                               NULL AS id;
+                    ELSE
+                        -- Blocks assigning an area already owned by someone else
+                        SELECT 409 AS status, 
+                               CONCAT('Area is already assigned to user: ', v_existing_user_name, ' (User ID: ', v_existing_user_id, '). Area ID must be unique.') AS message, 
+                               NULL AS id;
+                    END IF;
+                ELSE
+                    -- Step 5: Insert new assignment
+                    INSERT INTO area_assigned (
+                        user_id,
+                        user_name,
+                        district_id,
+                        district_name,
+                        area_id,
+                        area_name,
+                        area_pincode
+                    ) VALUES (
+                        p_user_id,
+                        v_user_name,
+                        v_district_id,
+                        v_district_name,
+                        p_area_id,
+                        v_area_name,
+                        v_area_pincode
+                    );
+
+                    SET v_new_id = LAST_INSERT_ID();
+
+                    SELECT 201 AS status, 'Area successfully assigned to user.' AS message, v_new_id AS id;
+
+                    -- Return inserted assignment row
+                    SELECT 
+                        id,
+                        user_id,
+                        user_name,
+                        district_id,
+                        district_name,
+                        area_id,
+                        area_name,
+                        area_pincode,
+                        created_at
+                    FROM area_assigned
+                    WHERE id = v_new_id;
+                END IF;
+            END IF;
+        END IF;
     END IF;
 END$$
 DELIMITER ;

@@ -44,32 +44,66 @@ export class UsersService {
     );
     const total = Number(countResult?.[0]?.total || 0);
 
-    // Paginated users query
-    const [rows] = await pool.query(
-      `SELECT 
-        u.id,
-        u.username,
-        u.role_id AS roleId,
-        u.role,
-        u.user_type_id AS userTypeId,
-        u.user_type AS userType,
-        u.name,
-        u.email,
-        u.phone,
-        u.state_id AS stateId,
-        u.state_name AS stateName,
-        u.district_id AS districtId,
-        u.district_name AS districtName,
-        u.address,
-        u.is_active AS isActive,
-        u.is_deleted AS isDeleted,
-        u.created_at AS createdAt
-      FROM users u
-      ${whereClause}
-      ORDER BY u.id ASC
-      LIMIT ? OFFSET ?`,
-      [...params, limitNum, offset]
-    );
+    // Paginated users query (with area_assigned if available)
+    let rows = [];
+    try {
+      const [r] = await pool.query(
+        `SELECT 
+          u.id,
+          u.username,
+          u.role_id AS roleId,
+          u.role,
+          u.user_type_id AS userTypeId,
+          u.user_type AS userType,
+          u.name,
+          u.email,
+          u.phone,
+          u.state_id AS stateId,
+          u.state_name AS stateName,
+          u.district_id AS districtId,
+          u.district_name AS districtName,
+          aa.area_id AS areaId,
+          aa.area_name AS areaName,
+          u.address,
+          u.is_active AS isActive,
+          u.is_deleted AS isDeleted,
+          u.created_at AS createdAt
+        FROM users u
+        LEFT JOIN area_assigned aa ON aa.user_id = u.id
+        ${whereClause}
+        ORDER BY u.id ASC
+        LIMIT ? OFFSET ?`,
+        [...params, limitNum, offset]
+      );
+      rows = r;
+    } catch {
+      const [r] = await pool.query(
+        `SELECT 
+          u.id,
+          u.username,
+          u.role_id AS roleId,
+          u.role,
+          u.user_type_id AS userTypeId,
+          u.user_type AS userType,
+          u.name,
+          u.email,
+          u.phone,
+          u.state_id AS stateId,
+          u.state_name AS stateName,
+          u.district_id AS districtId,
+          u.district_name AS districtName,
+          u.address,
+          u.is_active AS isActive,
+          u.is_deleted AS isDeleted,
+          u.created_at AS createdAt
+        FROM users u
+        ${whereClause}
+        ORDER BY u.id ASC
+        LIMIT ? OFFSET ?`,
+        [...params, limitNum, offset]
+      );
+      rows = r;
+    }
 
     // Role counts across all non-deleted users
     const [roleCountRows] = await pool.query(
@@ -125,7 +159,9 @@ export class UsersService {
       email,
       phone,
       districtId,
-      address
+      address,
+      areaId,
+      areaName
     } = data;
 
     if (!username || !password || !name) {
@@ -168,8 +204,24 @@ export class UsersService {
       }
     }
 
-    // If role is branch_head, ensure no other active (non-deleted) branch head is already assigned to this district
-    if ((mapped.roleId === 3 || mapped.role === 'branch_head') && resolvedDistrictId) {
+    // If areaId is provided, ensure no other active user is assigned to this area
+    if (areaId) {
+      try {
+        const [dupArea] = await pool.query(
+          `SELECT aa.user_name, u.name 
+           FROM area_assigned aa
+           LEFT JOIN users u ON u.id = aa.user_id
+           WHERE aa.area_id = ? AND aa.user_id != ? AND (u.is_deleted = 0 OR u.is_deleted IS NULL)
+           LIMIT 1`,
+          [Number(areaId), existing && existing.length > 0 ? existing[0].id : 0]
+        );
+        if (dupArea && dupArea.length > 0) {
+          throw new Error(`Area is already assigned to another Branch Head (${dupArea[0].name || dupArea[0].user_name}).`);
+        }
+      } catch (err) {
+        if (err.message && err.message.includes('Area is already assigned')) throw err;
+      }
+    } else if ((mapped.roleId === 3 || mapped.role === 'branch_head') && resolvedDistrictId) {
       const [duplicateBranchHeads] = await pool.query(
         `SELECT id, name FROM users 
          WHERE (role_id = 3 OR role = 'branch_head') 
@@ -259,30 +311,84 @@ export class UsersService {
       targetUserId = result.insertId;
     }
 
-    const [createdRows] = await pool.query(
-      `SELECT 
-        u.id,
-        u.username,
-        u.role_id AS roleId,
-        u.role,
-        u.user_type_id AS userTypeId,
-        u.user_type AS userType,
-        u.name,
-        u.email,
-        u.phone,
-        u.state_id AS stateId,
-        u.state_name AS stateName,
-        u.district_id AS districtId,
-        u.district_name AS districtName,
-        u.address,
-        u.is_active AS isActive,
-        u.created_at AS createdAt
-      FROM users u
-      WHERE u.id = ?`,
-      [targetUserId]
-    );
+    // Save into area_assigned if areaId is specified
+    if (areaId && targetUserId && resolvedDistrictId) {
+      try {
+        const [areaRows] = await pool.query('SELECT name, pincode FROM areas WHERE id = ?', [Number(areaId)]);
+        const finalAreaName = areaRows?.[0]?.name || areaName || null;
+        const finalPincode = areaRows?.[0]?.pincode || null;
+        await pool.query(
+          `INSERT INTO area_assigned (user_id, user_name, district_id, district_name, area_id, area_name, area_pincode)
+           VALUES (?, ?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE 
+             user_name = VALUES(user_name),
+             district_id = VALUES(district_id),
+             district_name = VALUES(district_name),
+             area_id = VALUES(area_id),
+             area_name = VALUES(area_name),
+             area_pincode = VALUES(area_pincode)`,
+          [targetUserId, name.trim(), resolvedDistrictId, resolvedDistrictName, Number(areaId), finalAreaName, finalPincode]
+        );
+      } catch (e) {
+        console.warn('[UsersService] area_assigned insert warning:', e.message);
+      }
+    }
 
-    return createdRows[0];
+    let createdUser;
+    try {
+      const [rows] = await pool.query(
+        `SELECT 
+          u.id,
+          u.username,
+          u.role_id AS roleId,
+          u.role,
+          u.user_type_id AS userTypeId,
+          u.user_type AS userType,
+          u.name,
+          u.email,
+          u.phone,
+          u.state_id AS stateId,
+          u.state_name AS stateName,
+          u.district_id AS districtId,
+          u.district_name AS districtName,
+          aa.area_id AS areaId,
+          aa.area_name AS areaName,
+          u.address,
+          u.is_active AS isActive,
+          u.created_at AS createdAt
+        FROM users u
+        LEFT JOIN area_assigned aa ON aa.user_id = u.id
+        WHERE u.id = ?`,
+        [targetUserId]
+      );
+      createdUser = rows[0];
+    } catch {
+      const [rows] = await pool.query(
+        `SELECT 
+          u.id,
+          u.username,
+          u.role_id AS roleId,
+          u.role,
+          u.user_type_id AS userTypeId,
+          u.user_type AS userType,
+          u.name,
+          u.email,
+          u.phone,
+          u.state_id AS stateId,
+          u.state_name AS stateName,
+          u.district_id AS districtId,
+          u.district_name AS districtName,
+          u.address,
+          u.is_active AS isActive,
+          u.created_at AS createdAt
+        FROM users u
+        WHERE u.id = ?`,
+        [targetUserId]
+      );
+      createdUser = rows[0];
+    }
+
+    return createdUser;
   }
 
   /**
@@ -297,7 +403,9 @@ export class UsersService {
       address,
       role,
       userType,
-      password
+      password,
+      areaId,
+      areaName
     } = data;
 
     let resolvedDistrictName = null;
@@ -318,7 +426,23 @@ export class UsersService {
         }
       }
 
-      if (isBranchHead) {
+      if (areaId) {
+        try {
+          const [dupArea] = await pool.query(
+            `SELECT aa.user_name, u.name 
+             FROM area_assigned aa
+             LEFT JOIN users u ON u.id = aa.user_id
+             WHERE aa.area_id = ? AND aa.user_id != ? AND (u.is_deleted = 0 OR u.is_deleted IS NULL)
+             LIMIT 1`,
+            [Number(areaId), id]
+          );
+          if (dupArea && dupArea.length > 0) {
+            throw new Error(`Area is already assigned to another Branch Head (${dupArea[0].name || dupArea[0].user_name}).`);
+          }
+        } catch (err) {
+          if (err.message && err.message.includes('Area is already assigned')) throw err;
+        }
+      } else if (isBranchHead) {
         const [duplicateBranchHeads] = await pool.query(
           `SELECT id, name FROM users 
            WHERE (role_id = 3 OR role = 'branch_head') 
@@ -386,30 +510,93 @@ export class UsersService {
       await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
     }
 
-    const [rows] = await pool.query(
-      `SELECT 
-        u.id,
-        u.username,
-        u.role_id AS roleId,
-        u.role,
-        u.user_type_id AS userTypeId,
-        u.user_type AS userType,
-        u.name,
-        u.email,
-        u.phone,
-        u.state_id AS stateId,
-        u.state_name AS stateName,
-        u.district_id AS districtId,
-        u.district_name AS districtName,
-        u.address,
-        u.is_active AS isActive,
-        u.created_at AS createdAt
-      FROM users u
-      WHERE u.id = ?`,
-      [id]
-    );
+    // Save/update area_assigned if areaId is specified
+    if (areaId !== undefined) {
+      try {
+        if (areaId) {
+          const [uRows] = await pool.query('SELECT name, district_id, district_name FROM users WHERE id = ?', [id]);
+          const uData = uRows?.[0] || {};
+          const uDistId = resolvedDistrictId || uData.district_id;
+          const uDistName = resolvedDistrictName || uData.district_name;
+          const [areaRows] = await pool.query('SELECT name, pincode FROM areas WHERE id = ?', [Number(areaId)]);
+          const finalAreaName = areaRows?.[0]?.name || areaName || null;
+          const finalPincode = areaRows?.[0]?.pincode || null;
 
-    return rows[0];
+          await pool.query(
+            `INSERT INTO area_assigned (user_id, user_name, district_id, district_name, area_id, area_name, area_pincode)
+             VALUES (?, ?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE 
+               user_name = VALUES(user_name),
+               district_id = VALUES(district_id),
+               district_name = VALUES(district_name),
+               area_id = VALUES(area_id),
+               area_name = VALUES(area_name),
+               area_pincode = VALUES(area_pincode)`,
+            [id, (name ? name.trim() : uData.name), uDistId, uDistName, Number(areaId), finalAreaName, finalPincode]
+          );
+        } else {
+          await pool.query('DELETE FROM area_assigned WHERE user_id = ?', [id]);
+        }
+      } catch (e) {
+        console.warn('[UsersService] area_assigned update warning:', e.message);
+      }
+    }
+
+    let updatedUser;
+    try {
+      const [rows] = await pool.query(
+        `SELECT 
+          u.id,
+          u.username,
+          u.role_id AS roleId,
+          u.role,
+          u.user_type_id AS userTypeId,
+          u.user_type AS userType,
+          u.name,
+          u.email,
+          u.phone,
+          u.state_id AS stateId,
+          u.state_name AS stateName,
+          u.district_id AS districtId,
+          u.district_name AS districtName,
+          aa.area_id AS areaId,
+          aa.area_name AS areaName,
+          u.address,
+          u.is_active AS isActive,
+          u.created_at AS createdAt
+        FROM users u
+        LEFT JOIN area_assigned aa ON aa.user_id = u.id
+        WHERE u.id = ?`,
+        [id]
+      );
+      updatedUser = rows[0];
+    } catch {
+      const [rows] = await pool.query(
+        `SELECT 
+          u.id,
+          u.username,
+          u.role_id AS roleId,
+          u.role,
+          u.user_type_id AS userTypeId,
+          u.user_type AS userType,
+          u.name,
+          u.email,
+          u.phone,
+          u.state_id AS stateId,
+          u.state_name AS stateName,
+          u.district_id AS districtId,
+          u.district_name AS districtName,
+          u.address,
+          u.is_active AS isActive,
+          u.created_at AS createdAt
+        FROM users u
+        WHERE u.id = ?`,
+        [id]
+      );
+      updatedUser = rows[0];
+    }
+
+    return updatedUser;
   }
 
   /**

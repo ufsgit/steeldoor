@@ -146,17 +146,20 @@ export class DataService {
     if (stateId) params = params.set('stateId', String(stateId));
     if (search && search.trim()) params = params.set('search', search.trim());
 
-    return this.http.get<{ data: District[] }>(this.url('/api/dropdowns/districts'), { params }).pipe(
-      map(res => res?.data || []),
+    return this.http.get<any>(this.url('/api/dropdowns/districts'), { params }).pipe(
+      map(res => {
+        if (Array.isArray(res)) return res;
+        return res?.data || [];
+      }),
       catchError(() => of([]))
     );
   }
 
-  getDropdownAreas(districtId: number | string, search?: string): Observable<AreaItem[]> {
+  getDropdownAreas(districtId: number | string, search?: string, limit: number = 100): Observable<AreaItem[]> {
     if (isPlatformServer(this.platformId)) {
       return of([]);
     }
-    let params = new HttpParams().set('districtId', String(districtId));
+    let params = new HttpParams().set('districtId', String(districtId)).set('limit', String(limit));
     if (search && search.trim()) params = params.set('search', search.trim());
 
     return this.http.get<{ data: AreaItem[] }>(this.url('/api/dropdowns/areas'), { params }).pipe(
@@ -456,8 +459,11 @@ export class DataService {
     if (isPlatformServer(this.platformId)) {
       return of([]);
     }
-    return this.http.get<{ success: boolean; count: number; data: StatusOption[] }>(this.url('/api/status')).pipe(
-      map(res => res?.data || []),
+    return this.http.get<any>(this.url('/api/status')).pipe(
+      map(res => {
+        if (Array.isArray(res)) return res;
+        return res?.data || [];
+      }),
       catchError(() => of([]))
     );
   }

@@ -263,11 +263,13 @@ export class DropdownComponent implements ControlValueAccessor {
   @Input() suffix = '';
   @Input() prefix = '';
   @Input() size: 'sm' | 'md' | 'lg' = 'md';
+  @Input() direction: 'auto' | 'down' | 'up' = 'auto';
   @Input() customClass = '';
   @Input() panelClass = '';
   @Input() emptyMessage = 'No results found';
 
   @Output() selectionChange = new EventEmitter<any>();
+  @Output() valueChange = new EventEmitter<any>();
   @Output() opened = new EventEmitter<void>();
   @Output() closed = new EventEmitter<void>();
   @Output() searchChange = new EventEmitter<string>();
@@ -279,7 +281,7 @@ export class DropdownComponent implements ControlValueAccessor {
   openUpward = false;
   searchQuery = '';
   highlightedIndex = -1;
-  value: any = null;
+  @Input() value: any = null;
 
   // ControlValueAccessor callbacks
   onChange: (value: any) => void = () => {};
@@ -433,13 +435,19 @@ export class DropdownComponent implements ControlValueAccessor {
   open(): void {
     if (this.disabled || this.isOpen) return;
 
-    // Determine if popup should open upward based on screen clearance
-    const winHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
-    const rect = this.elementRef.nativeElement?.getBoundingClientRect
-      ? this.elementRef.nativeElement.getBoundingClientRect()
-      : { top: 0, bottom: 0 };
-    const spaceBelow = winHeight - rect.bottom;
-    this.openUpward = spaceBelow < 260 && rect.top > 260;
+    if (this.direction === 'down') {
+      this.openUpward = false;
+    } else if (this.direction === 'up') {
+      this.openUpward = true;
+    } else {
+      // Determine if popup should open upward based on screen clearance
+      const winHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+      const rect = this.elementRef.nativeElement?.getBoundingClientRect
+        ? this.elementRef.nativeElement.getBoundingClientRect()
+        : { top: 0, bottom: 0 };
+      const spaceBelow = winHeight - rect.bottom;
+      this.openUpward = spaceBelow < 260 && rect.top > 260;
+    }
 
     this.isOpen = true;
     this.searchQuery = '';
@@ -470,6 +478,7 @@ export class DropdownComponent implements ControlValueAccessor {
     this.value = item.value;
     this.onChange(item.value);
     this.onTouched();
+    this.valueChange.emit(item.value);
     this.selectionChange.emit(item.value);
     this.close();
   }
@@ -480,6 +489,7 @@ export class DropdownComponent implements ControlValueAccessor {
     this.value = '';
     this.onChange('');
     this.onTouched();
+    this.valueChange.emit('');
     this.selectionChange.emit('');
     this.cdr.markForCheck();
   }

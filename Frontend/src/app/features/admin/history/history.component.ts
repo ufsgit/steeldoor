@@ -3,7 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Title } from '@angular/platform-browser';
-import { BookingHistoryService, BookingHistoryRecord } from '../../../core/services/booking-history.service';
+import { BookingHistoryService, BookingHistoryRecord, ActionTypeRecord } from '../../../core/services/booking-history.service';
+import { DataService } from '../../../core/data.service';
+import { StatusOption } from '../../../core/models';
 import { DropdownComponent, DropdownOption, BookingHistoryModalComponent } from '../../../shared/components';
 
 type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
@@ -64,8 +66,8 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
       </div>
 
       <!-- Action & Filter Toolbar -->
-      <div class="w-full flex items-center justify-between gap-3 px-7 sm:px-10 py-3.5 border-b border-gray-100 bg-white flex-wrap">
-        <div class="flex items-center gap-3 flex-wrap flex-1">
+      <div class="relative z-30 w-full flex items-center justify-between gap-3 px-7 sm:px-10 py-3.5 border-b border-gray-100 bg-white flex-wrap">
+        <div class="flex items-center gap-3 flex-wrap flex-1 relative z-30">
           <!-- Search Input -->
           <div class="w-full sm:w-[320px] relative shrink-0">
             <span class="absolute left-3 top-2.5 text-gray-400">
@@ -82,15 +84,28 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
             />
           </div>
 
-          <!-- Activity Action Category Dropdown -->
-          <div class="w-[230px] shrink-0">
+          <!-- Activity Action Category Dropdown (loaded dynamically from action_types table) -->
+          <div class="w-[230px] shrink-0 relative z-30">
             <app-dropdown
-              [options]="activityFilterOptions"
-              [(ngModel)]="actionFilter"
-              (ngModelChange)="applyFilters()"
+              [options]="activityFilterOptions()"
+              [ngModel]="selectedActivityValue()"
+              (ngModelChange)="onActivityChange($event)"
               placeholder="Filter by Activity"
             ></app-dropdown>
           </div>
+
+          <!-- Status Dropdown (Displayed when Activity filter is 'Status Updated' (id=2), with 'All', 'New', 'Scheduled', 'Completed', 'Cancelled') -->
+          @if (isStatusUpdateSelected()) {
+            <div class="w-[180px] shrink-0 relative z-40">
+              <app-dropdown
+                [options]="statusFilterOptions()"
+                [ngModel]="selectedStatusId()"
+                (ngModelChange)="onStatusChange($event)"
+                [searchable]="false"
+                placeholder="Filter Status"
+              ></app-dropdown>
+            </div>
+          }
 
           <!-- Custom Date Range Pickers (shown when custom is selected) -->
           @if (datePreset() === 'custom') {
@@ -416,6 +431,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
 })
 export class AdminHistoryComponent implements OnInit {
   private historyService = inject(BookingHistoryService);
+  private dataService = inject(DataService);
   private title = inject(Title);
 
   historyList = signal<BookingHistoryRecord[]>([]);
@@ -430,27 +446,114 @@ export class AdminHistoryComponent implements OnInit {
   fromDate: string = '';
   toDate: string = '';
   searchTerm: string = '';
-  actionFilter: string = 'ALL';
+
+  // Dynamic Activity Action Types from action_types table
+  actionTypesList = signal<ActionTypeRecord[]>([]);
+  activityFilterOptions = signal<DropdownOption[]>([
+    { label: 'All Activities', value: 0 },
+    { label: 'New Booking Created', value: 1 },
+    { label: 'Status Updated', value: 2 },
+    { label: 'Transfered', value: 3 },
+    { label: 'Scheduled Date Changed', value: 4 },
+    { label: 'Customer Name Updated', value: 5 },
+    { label: 'Customer Notes Updated', value: 6 }
+  ]);
+  selectedActivityValue = signal<number>(0);
+
+  // Status Filter Options for Status Updated activity (All, New, Scheduled, Completed, Cancelled)
+  statusFilterOptions = signal<DropdownOption[]>([
+    { label: 'All', value: 0 },
+    { label: 'New', value: 1 },
+    { label: 'Scheduled', value: 2 },
+    { label: 'Completed', value: 3 },
+    { label: 'Cancelled', value: 4 }
+  ]);
+  selectedStatusId = signal<number>(0);
 
   page = signal<number>(1);
   limit = signal<number>(20);
 
-  // Styled options matching app-dropdown
-  readonly activityFilterOptions: DropdownOption[] = [
-    { label: 'All Activities', value: 'ALL' },
-    { label: 'New Booking Created', value: 'New Booking Created' },
-    { label: 'Customer Notes Updated', value: 'Customer Notes Updated' },
-    { label: 'Status Updated', value: 'Status Updated' },
-    { label: 'Transfered', value: 'Transfered' },
-    { label: 'Customer Name Updated', value: 'Customer Name Updated' },
-    { label: 'Scheduled Date Changed', value: 'Scheduled Date Changed' }
-  ];
+  // Checks whether selected activity is 'Status Updated' (id 2 or code/name)
+  isStatusUpdateSelected = computed(() => {
+    const val = Number(this.selectedActivityValue());
+    if (val === 2) return true;
+    if (!val || val === 0) return false;
+    const match = this.actionTypesList().find(t => Number(t.id) === val);
+    if (!match) return false;
+    const code = (match.code || '').toUpperCase();
+    const name = (match.name || '').toLowerCase();
+    return code === 'STATUS_UPDATED' || name === 'status updated' || name.includes('status');
+  });
 
   private searchDebounceTimer: any;
 
   ngOnInit(): void {
     this.title.setTitle('Booking Activity History | SteelGuard');
+    this.loadActionTypes();
+    this.loadStatusOptions();
     this.setDatePreset('today');
+  }
+
+  loadActionTypes(): void {
+    this.historyService.getActionTypes().subscribe({
+      next: (res) => {
+        const types = res?.data || [];
+        this.actionTypesList.set(types);
+        const options: DropdownOption[] = [
+          { label: 'All Activities', value: 0 },
+          ...types.map(t => ({
+            label: t.name,
+            value: Number(t.id)
+          }))
+        ];
+        this.activityFilterOptions.set(options);
+      },
+      error: (err) => {
+        console.error('Failed to load dynamic action types:', err);
+      }
+    });
+  }
+
+  loadStatusOptions(): void {
+    this.dataService.getStatusOptions().subscribe({
+      next: (statuses: any) => {
+        const list: StatusOption[] = Array.isArray(statuses)
+          ? statuses
+          : (Array.isArray(statuses?.data) ? statuses.data : []);
+        if (list && list.length > 0) {
+          const options: DropdownOption[] = [
+            { label: 'All', value: 0 },
+            ...list.map(s => ({
+              label: s.label || s.code,
+              value: Number(s.id)
+            }))
+          ];
+          this.statusFilterOptions.set(options);
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load status options from /api/status:', err);
+      }
+    });
+  }
+
+  onActivityChange(val: any): void {
+    const num = Number(val) || 0;
+    this.selectedActivityValue.set(num);
+    if (this.isStatusUpdateSelected()) {
+      // Whenever Status Updated is clicked/selected, call http://localhost:5000/api/status
+      this.selectedStatusId.set(0);
+      this.loadStatusOptions();
+    } else {
+      this.selectedStatusId.set(0);
+    }
+    this.applyFilters();
+  }
+
+  onStatusChange(val: any): void {
+    const num = Number(val) || 0;
+    this.selectedStatusId.set(num);
+    this.applyFilters();
   }
 
   setDatePreset(preset: DatePreset) {
@@ -499,16 +602,41 @@ export class AdminHistoryComponent implements OnInit {
   loadHistory() {
     this.loading.set(true);
 
+    let actId = Number(this.selectedActivityValue()) || 0;
+    const isStatus = this.isStatusUpdateSelected();
+    const stId = isStatus ? (Number(this.selectedStatusId()) || 0) : 0;
+
+    let statusIdParam = 0;
+    if (isStatus) {
+      if (stId > 0) {
+        actId = 2; // Status Updated
+        statusIdParam = stId; // 1: New, 2: Scheduled, 3: Completed, 4: Cancelled
+      } else {
+        // When 'All' (stId === 0) is selected in Status Updated dropdown:
+        // As requested: "in the status update all dropdown show all datas as same as in the all activities page"
+        actId = 0;
+        statusIdParam = 0;
+      }
+    }
+
     this.historyService.getBookingHistory({
       search: this.searchTerm,
-      actionFilter: this.actionFilter,
+      actionTypeId: actId,
+      statusId: statusIdParam,
       fromDate: this.fromDate,
       toDate: this.toDate,
       page: this.page(),
       limit: this.limit()
     }).subscribe({
       next: (res) => {
-        this.historyList.set(res?.data?.history || []);
+        let history = res?.data?.history || [];
+
+        // If a specific status id is selected (1: New, 2: Scheduled, 3: Completed, 4: Cancelled), filter by new_status_id
+        if (isStatus && stId > 0) {
+          history = history.filter(item => Number(item.new_status_id) === stId);
+        }
+
+        this.historyList.set(history);
         this.loading.set(false);
       },
       error: (err) => {
@@ -610,4 +738,4 @@ export class AdminHistoryComponent implements OnInit {
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
-}
+}

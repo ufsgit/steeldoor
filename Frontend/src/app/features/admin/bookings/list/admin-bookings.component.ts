@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -629,14 +629,16 @@ import { environment } from '../../../../../environments/environment';
                         }
                         <span class="truncate font-medium text-gray-800" [title]="doc">{{ getDocumentName(doc) }}</span>
                       </div>
-                      <button
-                        type="button"
-                        (click)="removeDocumentFromEdit($index)"
-                        class="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-red-600 hover:text-white hover:bg-red-600 border border-red-200 hover:border-red-600 rounded transition-colors cursor-pointer shrink-0"
-                        title="Delete this document"
-                      >
-                        Delete
-                      </button>
+                      @if (canDelete()) {
+                        <button
+                          type="button"
+                          (click)="removeDocumentFromEdit($index)"
+                          class="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-red-600 hover:text-white hover:bg-red-600 border border-red-200 hover:border-red-600 rounded transition-colors cursor-pointer shrink-0"
+                          title="Delete this document"
+                        >
+                          Delete
+                        </button>
+                      }
                     </div>
                   } @empty {
                     <div class="p-6 text-center rounded-xl border border-dashed border-gray-200 text-gray-400 text-xs">
@@ -1100,6 +1102,8 @@ export class AdminBookingsComponent implements OnInit {
   authService = inject(AuthService);
   toastService = inject(ToastService);
 
+  @ViewChild(BookingDetailedComponent) bookingDetailedDrawer?: BookingDetailedComponent;
+
   bookings = signal<Booking[]>([]);
   districts = signal<District[]>([]);
   branchHeads: BranchHead[] = [];
@@ -1111,6 +1115,14 @@ export class AdminBookingsComponent implements OnInit {
     const roleId = Number(u?.roleId ?? u?.dbRoleId);
     const r = (u?.role || '').toLowerCase();
     return roleId === 1 || r === 'company' || r === 'admin';
+  });
+
+  // Only role_id === 1 (Company Admin) has permission to delete bookings and attached documents
+  canDelete = computed(() => {
+    const u = this.authService.currentUser();
+    if (!u) return false;
+    const roleId = Number(u.roleId ?? u.dbRoleId ?? (u as any).role_id ?? null);
+    return roleId === 1;
   });
 
   isBranchHead = computed(() => {
@@ -1556,6 +1568,10 @@ export class AdminBookingsComponent implements OnInit {
   }
 
   removeDocumentFromEdit(index: number): void {
+    if (!this.canDelete()) {
+      this.toastService.error('Only Company Admin (Role 1) has permission to delete documents.');
+      return;
+    }
     this.editDocuments.update(docs => docs.filter((_, i) => i !== index));
   }
 
@@ -1691,6 +1707,11 @@ export class AdminBookingsComponent implements OnInit {
           list.map(item => item.id === b.id ? { ...item, ...updated } : item)
         );
         this.selectedBooking.set(updated);
+
+        // Reload history & documents in the detailed drawer
+        this.bookingDetailedDrawer?.fetchInitialHistory();
+        this.bookingDetailedDrawer?.fetchDocuments();
+
         this.toastService.success(`Booking #${b.id} updated successfully!`);
       },
       error: (err) => {
@@ -1859,6 +1880,9 @@ export class AdminBookingsComponent implements OnInit {
           list.map(item => item.id === b.id ? { ...item, ...updatedBooking } : item)
         );
         this.selectedBooking.set(updatedBooking);
+
+        // Immediately reload history API for this booking so the new status update record appears right away
+        this.bookingDetailedDrawer?.fetchInitialHistory();
 
         this.toastService.success(res?.message || `Status changed to ${newStatus} successfully!`);
       },

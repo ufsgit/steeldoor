@@ -1,12 +1,13 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { DataService } from '../../../core/data.service';
 import { ToastService } from '../../../shared/toast/toast.service';
-import { District } from '../../../core/models';
+import { District, AreaItem } from '../../../core/models';
 import { ModalComponent } from '../../../shared/components/modal.component';
+import { DropdownComponent, DropdownOption } from '../../../shared/components/dropdown.component';
 
 export interface SystemUser {
   id: number | string;
@@ -22,6 +23,8 @@ export interface SystemUser {
   stateName?: string;
   districtId?: number | string | null;
   districtName?: string | null;
+  areaId?: number | string | null;
+  areaName?: string | null;
   address?: string;
   isActive: boolean | number;
   isDeleted?: boolean | number;
@@ -31,7 +34,7 @@ export interface SystemUser {
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalComponent],
+  imports: [CommonModule, FormsModule, ModalComponent, DropdownComponent],
   template: `
     <div class="bg-white rounded-2xl border border-gray-200 shadow-xs p-4 sm:p-6 space-y-4 animate-fadeIn">
       <!-- Header -->
@@ -166,9 +169,19 @@ export interface SystemUser {
 
                 <td class="py-3.5 px-4 whitespace-nowrap">
                   @if (user.districtName) {
-                    <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                      {{ user.districtName }}
-                    </span>
+                    <div class="flex flex-col gap-0.5">
+                      <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 w-fit">
+                        {{ user.districtName }}
+                      </span>
+                      @if (user.areaName) {
+                        <span class="text-[10px] text-gray-500 font-medium flex items-center gap-1">
+                          <svg class="w-2.5 h-2.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                          </svg>
+                          {{ user.areaName }}
+                        </span>
+                      }
+                    </div>
                   } @else {
                     <span class="text-gray-400 text-[11px]">HQ / Statewide</span>
                   }
@@ -270,6 +283,7 @@ export interface SystemUser {
       <app-modal
         [isOpen]="modalOpen"
         [title]="modalTitle"
+        [overflowVisible]="true"
         (closeModal)="closeUserModal()"
       >
         <div class="space-y-4">
@@ -311,7 +325,7 @@ export interface SystemUser {
           </div>
 
           <!-- Role & District -->
-          <div class="grid grid-cols-1 gap-3" [ngClass]="formRole === 'branch_head' ? 'sm:grid-cols-2' : ''">
+          <div class="grid grid-cols-1 gap-3 relative z-40" [ngClass]="formRole === 'branch_head' ? 'sm:grid-cols-2' : ''">
             <div class="space-y-1.5">
               <label class="block text-xs font-bold text-gray-700">System Role <span class="text-red-500">*</span></label>
               <select
@@ -327,26 +341,66 @@ export interface SystemUser {
             </div>
 
             @if (formRole === 'branch_head') {
-              <div class="space-y-1.5 animate-fadeIn">
+              <div class="space-y-1.5 animate-fadeIn relative z-40">
                 <label class="block text-xs font-bold text-gray-700">Assigned District Hub <span class="text-red-500">*</span></label>
-                <select
-                  [(ngModel)]="formDistrictId"
-                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
-                >
-                  <option [ngValue]="null">Select District...</option>
-                  @for (d of availableDistrictsForBranchHead(); track d.id) {
-                    <option [ngValue]="d.id">{{ d.name }}</option>
-                  }
-                </select>
-                @if (availableDistrictsForBranchHead().length === 0) {
-                  <p class="text-[11px] text-amber-600 font-medium">All districts already have an assigned Branch Head.</p>
-                }
+                <app-dropdown
+                  [options]="districtOptions()"
+                  [(ngModel)]="formDistrictIdRegular"
+                  (selectionChange)="onDistrictChange($event)"
+                  placeholder="Select District..."
+                  searchPlaceholder="Search district..."
+                  [searchable]="true"
+                  [clearable]="false"
+                  direction="down"
+                  customClass="!rounded-xl border-gray-200 !text-xs !py-2.5 !px-3.5"
+                  emptyMessage="No districts found"
+                ></app-dropdown>
               </div>
             }
           </div>
 
+          <!-- Assigned Area: Shown when role is branch_head -->
+          @if (formRole === 'branch_head') {
+            @if (formDistrictId()) {
+              <div class="space-y-1.5 animate-fadeIn relative z-30">
+                <label class="block text-xs font-bold text-gray-700 flex items-center justify-between">
+                  <span>Assigned Area <span class="text-red-500">*</span></span>
+                  @if (isLoadingAreas()) {
+                    <span class="text-[11px] text-[#0f9d58] font-normal flex items-center gap-1">
+                      <span class="inline-block w-3 h-3 border-2 border-[#0f9d58] border-t-transparent rounded-full animate-spin"></span>
+                      Loading areas...
+                    </span>
+                  }
+                </label>
+                <app-dropdown
+                  [options]="areaOptions()"
+                  [(ngModel)]="formAreaIdRegular"
+                  (selectionChange)="onAreaChange($event)"
+                  placeholder="Select Area..."
+                  searchPlaceholder="Search area or pincode..."
+                  [searchable]="true"
+                  [clearable]="false"
+                  direction="down"
+                  customClass="!rounded-xl border-gray-200 !text-xs !py-2.5 !px-3.5"
+                  [emptyMessage]="isLoadingAreas() ? 'Loading areas...' : 'No areas found for this district'"
+                ></app-dropdown>
+              </div>
+            } @else {
+              <!-- Before selecting district, show disabled placeholder box so user knows Area is right here -->
+              <div class="space-y-1.5 animate-fadeIn relative z-30">
+                <label class="block text-xs font-bold text-gray-700">Assigned Area <span class="text-red-500">*</span></label>
+                <div class="w-full flex items-center justify-between text-xs px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed select-none">
+                  <span>Select District first to view & choose area...</span>
+                  <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            }
+          }
+
           <!-- Phone & Email -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-10">
             <div class="space-y-1.5">
               <label class="block text-xs font-bold text-gray-700">Phone Number</label>
               <input
@@ -369,7 +423,7 @@ export interface SystemUser {
           </div>
 
           <!-- Address -->
-          <div class="space-y-1.5">
+          <div class="space-y-1.5 relative z-0">
             <label class="block text-xs font-bold text-gray-700">Address / Location</label>
             <textarea
               rows="2"
@@ -380,7 +434,7 @@ export interface SystemUser {
           </div>
 
           <!-- Modal Actions -->
-          <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-200">
+          <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-200 relative z-0">
             <button
               type="button"
               (click)="closeUserModal()"
@@ -476,9 +530,12 @@ export class AdminUsersComponent implements OnInit {
   private dataService = inject(DataService);
   private toast = inject(ToastService);
   private title = inject(Title);
+  private cdr = inject(ChangeDetectorRef);
 
   users = signal<SystemUser[]>([]);
   districts = signal<District[]>([]);
+  areas = signal<AreaItem[]>([]);
+  isLoadingAreas = signal<boolean>(false);
   branchHeadUsers = signal<any[]>([]);
 
   editingUserId = signal<string | number | null>(null);
@@ -486,6 +543,21 @@ export class AdminUsersComponent implements OnInit {
   // Only allow districts that are NOT assigned to another non-deleted branch head user
   availableDistrictsForBranchHead = computed(() => {
     return this.districts();
+  });
+
+  districtOptions = computed<DropdownOption[]>(() => {
+    return this.districts().map(d => ({
+      label: d.name,
+      value: d.id
+    }));
+  });
+
+  areaOptions = computed<DropdownOption[]>(() => {
+    return this.areas().map(a => ({
+      label: a.name,
+      subtext: a.pincode ? a.pincode : undefined,
+      value: a.id
+    }));
   });
 
   activeRoleFilter = signal<string>('all');
@@ -521,7 +593,10 @@ export class AdminUsersComponent implements OnInit {
   formUsername = '';
   formPassword = '';
   formRole = 'coordinator';
-  formDistrictId: any = null;
+  formDistrictId = signal<number | string | null>(null);
+  formAreaId = signal<number | string | null>(null);
+  formDistrictIdRegular: any = null;
+  formAreaIdRegular: any = null;
   formPhone = '';
   formEmail = '';
   formAddress = '';
@@ -558,9 +633,6 @@ export class AdminUsersComponent implements OnInit {
     } else {
       this.loadUsers(1);
     }
-
-    // Preload districts and branch heads for quick availability in the creation modal
-
   }
 
   loadUsers(page: number = this.currentPage()): void {
@@ -691,22 +763,77 @@ export class AdminUsersComponent implements OnInit {
   }
 
   loadAvailableBranchDistricts(userId?: string | number | null): void {
-    const targetUserId = userId !== undefined ? userId : this.editingUserId();
-    this.dataService.getAvailableBranchDistricts(targetUserId).subscribe({
+    this.dataService.getDropdownDistricts().subscribe({
       next: (dists) => {
-        if (Array.isArray(dists)) {
+        if (Array.isArray(dists) && dists.length > 0) {
           this.districts.set(dists);
         }
+      },
+      error: (err) => {
+        console.error('Failed to load districts from /api/dropdowns/districts:', err);
       }
     });
   }
 
   onRoleChange(): void {
     if (this.formRole === 'branch_head') {
-      this.loadAvailableBranchDistricts(this.editingUserId());
+      this.loadAvailableBranchDistricts();
+      const dId = this.formDistrictId();
+      if (dId) {
+        this.loadAreasForDistrict(dId);
+      }
     } else {
-      this.formDistrictId = null;
+      this.formDistrictId.set(null);
+      this.formDistrictIdRegular = null;
+      this.formAreaId.set(null);
+      this.formAreaIdRegular = null;
+      this.areas.set([]);
     }
+    this.cdr.markForCheck();
+  }
+
+  onDistrictChange(districtId: any): void {
+    const val = (districtId !== null && districtId !== undefined && districtId !== '') ? Number(districtId) : null;
+    this.formDistrictId.set(val);
+    this.formDistrictIdRegular = val;
+    this.formAreaId.set(null);
+    this.formAreaIdRegular = null;
+    this.areas.set([]);
+
+    if (val) {
+      this.loadAreasForDistrict(val);
+    }
+    this.cdr.markForCheck();
+  }
+
+  onAreaChange(areaId: any): void {
+    const val = (areaId !== null && areaId !== undefined && areaId !== '') ? Number(areaId) : null;
+    this.formAreaId.set(val);
+    this.formAreaIdRegular = val;
+    this.cdr.markForCheck();
+  }
+
+  loadAreasForDistrict(districtId: number | string, preselectAreaId?: any): void {
+    this.isLoadingAreas.set(true);
+    this.cdr.markForCheck();
+    this.dataService.getDropdownAreas(districtId, undefined, 200).subscribe({
+      next: (areas) => {
+        this.areas.set(areas || []);
+        this.isLoadingAreas.set(false);
+        if (preselectAreaId !== undefined && preselectAreaId !== null) {
+          const pVal = Number(preselectAreaId);
+          this.formAreaId.set(pVal);
+          this.formAreaIdRegular = pVal;
+        }
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Failed to load areas for district:', err);
+        this.areas.set([]);
+        this.isLoadingAreas.set(false);
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   openCreateModal(): void {
@@ -716,11 +843,16 @@ export class AdminUsersComponent implements OnInit {
     this.formUsername = '';
     this.formPassword = '';
     this.formRole = 'coordinator';
-    this.formDistrictId = null;
+    this.formDistrictId.set(null);
+    this.formDistrictIdRegular = null;
+    this.formAreaId.set(null);
+    this.formAreaIdRegular = null;
+    this.areas.set([]);
     this.formPhone = '';
     this.formEmail = '';
     this.formAddress = '';
     this.modalOpen = true;
+    this.cdr.markForCheck();
   }
 
   openEditModal(user: SystemUser): void {
@@ -738,14 +870,27 @@ export class AdminUsersComponent implements OnInit {
     } else {
       this.formRole = 'coordinator';
     }
-    this.formDistrictId = this.formRole === 'branch_head' ? (user.districtId || null) : null;
+    const dId = this.formRole === 'branch_head' ? (user.districtId ? Number(user.districtId) : null) : null;
+    const aId = this.formRole === 'branch_head' ? ((user as any).areaId || (user as any).area_id ? Number((user as any).areaId || (user as any).area_id) : null) : null;
+    this.formDistrictId.set(dId);
+    this.formDistrictIdRegular = dId;
+    this.formAreaId.set(aId);
+    this.formAreaIdRegular = aId;
     if (this.formRole === 'branch_head') {
-      this.loadAvailableBranchDistricts(user.id);
+      this.loadAvailableBranchDistricts();
+      if (dId) {
+        this.loadAreasForDistrict(dId, aId);
+      } else {
+        this.areas.set([]);
+      }
+    } else {
+      this.areas.set([]);
     }
     this.formPhone = user.phone || '';
     this.formEmail = user.email || '';
     this.formAddress = user.address || '';
     this.modalOpen = true;
+    this.cdr.markForCheck();
   }
 
   closeUserModal(): void {
@@ -756,10 +901,15 @@ export class AdminUsersComponent implements OnInit {
     this.formUsername = '';
     this.formPassword = '';
     this.formRole = 'coordinator';
-    this.formDistrictId = null;
+    this.formDistrictId.set(null);
+    this.formDistrictIdRegular = null;
+    this.formAreaId.set(null);
+    this.formAreaIdRegular = null;
+    this.areas.set([]);
     this.formPhone = '';
     this.formEmail = '';
     this.formAddress = '';
+    this.cdr.markForCheck();
   }
 
   saveUser(): void {
@@ -781,30 +931,28 @@ export class AdminUsersComponent implements OnInit {
       }
     }
 
-    if (this.formRole === 'branch_head' && !this.formDistrictId) {
-      this.toast.error('Please select an assigned district hub for Branch Head.');
-      return;
-    }
+    const distId = this.formDistrictId();
+    const areaId = this.formAreaId();
 
-    // Double check that the selected district is not already assigned to another active branch head
-    if (this.formRole === 'branch_head' && this.formDistrictId) {
-      const alreadyAssigned = this.branchHeadUsers().some(u => {
-        const isDeleted = u.isDeleted === 1 || u.is_deleted === 1;
-        const isCurrent = currentEditingId != null && String(u.id) === String(currentEditingId);
-        const uDistId = u.districtId ?? u.district_id;
-        return !isDeleted && !isCurrent && String(uDistId) === String(this.formDistrictId);
-      });
-      if (alreadyAssigned) {
-        this.toast.error('Another Branch Head is already assigned to this district. Please choose a different district.');
+    if (this.formRole === 'branch_head') {
+      if (!distId) {
+        this.toast.error('Please select an assigned district hub for Branch Head.');
+        return;
+      }
+      if (!areaId) {
+        this.toast.error('Please select an assigned area for Branch Head.');
         return;
       }
     }
 
+    const selectedArea = this.areas().find(a => Number(a.id) === Number(areaId));
     const payload: any = {
       name: this.formName.trim(),
       username: this.formUsername.trim(),
       role: this.formRole,
-      districtId: this.formRole === 'branch_head' ? this.formDistrictId : null,
+      districtId: this.formRole === 'branch_head' ? distId : null,
+      areaId: this.formRole === 'branch_head' ? areaId : null,
+      areaName: (this.formRole === 'branch_head' && selectedArea) ? selectedArea.name : null,
       phone: this.formPhone.trim(),
       email: this.formEmail.trim(),
       address: this.formAddress.trim()

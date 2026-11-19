@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, inject, signal, computed, ElementRef, ViewChild, PLATFORM_ID } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, OnDestroy, inject, signal, computed, ElementRef, ViewChild, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../../../../core/data.service';
@@ -1027,7 +1027,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
     </div>
   `
 })
-export class BookingDetailedComponent implements OnInit, OnDestroy {
+export class BookingDetailedComponent implements OnInit, OnChanges, OnDestroy {
   @Input({ required: true }) booking!: Booking;
   @Input() statusOptions: StatusOption[] = [];
   @Output() close = new EventEmitter<void>();
@@ -1107,6 +1107,24 @@ export class BookingDetailedComponent implements OnInit, OnDestroy {
     if (this.booking?.id) {
       this.fetchInitialHistory();
       this.fetchDocuments();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['booking'] && !changes['booking'].firstChange) {
+      if (this.booking?.id) {
+        this.fetchInitialHistory();
+        this.fetchDocuments();
+      }
+    }
+  }
+
+  /**
+   * Public method to reload history from parent after status or booking updates
+   */
+  reloadHistory(): void {
+    if (this.booking?.id) {
+      this.fetchInitialHistory();
     }
   }
 

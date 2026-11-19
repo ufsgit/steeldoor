@@ -22,6 +22,7 @@ import bookingHistoryRoutes from './modules/booking-history/booking-history.rout
 import reportsRoutes from './modules/reports/reports.routes.js';
 import notificationsRoutes from './modules/notifications/notifications.routes.js';
 import brochuresRoutes from './modules/brochures/brochures.routes.js';
+import actionTypesRoutes from './modules/action-types/action-types.routes.js';
 
 dotenv.config();
 
@@ -91,6 +92,8 @@ app.use('/api/booking-history', bookingHistoryRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/brochures', brochuresRoutes);
+app.use('/api/action-types', actionTypesRoutes);
+app.use('/api/action_types', actionTypesRoutes);
 
 // ---------------- 404 Handler ----------------
 
