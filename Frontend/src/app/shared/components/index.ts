@@ -1,4 +1,5 @@
 export * from './dropdown.component';
+export * from './infinite-dropdown.component';
 export * from './district-dropdown.component';
 export * from './modal.component';
 export * from './status-chip.component';

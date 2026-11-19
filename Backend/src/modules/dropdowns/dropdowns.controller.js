@@ -23,8 +23,8 @@ export class DropdownsController {
     }
 
     const search = req.query.search ?? req.query.q ?? null;
-    const page = Math.max(1, Number(req.query.page) || 1);
-    const limit = Math.max(1, Number(req.query.limit) || 20);
+    const page = req.query.page !== undefined ? Math.max(1, Number(req.query.page) || 1) : null;
+    const limit = req.query.limit !== undefined ? Math.max(1, Number(req.query.limit) || 20) : null;
 
     return {
       roleId: roleId || null,

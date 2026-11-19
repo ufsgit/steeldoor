@@ -138,12 +138,18 @@ export class DataService {
 
   // ---------------- Districts & Areas (sp_get_dropdown_data) ----------------
 
-  getDropdownDistricts(stateId?: number | string, search?: string): Observable<District[]> {
+  getDropdownDistricts(stateId?: number | string, search?: string, limit?: number, page?: number): Observable<District[]> {
     if (isPlatformServer(this.platformId)) {
       return of([]);
     }
     let params = new HttpParams();
     if (stateId) params = params.set('stateId', String(stateId));
+    if (limit !== undefined && limit !== null) {
+      params = params.set('limit', String(limit));
+    }
+    if (page !== undefined && page !== null) {
+      params = params.set('page', String(page));
+    }
     if (search && search.trim()) params = params.set('search', search.trim());
 
     return this.http.get<any>(this.url('/api/dropdowns/districts'), { params }).pipe(
@@ -155,11 +161,17 @@ export class DataService {
     );
   }
 
-  getDropdownAreas(districtId: number | string, search?: string, limit: number = 100): Observable<AreaItem[]> {
+  getDropdownAreas(districtId: number | string, search?: string, limit?: number, page?: number): Observable<AreaItem[]> {
     if (isPlatformServer(this.platformId)) {
       return of([]);
     }
-    let params = new HttpParams().set('districtId', String(districtId)).set('limit', String(limit));
+    let params = new HttpParams().set('districtId', String(districtId));
+    if (limit !== undefined && limit !== null) {
+      params = params.set('limit', String(limit));
+    }
+    if (page !== undefined && page !== null) {
+      params = params.set('page', String(page));
+    }
     if (search && search.trim()) params = params.set('search', search.trim());
 
     return this.http.get<{ data: AreaItem[] }>(this.url('/api/dropdowns/areas'), { params }).pipe(

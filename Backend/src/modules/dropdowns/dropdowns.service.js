@@ -19,7 +19,8 @@ export class DropdownsService {
     const cleanRoleId = roleId ? Number(roleId) : null;
     const cleanLoginId = loginId ? Number(loginId) : null;
     const cleanPage = page ? Math.max(1, Number(page)) : 1;
-    const cleanLimit = limit ? Math.max(1, Number(limit)) : 20;
+    // When limit is omitted/null (no limit requested), fetch all records (large number for SP)
+    const cleanLimit = limit !== null && limit !== undefined ? Math.max(1, Number(limit)) : 100000;
 
     if (!['district', 'area'].includes(cleanType)) {
       throw new Error('Invalid type parameter. Expected "district" or "area".');
