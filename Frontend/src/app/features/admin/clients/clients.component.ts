@@ -411,10 +411,20 @@ export class AdminClientsComponent implements OnInit {
   }
 
   onModalDistrictChange(): void {
-    const d = this.districts.find(item => item.id === this.formDistrictId);
-    this.modalDistrictAreas = d ? d.areas : [];
-    if (this.modalDistrictAreas.length > 0) {
-      this.formArea = this.modalDistrictAreas[0];
+    if (this.formDistrictId) {
+      this.dataService.getAreasByDistrict(this.formDistrictId).subscribe(areas => {
+        this.modalDistrictAreas = (areas || []).map(a => a.name);
+        if (this.modalDistrictAreas.length > 0) {
+          if (!this.formArea || !this.modalDistrictAreas.includes(this.formArea)) {
+            this.formArea = this.modalDistrictAreas[0];
+          }
+        } else {
+          this.formArea = '';
+        }
+      });
+    } else {
+      this.modalDistrictAreas = [];
+      this.formArea = '';
     }
   }
 

@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Title } from '@angular/platform-browser';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { DataService } from '../../../core/data.service';
 import { ToastService } from '../../../shared/toast/toast.service';
 import { District, AreaItem } from '../../../core/models';
 import { ModalComponent } from '../../../shared/components/modal.component';
 import { InfiniteDropdownComponent, InfiniteDropdownOption } from '../../../shared/components/infinite-dropdown.component';
+import { AreaMultiSelectComponent } from '../../../shared/components/area-multi-select.component';
 
 export interface SystemUser {
   id: number | string;
@@ -36,7 +37,7 @@ export interface SystemUser {
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalComponent, InfiniteDropdownComponent],
+  imports: [CommonModule, FormsModule, ModalComponent, InfiniteDropdownComponent, AreaMultiSelectComponent],
   template: `
     <div class="bg-white rounded-2xl border border-gray-200 shadow-xs p-4 sm:p-6 space-y-4 animate-fadeIn">
       <!-- Header -->
@@ -344,8 +345,17 @@ export interface SystemUser {
 
             @if (formRole === 'branch_head') {
               <div class="space-y-1.5 animate-fadeIn relative z-40">
-                <label class="block text-xs font-bold text-gray-700">Assigned District Hub <span class="text-red-500">*</span></label>
+                <label class="block text-xs font-bold text-gray-700 flex items-center justify-between">
+                  <span>Assigned District Hub <span class="text-red-500">*</span></span>
+                  @if (isLoadingDistricts()) {
+                    <span class="text-[11px] text-[#0f9d58] font-normal flex items-center gap-1">
+                      <span class="inline-block w-3 h-3 border-2 border-[#0f9d58] border-t-transparent rounded-full animate-spin"></span>
+                      Loading districts...
+                    </span>
+                  }
+                </label>
                 <app-infinite-dropdown
+                  [loadImmediately]="true"
                   [fetchFn]="fetchDistrictsFn"
                   [initialSelectedItem]="selectedDistrictOption"
                   [(ngModel)]="formDistrictIdRegular"
@@ -372,16 +382,18 @@ export interface SystemUser {
                     </span>
                   }
                 </label>
-                <app-infinite-dropdown
-                  [fetchFn]="fetchAreasFn"
-                  [initialSelectedItem]="selectedAreaOption"
-                  [(ngModel)]="formAreaIdRegular"
-                  (selectionChange)="onAreaChange($event)"
-                  placeholder="Select Area..."
+                <app-area-multi-select
+                  [areas]="availableAreas()"
+                  [currentUserId]="editingUserId()"
+                  [isLoading]="isLoadingAreas()"
+                  [(ngModel)]="formAreaIdsRegular"
+                  (selectionChange)="onAreasChange($event)"
+                  (selectedIdsChange)="onAreaIdsChange($event)"
+                  placeholder="Select Area(s)..."
                   searchPlaceholder="Search area or pincode..."
-                  [clearable]="false"
+                  [clearable]="true"
                   emptyMessage="No areas found for this district"
-                ></app-infinite-dropdown>
+                ></app-area-multi-select>
               </div>
             } @else {
               <!-- Before selecting district, show disabled placeholder box so user knows Area is right here -->
@@ -577,14 +589,18 @@ export class AdminUsersComponent implements OnInit {
   formPassword = '';
   formRole = 'coordinator';
   formDistrictId = signal<number | string | null>(null);
-  formAreaId = signal<number | string | null>(null);
   formDistrictIdRegular: any = null;
-  formAreaIdRegular: any = null;
   selectedDistrictOption: InfiniteDropdownOption | null = null;
   selectedDistrictName: string | null = null;
+  isLoadingDistricts = signal<boolean>(false);
+  districtOptions: InfiniteDropdownOption[] = [];
   fetchDistrictsFn?: (search: string, page: number, pageSize: number) => Observable<InfiniteDropdownOption[]>;
-  selectedAreaOption: InfiniteDropdownOption | null = null;
-  selectedAreaName: string | null = null;
+
+  availableAreas = signal<AreaItem[]>([]);
+  formAreaIds = signal<number[]>([]);
+  formAreaIdsRegular: any[] = [];
+  selectedAreasList: AreaItem[] = [];
+  selectedAreaOptions: InfiniteDropdownOption[] = [];
   fetchAreasFn?: (search: string, page: number, pageSize: number) => Observable<InfiniteDropdownOption[]>;
   formPhone = '';
   formEmail = '';
@@ -751,125 +767,163 @@ export class AdminUsersComponent implements OnInit {
     });
   }
 
-  setupDistrictDropdown(preselectDistrictId?: any, preselectDistrictName?: string): void {
-    this.fetchDistrictsFn = (search: string, page: number, pageSize: number) => {
-      return this.dataService.getDropdownDistricts(undefined, search, pageSize, page).pipe(
-        map((districts: District[]) =>
-          (districts || []).map(d => ({
-            label: d.name,
-            value: d.id,
-            subtext: d.code ? `Code: ${d.code}` : undefined,
-            raw: d
-          }))
-        )
-      );
-    };
+  loadDistricts(preselectDistrictId?: any, preselectDistrictName?: string): void {
+    this.isLoadingDistricts.set(true);
+    this.districtOptions = [];
 
-    if (preselectDistrictId !== undefined && preselectDistrictId !== null) {
-      const pVal = Number(preselectDistrictId);
-      this.formDistrictId.set(pVal);
-      this.formDistrictIdRegular = pVal;
-      this.selectedDistrictName = preselectDistrictName || null;
-      this.selectedDistrictOption = {
-        label: preselectDistrictName || `District #${pVal}`,
-        value: pVal
-      };
-    }
+    this.dataService.getDropdownDistricts().subscribe({
+      next: (districts: District[]) => {
+        this.districts.set(districts || []);
+        const options: InfiniteDropdownOption[] = (districts || []).map(d => ({
+          label: d.name,
+          value: Number(d.id),
+          subtext: d.code ? `Code: ${d.code}` : undefined,
+          raw: d
+        }));
+        this.districtOptions = options;
+
+        this.fetchDistrictsFn = (search: string) => {
+          const q = (search || '').trim().toLowerCase();
+          if (!q) return of(options);
+          return of(options.filter(o =>
+            o.label.toLowerCase().includes(q) ||
+            (o.subtext && o.subtext.toLowerCase().includes(q))
+          ));
+        };
+
+        this.isLoadingDistricts.set(false);
+
+        if (preselectDistrictId !== undefined && preselectDistrictId !== null && preselectDistrictId !== '') {
+          const pVal = Number(preselectDistrictId);
+          this.formDistrictId.set(pVal);
+          this.formDistrictIdRegular = pVal;
+          const matched = options.find(o => Number(o.value) === pVal);
+          this.selectedDistrictOption = matched || {
+            label: preselectDistrictName || `District #${pVal}`,
+            value: pVal
+          };
+          this.selectedDistrictName = this.selectedDistrictOption.label;
+        }
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.isLoadingDistricts.set(false);
+        this.toast.error('Failed to load districts.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  setupDistrictDropdown(preselectDistrictId?: any, preselectDistrictName?: string): void {
+    this.loadDistricts(preselectDistrictId, preselectDistrictName);
   }
 
   loadAvailableBranchDistricts(userId?: string | number | null): void {
-    this.setupDistrictDropdown();
+    this.loadDistricts();
+  }
+
+  clearDistrictAndAreas(): void {
+    this.formDistrictId.set(null);
+    this.formDistrictIdRegular = null;
+    this.selectedDistrictOption = null;
+    this.selectedDistrictName = null;
+    this.fetchDistrictsFn = undefined;
+    this.districtOptions = [];
+    this.isLoadingDistricts.set(false);
+    this.clearAreas();
+  }
+
+  clearAreas(): void {
+    this.formAreaIds.set([]);
+    this.formAreaIdsRegular = [];
+    this.selectedAreaOptions = [];
+    this.selectedAreasList = [];
+    this.availableAreas.set([]);
+    this.fetchAreasFn = undefined;
+    this.isLoadingAreas.set(false);
   }
 
   onRoleChange(): void {
     if (this.formRole === 'branch_head') {
-      this.setupDistrictDropdown();
-      const dId = this.formDistrictId();
-      if (dId) {
-        this.loadAreasForDistrict(dId);
-      }
+      this.clearDistrictAndAreas();
+      this.loadDistricts();
     } else {
-      this.formDistrictId.set(null);
-      this.formDistrictIdRegular = null;
-      this.selectedDistrictOption = null;
-      this.selectedDistrictName = null;
-      this.fetchDistrictsFn = undefined;
-      this.formAreaId.set(null);
-      this.formAreaIdRegular = null;
-      this.selectedAreaOption = null;
-      this.selectedAreaName = null;
-      this.fetchAreasFn = undefined;
-      this.areas.set([]);
+      this.clearDistrictAndAreas();
     }
     this.cdr.markForCheck();
   }
 
   onDistrictChange(districtOptionOrId: any): void {
     let val: number | null = null;
+    let opt: InfiniteDropdownOption | null = null;
     if (districtOptionOrId && typeof districtOptionOrId === 'object') {
       val = districtOptionOrId.value !== null && districtOptionOrId.value !== undefined ? Number(districtOptionOrId.value) : null;
-      this.selectedDistrictOption = districtOptionOrId;
-      this.selectedDistrictName = districtOptionOrId.label || null;
+      opt = districtOptionOrId;
     } else {
       val = (districtOptionOrId !== null && districtOptionOrId !== undefined && districtOptionOrId !== '') ? Number(districtOptionOrId) : null;
     }
 
+    // Prevent duplicate API calls if the same district is re-selected
+    if (val === this.formDistrictId() && val !== null) {
+      return;
+    }
+
+    this.selectedDistrictOption = opt;
+    this.selectedDistrictName = opt?.label || null;
     this.formDistrictId.set(val);
     this.formDistrictIdRegular = val;
-    this.formAreaId.set(null);
-    this.formAreaIdRegular = null;
-    this.selectedAreaOption = null;
-    this.selectedAreaName = null;
-    this.areas.set([]);
+
+    // Clear previously selected areas when district changes
+    this.clearAreas();
 
     if (val) {
       this.loadAreasForDistrict(val);
-    } else {
-      this.fetchAreasFn = undefined;
     }
     this.cdr.markForCheck();
   }
 
-  onAreaChange(areaOptionOrId: any): void {
-    if (areaOptionOrId && typeof areaOptionOrId === 'object') {
-      const val = areaOptionOrId.value !== null && areaOptionOrId.value !== undefined ? Number(areaOptionOrId.value) : null;
-      this.formAreaId.set(val);
-      this.formAreaIdRegular = val;
-      this.selectedAreaOption = areaOptionOrId;
-      this.selectedAreaName = areaOptionOrId.label || null;
-    } else {
-      const val = (areaOptionOrId !== null && areaOptionOrId !== undefined && areaOptionOrId !== '') ? Number(areaOptionOrId) : null;
-      this.formAreaId.set(val);
-      this.formAreaIdRegular = val;
-    }
-    this.cdr.markForCheck();
-  }
-
-  loadAreasForDistrict(districtId: number | string, preselectAreaId?: any, preselectAreaName?: string): void {
+  loadAreasForDistrict(districtId: number | string, preselectAreaIds?: number[]): void {
     const dId = Number(districtId);
-    this.fetchAreasFn = (search: string, page: number, pageSize: number) => {
-      return this.dataService.getDropdownAreas(dId, search, pageSize, page).pipe(
-        map((areas: AreaItem[]) =>
-          (areas || []).map(a => ({
-            label: a.name,
-            value: a.id,
-            subtext: a.pincode ? `PIN: ${a.pincode}` : undefined,
-            raw: a
-          }))
-        )
-      );
-    };
+    this.isLoadingAreas.set(true);
+    this.availableAreas.set([]);
 
-    if (preselectAreaId !== undefined && preselectAreaId !== null) {
-      const pVal = Number(preselectAreaId);
-      this.formAreaId.set(pVal);
-      this.formAreaIdRegular = pVal;
-      this.selectedAreaName = preselectAreaName || null;
-      this.selectedAreaOption = {
-        label: preselectAreaName || `Area #${pVal}`,
-        value: pVal
-      };
-    }
+    this.dataService.getAreasWithAssignmentStatus(dId, undefined, this.editingUserId()).subscribe({
+      next: (areas: AreaItem[]) => {
+        this.availableAreas.set(areas || []);
+        this.isLoadingAreas.set(false);
+
+        if (preselectAreaIds && preselectAreaIds.length > 0) {
+          this.formAreaIds.set(preselectAreaIds);
+          this.formAreaIdsRegular = [...preselectAreaIds];
+          this.selectedAreasList = (areas || []).filter(a => preselectAreaIds.includes(Number(a.id)));
+          this.selectedAreaOptions = this.selectedAreasList.map(a => ({ label: a.name, value: a.id }));
+        }
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.isLoadingAreas.set(false);
+        this.availableAreas.set([]);
+        this.toast.error('Failed to load areas for selected district.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  onAreasChange(areas: AreaItem[]): void {
+    this.selectedAreasList = areas || [];
+    const ids = (areas || []).map(a => Number(a.id)).filter(id => !isNaN(id));
+    this.formAreaIds.set(ids);
+    this.formAreaIdsRegular = ids;
+    this.selectedAreaOptions = (areas || []).map(a => ({ label: a.name, value: a.id }));
+    this.cdr.markForCheck();
+  }
+
+  onAreaIdsChange(ids: number[]): void {
+    const cleanIds = (ids || []).map(id => Number(id)).filter(id => !isNaN(id));
+    this.formAreaIds.set(cleanIds);
+    this.formAreaIdsRegular = cleanIds;
+    this.selectedAreasList = this.availableAreas().filter(a => cleanIds.includes(Number(a.id)));
+    this.selectedAreaOptions = this.selectedAreasList.map(a => ({ label: a.name, value: a.id }));
     this.cdr.markForCheck();
   }
 
@@ -880,17 +934,7 @@ export class AdminUsersComponent implements OnInit {
     this.formUsername = '';
     this.formPassword = '';
     this.formRole = 'coordinator';
-    this.formDistrictId.set(null);
-    this.formDistrictIdRegular = null;
-    this.selectedDistrictOption = null;
-    this.selectedDistrictName = null;
-    this.fetchDistrictsFn = undefined;
-    this.formAreaId.set(null);
-    this.formAreaIdRegular = null;
-    this.selectedAreaOption = null;
-    this.selectedAreaName = null;
-    this.fetchAreasFn = undefined;
-    this.areas.set([]);
+    this.clearDistrictAndAreas();
     this.formPhone = '';
     this.formEmail = '';
     this.formAddress = '';
@@ -913,22 +957,27 @@ export class AdminUsersComponent implements OnInit {
     } else {
       this.formRole = 'coordinator';
     }
-    const dId = this.formRole === 'branch_head' ? (user.districtId ? Number(user.districtId) : null) : null;
-    const aId = this.formRole === 'branch_head' ? ((user as any).areaId || (user as any).area_id ? Number((user as any).areaId || (user as any).area_id) : null) : null;
-    this.formDistrictId.set(dId);
-    this.formDistrictIdRegular = dId;
-    this.formAreaId.set(aId);
-    this.formAreaIdRegular = aId;
+
+    this.clearDistrictAndAreas();
+
     if (this.formRole === 'branch_head') {
-      this.setupDistrictDropdown(dId, user.districtName || (user as any).district_name);
+      const dId = user.districtId ? Number(user.districtId) : null;
+      this.loadDistricts(dId, user.districtName || (user as any).district_name);
+
       if (dId) {
-        this.loadAreasForDistrict(dId, aId, (user as any).areaName || (user as any).area_name);
-      } else {
-        this.areas.set([]);
+        // Parse preselected area(s)
+        const rawAreaId = (user as any).areaIds || (user as any).areaId || (user as any).area_id;
+        let preAreaIds: number[] = [];
+        if (rawAreaId !== null && rawAreaId !== undefined && rawAreaId !== '') {
+          preAreaIds = String(rawAreaId)
+            .split(',')
+            .map(s => Number(s.trim()))
+            .filter(n => !isNaN(n) && n > 0);
+        }
+        this.loadAreasForDistrict(dId, preAreaIds);
       }
-    } else {
-      this.areas.set([]);
     }
+
     this.formPhone = user.phone || '';
     this.formEmail = user.email || '';
     this.formAddress = user.address || '';
@@ -944,17 +993,7 @@ export class AdminUsersComponent implements OnInit {
     this.formUsername = '';
     this.formPassword = '';
     this.formRole = 'coordinator';
-    this.formDistrictId.set(null);
-    this.formDistrictIdRegular = null;
-    this.selectedDistrictOption = null;
-    this.selectedDistrictName = null;
-    this.fetchDistrictsFn = undefined;
-    this.formAreaId.set(null);
-    this.formAreaIdRegular = null;
-    this.selectedAreaOption = null;
-    this.selectedAreaName = null;
-    this.fetchAreasFn = undefined;
-    this.areas.set([]);
+    this.clearDistrictAndAreas();
     this.formPhone = '';
     this.formEmail = '';
     this.formAddress = '';
@@ -981,28 +1020,41 @@ export class AdminUsersComponent implements OnInit {
     }
 
     const distId = this.formDistrictId();
-    const areaId = this.formAreaId();
 
     if (this.formRole === 'branch_head') {
       if (!distId) {
         this.toast.error('Please select an assigned district hub for Branch Head.');
         return;
       }
-      if (!areaId) {
-        this.toast.error('Please select an assigned area for Branch Head.');
+      if (!this.formAreaIds() || this.formAreaIds().length === 0) {
+        this.toast.error('Please select at least one assigned area for Branch Head.');
+        return;
+      }
+
+      // Ensure none of the selected areas are already assigned to another user
+      const assignedToOther = this.availableAreas().find(a =>
+        this.formAreaIds().includes(Number(a.id)) &&
+        a.isAssigned &&
+        (!currentEditingId || Number(a.assignedUserId) !== Number(currentEditingId))
+      );
+      if (assignedToOther) {
+        this.toast.error(`Area "${assignedToOther.name}" is already assigned to another user.`);
         return;
       }
     }
 
-    const selectedArea = this.areas().find(a => Number(a.id) === Number(areaId));
-    const resolvedAreaName = this.selectedAreaName || (selectedArea ? selectedArea.name : null);
+    const areaIds = this.formRole === 'branch_head' ? this.formAreaIds() : [];
+    const areaNames = this.formRole === 'branch_head' ? this.selectedAreaOptions.map(o => o.label) : [];
+
     const payload: any = {
       name: this.formName.trim(),
       username: this.formUsername.trim(),
       role: this.formRole,
       districtId: this.formRole === 'branch_head' ? distId : null,
-      areaId: this.formRole === 'branch_head' ? areaId : null,
-      areaName: this.formRole === 'branch_head' ? resolvedAreaName : null,
+      areaIds: areaIds,
+      areaId: areaIds.length > 0 ? areaIds[0] : null,
+      areaNames: areaNames,
+      areaName: areaNames.length > 0 ? areaNames.join(', ') : null,
       phone: this.formPhone.trim(),
       email: this.formEmail.trim(),
       address: this.formAddress.trim()

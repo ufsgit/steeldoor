@@ -36,6 +36,36 @@ export class AreasService {
   }
 
   /**
+   * 2b. CALL sp_get_district_areas_assignment_status(?, ?, ?)
+   * Returns active areas for a district with assignment status
+   */
+  async getAreasAssignmentStatus(districtId, search = null, userId = null) {
+    if (!districtId) return [];
+    const cleanSearch = search && search.trim() ? search.trim() : null;
+    const userIdParam = userId !== undefined && userId !== null && userId !== '' ? Number(userId) : null;
+
+    const [results] = await pool.query(
+      'CALL sp_get_district_areas_assignment_status(?, ?, ?)',
+      [Number(districtId), cleanSearch, userIdParam]
+    );
+    const rows = results?.[0] || [];
+
+    return rows.map(r => ({
+      id: Number(r.id),
+      district_id: Number(r.district_id),
+      districtId: Number(r.district_id),
+      district_name: r.district_name,
+      name: r.name,
+      pincode: r.pincode || null,
+      assignedUserId: r.assigned_user_id ? Number(r.assigned_user_id) : null,
+      assignedUserName: r.assigned_user_name || null,
+      isAssigned: r.assigned_user_id !== null && r.assigned_user_id !== undefined,
+      isAssignedToOther: Boolean(Number(r.is_assigned_to_other) === 1),
+      isAvailable: !r.is_assigned_to_other || Number(r.is_assigned_to_other) === 0
+    }));
+  }
+
+  /**
    * 3. CALL create_or_reactivate_area(?, ?, ?)
    * Inserts or reactivates area with duplicate check
    */

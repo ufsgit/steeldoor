@@ -219,6 +219,7 @@ export class InfiniteDropdownComponent implements ControlValueAccessor, OnInit, 
   @Input() customClass = '';
   @Input() panelClass = '';
   @Input() pageSize = 20;
+  @Input() loadImmediately = false;
 
   /**
    * The fetch function provided by parent.
@@ -271,6 +272,10 @@ export class InfiniteDropdownComponent implements ControlValueAccessor, OnInit, 
       .subscribe((query) => {
         this.performSearch(query);
       });
+
+    if (this.loadImmediately && this.fetchFn && this.items.length === 0) {
+      this.loadPage(1, true);
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -282,6 +287,8 @@ export class InfiniteDropdownComponent implements ControlValueAccessor, OnInit, 
     }
     if (changes['fetchFn'] && !changes['fetchFn'].firstChange) {
       this.resetAndReload();
+    } else if (changes['fetchFn'] && changes['fetchFn'].firstChange && this.loadImmediately && this.items.length === 0) {
+      this.loadPage(1, true);
     }
   }
 

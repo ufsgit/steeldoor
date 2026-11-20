@@ -1253,6 +1253,40 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_district_areas_assignment_status`(
+    IN p_district_id INT,
+    IN p_search VARCHAR(100),
+    IN p_user_id INT -- NULL when creating, User ID when editing
+)
+BEGIN
+    SELECT 
+        a.id,
+        a.district_id,
+        d.name AS district_name,
+        a.name,
+        a.pincode,
+        aa.user_id AS assigned_user_id,
+        u.name AS assigned_user_name,
+        -- 1 = Assigned to another user (RED / Disabled)
+        -- 0 = Free OR already belongs to this user (GREEN / Selectable)
+        (aa.user_id IS NOT NULL AND (p_user_id IS NULL OR aa.user_id != p_user_id)) AS is_assigned_to_other
+    FROM areas a
+    INNER JOIN districts d ON a.district_id = d.id
+    LEFT JOIN area_assigned aa ON a.id = aa.area_id
+    LEFT JOIN users u ON aa.user_id = u.id AND u.is_deleted = 0
+    WHERE a.district_id = p_district_id
+      AND a.is_deleted = 0
+      AND (
+          p_search IS NULL 
+          OR TRIM(p_search) = '' 
+          OR a.name LIKE CONCAT('%', TRIM(p_search), '%') 
+          OR a.pincode LIKE CONCAT('%', TRIM(p_search), '%')
+      )
+    ORDER BY a.name ASC;
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_dropdown_data`(
     IN p_type       VARCHAR(20),
     IN p_parent_id  INT,

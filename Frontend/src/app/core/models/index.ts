@@ -21,6 +21,7 @@ export interface District {
 export interface AreaItem {
   id: number;
   district_id: number;
+  districtId?: number;
   name: string;
   pincode?: string | null;
   is_deleted?: number;
@@ -28,6 +29,9 @@ export interface AreaItem {
   state_id?: number;
   state_name?: string;
   created_at?: string;
+  isAssigned?: boolean;
+  assignedUserId?: number | null;
+  assignedUserName?: string | null;
 }
 
 export interface AreaHierarchyResponse {

@@ -6,6 +6,9 @@ const router = Router();
 // GET /api/areas/hierarchy?districtId=1 - Get all states, districts and initial areas
 router.get('/hierarchy', (req, res, next) => areasController.getHierarchy(req, res, next));
 
+// GET /api/areas/assignment-status?districtId=1&userId=2&search=xyz - Get areas with assigned/unassigned status for user form
+router.get('/assignment-status', (req, res, next) => areasController.getAreasAssignmentStatus(req, res, next));
+
 // GET /api/areas?districtId=1&search=xyz - Get all active areas for a district
 router.get('/', (req, res, next) => areasController.getAreas(req, res, next));
 

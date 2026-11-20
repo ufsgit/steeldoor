@@ -369,7 +369,7 @@ export class BookingNewComponent implements OnInit {
   }
 
   loadAreasForDistrict(districtId: number | string): void {
-    this.dataService.getDropdownAreas(districtId).subscribe({
+    this.dataService.getAreasByDistrict(districtId).subscribe({
       next: areas => {
         this.districtAreas.set(areas);
       }

@@ -120,6 +120,23 @@ export class DataService {
     );
   }
 
+  getAreasWithAssignmentStatus(districtId: number | string, search?: string, userId?: number | string | null): Observable<AreaItem[]> {
+    if (isPlatformServer(this.platformId)) {
+      return of([]);
+    }
+    let params = new HttpParams().set('districtId', String(districtId));
+    if (search && search.trim()) {
+      params = params.set('search', search.trim());
+    }
+    if (userId !== undefined && userId !== null && userId !== '') {
+      params = params.set('userId', String(userId));
+    }
+    return this.http.get<{ success: boolean; data: AreaItem[] }>(this.url('/api/areas/assignment-status'), { params }).pipe(
+      map(res => res?.data || []),
+      catchError(() => this.getAreasByDistrict(districtId, search))
+    );
+  }
+
   createAreaItem(data: { districtId: number | string; name: string; pincode?: string }): Observable<AreaItem> {
     return this.http.post<{ success: boolean; data: AreaItem }>(this.url('/api/areas'), data).pipe(
       map(res => res.data)
@@ -162,22 +179,7 @@ export class DataService {
   }
 
   getDropdownAreas(districtId: number | string, search?: string, limit?: number, page?: number): Observable<AreaItem[]> {
-    if (isPlatformServer(this.platformId)) {
-      return of([]);
-    }
-    let params = new HttpParams().set('districtId', String(districtId));
-    if (limit !== undefined && limit !== null) {
-      params = params.set('limit', String(limit));
-    }
-    if (page !== undefined && page !== null) {
-      params = params.set('page', String(page));
-    }
-    if (search && search.trim()) params = params.set('search', search.trim());
-
-    return this.http.get<{ data: AreaItem[] }>(this.url('/api/dropdowns/areas'), { params }).pipe(
-      map(res => res?.data || []),
-      catchError(() => of([]))
-    );
+    return this.getAreasByDistrict(districtId, search);
   }
 
   getDistricts(): Observable<District[]> {

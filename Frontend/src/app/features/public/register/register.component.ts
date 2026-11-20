@@ -306,10 +306,20 @@ export class RegisterComponent implements OnInit {
 
   onDistrictChange(): void {
     const distId = this.registerForm.get('districtId')?.value;
-    const match = this.districts.find(d => d.id === distId);
-    this.currentDistrictAreas = match ? match.areas : [];
-    if (this.currentDistrictAreas.length > 0) {
-      this.registerForm.get('area')?.setValue(this.currentDistrictAreas[0]);
+    if (distId) {
+      this.dataService.getAreasByDistrict(distId).subscribe(areas => {
+        this.currentDistrictAreas = (areas || []).map(a => a.name);
+        if (this.currentDistrictAreas.length > 0) {
+          const currentVal = this.registerForm.get('area')?.value;
+          if (!currentVal || !this.currentDistrictAreas.includes(currentVal)) {
+            this.registerForm.get('area')?.setValue(this.currentDistrictAreas[0]);
+          }
+        } else {
+          this.registerForm.get('area')?.setValue('');
+        }
+      });
+    } else {
+      this.currentDistrictAreas = [];
     }
   }
 

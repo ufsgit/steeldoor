@@ -25,6 +25,21 @@ export class AreasController {
     }
   }
 
+  async getAreasAssignmentStatus(req, res, next) {
+    try {
+      const districtId = req.query.districtId || req.query.district_id;
+      if (!districtId) {
+        return res.status(400).json({ error: 'Query parameter "districtId" is required.' });
+      }
+      const search = req.query.search || null;
+      const userId = req.query.userId || req.query.user_id || null;
+      const areas = await areasService.getAreasAssignmentStatus(districtId, search, userId);
+      res.json({ success: true, data: areas });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async createArea(req, res, next) {
     try {
       const { districtId, name, pincode } = req.body;
