@@ -44,67 +44,32 @@ export class UsersService {
     );
     const total = Number(countResult?.[0]?.total || 0);
 
-    // Paginated users query (with area_assigned if available)
-    let rows = [];
-    try {
-      const [r] = await pool.query(
-        `SELECT 
-          u.id,
-          u.username,
-          u.role_id AS roleId,
-          u.role,
-          u.user_type_id AS userTypeId,
-          u.user_type AS userType,
-          u.name,
-          u.email,
-          u.phone,
-          u.state_id AS stateId,
-          u.state_name AS stateName,
-          u.district_id AS districtId,
-          u.district_name AS districtName,
-          GROUP_CONCAT(DISTINCT aa.area_id) AS areaId,
-          GROUP_CONCAT(DISTINCT aa.area_name SEPARATOR ', ') AS areaName,
-          u.address,
-          u.is_active AS isActive,
-          u.is_deleted AS isDeleted,
-          u.created_at AS createdAt
-        FROM users u
-        LEFT JOIN area_assigned aa ON aa.user_id = u.id
-        ${whereClause}
-        GROUP BY u.id
-        ORDER BY u.id ASC
-        LIMIT ? OFFSET ?`,
-        [...params, limitNum, offset]
-      );
-      rows = r;
-    } catch {
-      const [r] = await pool.query(
-        `SELECT 
-          u.id,
-          u.username,
-          u.role_id AS roleId,
-          u.role,
-          u.user_type_id AS userTypeId,
-          u.user_type AS userType,
-          u.name,
-          u.email,
-          u.phone,
-          u.state_id AS stateId,
-          u.state_name AS stateName,
-          u.district_id AS districtId,
-          u.district_name AS districtName,
-          u.address,
-          u.is_active AS isActive,
-          u.is_deleted AS isDeleted,
-          u.created_at AS createdAt
-        FROM users u
-        ${whereClause}
-        ORDER BY u.id ASC
-        LIMIT ? OFFSET ?`,
-        [...params, limitNum, offset]
-      );
-      rows = r;
-    }
+    // Paginated users query directly from users table (without area_assigned join)
+    const [rows] = await pool.query(
+      `SELECT 
+        u.id,
+        u.username,
+        u.role_id AS roleId,
+        u.role,
+        u.user_type_id AS userTypeId,
+        u.user_type AS userType,
+        u.name,
+        u.email,
+        u.phone,
+        u.state_id AS stateId,
+        u.state_name AS stateName,
+        u.district_id AS districtId,
+        u.district_name AS districtName,
+        u.address,
+        u.is_active AS isActive,
+        u.is_deleted AS isDeleted,
+        u.created_at AS createdAt
+      FROM users u
+      ${whereClause}
+      ORDER BY u.id ASC
+      LIMIT ? OFFSET ?`,
+      [...params, limitNum, offset]
+    );
 
     // Role counts across all non-deleted users
     const [roleCountRows] = await pool.query(
@@ -717,6 +682,18 @@ export class UsersService {
     const idParam = userId ? Number(userId) : null;
     const [results] = await pool.query('CALL get_available_branch_districts(?)', [idParam]);
     return results?.[0] || [];
+  }
+
+  /**
+   * Fetch assigned area IDs for a specific user (on edit user)
+   */
+  async getUserAssignedAreas(userId) {
+    if (!userId) return [];
+    const [rows] = await pool.query(
+      'SELECT area_id, area_name, district_id, district_name FROM area_assigned WHERE user_id = ?',
+      [Number(userId)]
+    );
+    return rows || [];
   }
 }
 

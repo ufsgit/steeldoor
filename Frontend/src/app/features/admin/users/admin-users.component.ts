@@ -176,14 +176,6 @@ export interface SystemUser {
                       <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 w-fit">
                         {{ user.districtName }}
                       </span>
-                      @if (user.areaName) {
-                        <span class="text-[10px] text-gray-500 font-medium flex items-center gap-1">
-                          <svg class="w-2.5 h-2.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                          </svg>
-                          {{ user.areaName }}
-                        </span>
-                      }
                     </div>
                   } @else {
                     <span class="text-gray-400 text-[11px]">HQ / Statewide</span>
@@ -965,16 +957,16 @@ export class AdminUsersComponent implements OnInit {
       this.loadDistricts(dId, user.districtName || (user as any).district_name);
 
       if (dId) {
-        // Parse preselected area(s)
-        const rawAreaId = (user as any).areaIds || (user as any).areaId || (user as any).area_id;
-        let preAreaIds: number[] = [];
-        if (rawAreaId !== null && rawAreaId !== undefined && rawAreaId !== '') {
-          preAreaIds = String(rawAreaId)
-            .split(',')
-            .map(s => Number(s.trim()))
-            .filter(n => !isNaN(n) && n > 0);
-        }
-        this.loadAreasForDistrict(dId, preAreaIds);
+        // Fetch assigned areas on-demand for this user
+        this.dataService.getUserAssignedAreas(user.id).subscribe({
+          next: (assignedAreas) => {
+            const preAreaIds = (assignedAreas || []).map(a => Number(a.area_id)).filter(n => !isNaN(n) && n > 0);
+            this.loadAreasForDistrict(dId, preAreaIds);
+          },
+          error: () => {
+            this.loadAreasForDistrict(dId, []);
+          }
+        });
       }
     }
 

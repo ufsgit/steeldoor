@@ -690,4 +690,14 @@ export class DataService {
       catchError(() => of([]))
     );
   }
+
+  getUserAssignedAreas(userId: number | string): Observable<Array<{ area_id: number; area_name: string; district_id: number; district_name: string }>> {
+    if (isPlatformServer(this.platformId)) {
+      return of([]);
+    }
+    return this.http.get<{ success: boolean; data: any[] }>(this.url(`/api/users/${userId}/areas`)).pipe(
+      map(res => res?.data || []),
+      catchError(() => of([]))
+    );
+  }
 }

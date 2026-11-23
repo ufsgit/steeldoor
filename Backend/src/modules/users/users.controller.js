@@ -122,6 +122,20 @@ export class UsersController {
       return res.status(400).json({ error: this._formatError(err) });
     }
   }
+
+  async getUserAssignedAreas(req, res, next) {
+    try {
+      const userId = req.params.id;
+      const data = await usersService.getUserAssignedAreas(userId);
+      res.json({
+        success: true,
+        count: data.length,
+        data
+      });
+    } catch (err) {
+      return res.status(400).json({ error: this._formatError(err) });
+    }
+  }
 }
 
 export const usersController = new UsersController();
