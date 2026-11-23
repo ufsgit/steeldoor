@@ -155,6 +155,10 @@ export interface Booking {
   assignedHeadDistrictId?: number | string | null;
   assigned_head_district_name?: string | null;
   assignedHeadDistrictName?: string | null;
+  assigned_head_area_id?: number | null;
+  assignedHeadAreaId?: number | string | null;
+  assigned_head_area_name?: string | null;
+  assignedHeadAreaName?: string | null;
   branch_head_id?: number | null;
   branchHeadId?: string | null;
   branch_head_name?: string | null;

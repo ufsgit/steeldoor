@@ -1343,7 +1343,10 @@ export class AdminBookingsComponent implements OnInit {
 
   // Status Change Confirmation Modal State
   pendingStatusChange = signal<string | null>(null);
+  statusDistrictId: number | null = null;
   statusDistrictName = '';
+  statusAreaId: number | null = null;
+  statusAreaName = '';
   statusBranchHeadName = '';
   statusSelectedDropdownValue: number | string | null = null;
   statusBranchHeadId: number | null = null;
@@ -1363,9 +1366,10 @@ export class AdminBookingsComponent implements OnInit {
           const b = this.selectedBooking();
           const currHead = b?.branchHeadName || this.statusBranchHeadName;
           if (currHead && !search) {
-            const currDist = (b?.districtName || '').trim();
-            const currArea = (b?.areaName || '').trim();
+            const currDistId = b?.assignedHeadDistrictId ? Number(b.assignedHeadDistrictId) : (b?.districtId ? Number(b.districtId) : null);
+            const currDist = (b?.assignedHeadDistrictName || b?.districtName || '').trim();
             const currAreaId = b?.areaId ? Number(b.areaId) : null;
+            const currArea = (b?.areaName || b?.area || '').trim();
             if (currAreaId) {
               seen.add(currAreaId);
             }
@@ -1375,6 +1379,7 @@ export class AdminBookingsComponent implements OnInit {
               subtext: [currDist, currArea].filter(Boolean).join(' - ') || 'Current Assignment',
               branchHeadName: currHead,
               branchHeadId: b?.branchHeadId ? Number(b.branchHeadId) : null,
+              districtId: currDistId,
               districtName: currDist,
               areaName: currArea,
               areaId: currAreaId
@@ -1392,6 +1397,7 @@ export class AdminBookingsComponent implements OnInit {
               subtext: `${h.district_name || ''} - ${h.area_name || ''}${h.area_pincode ? ' (' + h.area_pincode + ')' : ''}`,
               branchHeadName: h.branch_head_name,
               branchHeadId: h.branch_head_id,
+              districtId: h.district_id,
               districtName: h.district_name,
               areaName: h.area_name,
               areaId: aId
@@ -1409,13 +1415,21 @@ export class AdminBookingsComponent implements OnInit {
       this.statusSelectedDropdownValue = item.value;
       this.statusBranchHeadId = item['branchHeadId'] || null;
       this.statusBranchHeadName = item['branchHeadName'] || item.label;
-      if (item['areaId']) {
-        this.statusSelectedAreaId.set(item['areaId']);
+      this.statusDistrictId = item['districtId'] || null;
+      this.statusDistrictName = item['districtName'] || '';
+      this.statusAreaId = item['areaId'] || (typeof item.value === 'number' ? item.value : null);
+      this.statusAreaName = item['areaName'] || '';
+      if (this.statusAreaId) {
+        this.statusSelectedAreaId.set(this.statusAreaId);
       }
     } else {
       this.statusSelectedDropdownValue = null;
       this.statusBranchHeadId = null;
       this.statusBranchHeadName = '';
+      this.statusDistrictId = null;
+      this.statusDistrictName = '';
+      this.statusAreaId = null;
+      this.statusAreaName = '';
       this.statusSelectedAreaId.set(null);
     }
   }
@@ -1832,9 +1846,14 @@ export class AdminBookingsComponent implements OnInit {
     // Pre-fill Branch Head directly from the booking
     this.statusBranchHeadName = b.branchHeadName || '';
     this.statusBranchHeadId = b.branchHeadId ? Number(b.branchHeadId) : null;
+    this.statusDistrictId = b.assignedHeadDistrictId ? Number(b.assignedHeadDistrictId) : (b.districtId ? Number(b.districtId) : null);
+    this.statusDistrictName = b.assignedHeadDistrictName || b.districtName || '';
+    this.statusAreaId = b.areaId ? Number(b.areaId) : null;
+    this.statusAreaName = b.areaName || b.area || '';
+
     if (this.statusBranchHeadName) {
-      const currDist = (b.districtName || '').trim();
-      const currArea = (b.areaName || '').trim();
+      const currDist = (b.assignedHeadDistrictName || b.districtName || '').trim();
+      const currArea = (b.areaName || b.area || '').trim();
       const currAreaId = b.areaId ? Number(b.areaId) : null;
       this.statusSelectedDropdownValue = currAreaId || `bh_${this.statusBranchHeadId || '0'}`;
       this.statusInitialSelectedBranchHead = {
@@ -1843,6 +1862,7 @@ export class AdminBookingsComponent implements OnInit {
         subtext: [currDist, currArea].filter(Boolean).join(' - ') || 'Current Assignment',
         branchHeadName: this.statusBranchHeadName,
         branchHeadId: this.statusBranchHeadId,
+        districtId: this.statusDistrictId,
         districtName: currDist,
         areaName: currArea,
         areaId: currAreaId
@@ -1871,7 +1891,10 @@ export class AdminBookingsComponent implements OnInit {
 
   cancelStatusChange(): void {
     this.pendingStatusChange.set(null);
+    this.statusDistrictId = null;
     this.statusDistrictName = '';
+    this.statusAreaId = null;
+    this.statusAreaName = '';
     this.statusBranchHeadName = '';
     this.statusBranchHeadId = null;
     this.statusSelectedDropdownValue = null;
@@ -1916,44 +1939,40 @@ export class AdminBookingsComponent implements OnInit {
     const notes = this.statusNotes.trim();
     const chosenBranchHead = this.statusBranchHeadName.trim() || b.branchHeadName || '';
 
-    // Find matched branch head from available dropdown options first (exact new ID)
-    const matchedOption = this.availableBranchHeadOptions().find(
-      h => h.name.toLowerCase() === chosenBranchHead.toLowerCase()
+    // Find matched status option to pass statusId
+    const matchedStatusOpt = this.statusOptionsList().find(
+      o => (o.code && o.code.toLowerCase() === newStatus.toLowerCase()) ||
+           (o.label && o.label.toLowerCase() === newStatus.toLowerCase())
     );
-    const matchedDropdownItem = this.branchHeadDropdownOptions().find(
-      h => h.branch_head_name.toLowerCase() === chosenBranchHead.toLowerCase()
-    );
+    const resolvedStatusId = matchedStatusOpt ? matchedStatusOpt.id : (b.statusId || null);
 
-    let resolvedBranchHeadId = this.statusBranchHeadId ? String(this.statusBranchHeadId) : null;
-    if (!resolvedBranchHeadId) {
-      if (matchedDropdownItem && matchedDropdownItem.branch_head_id) {
-        resolvedBranchHeadId = String(matchedDropdownItem.branch_head_id);
-      } else if (matchedOption && matchedOption.branchHeadId) {
-        resolvedBranchHeadId = String(matchedOption.branchHeadId);
-      } else if (matchedOption && matchedOption.id && matchedOption.id !== 'current') {
-        resolvedBranchHeadId = String(matchedOption.id).replace(/^bh_(\d+).*/, '$1');
-      } else if (b.branchHeadName && b.branchHeadName.toLowerCase() === chosenBranchHead.toLowerCase()) {
-        resolvedBranchHeadId = b.branchHeadId ? String(b.branchHeadId) : null;
-      }
-    }
-
-    // Keep the booking's original district unchanged
-    const bookingDistrictId = b.districtId || null;
-    const bookingDistrictName = b.districtName || '';
+    const resolvedBranchHeadId = this.statusBranchHeadId ? Number(this.statusBranchHeadId) : (b.branchHeadId ? Number(b.branchHeadId) : null);
+    const resolvedDistrictId = this.statusDistrictId ? Number(this.statusDistrictId) : (b.assignedHeadDistrictId ? Number(b.assignedHeadDistrictId) : (b.districtId ? Number(b.districtId) : null));
+    const resolvedDistrictName = this.statusDistrictName || b.assignedHeadDistrictName || b.districtName || '';
+    const resolvedAreaId = this.statusAreaId ? Number(this.statusAreaId) : (b.assignedHeadAreaId ? Number(b.assignedHeadAreaId) : (b.assigned_head_area_id ? Number(b.assigned_head_area_id) : (b.areaId ? Number(b.areaId) : null)));
+    const resolvedAreaName = this.statusAreaName || b.assignedHeadAreaName || b.assigned_head_area_name || b.areaName || b.area || '';
 
     const payload = {
       clientId: b.id,
       clientName: b.clientName || b.name,
       status: newStatus,
+      statusId: resolvedStatusId,
       scheduleDate: scheduleDate,
       notes: notes,
       staffNotes: notes,
       createdBy: user?.id ? String(user.id) : null,
       createdByName: user?.name || null,
+      actionByRoleId: Number(user?.roleId ?? user?.dbRoleId ?? (user as any)?.role_id ?? 1),
       branchHeadId: resolvedBranchHeadId,
       branchHeadName: chosenBranchHead,
-      districtId: bookingDistrictId,
-      districtName: bookingDistrictName
+      assignedHeadDistrictId: resolvedDistrictId,
+      assignedHeadDistrictName: resolvedDistrictName,
+      assignedHeadAreaId: resolvedAreaId,
+      assignedHeadAreaName: resolvedAreaName,
+      districtId: resolvedDistrictId,
+      districtName: resolvedDistrictName,
+      areaId: resolvedAreaId,
+      areaName: resolvedAreaName
     };
 
     // Save status and branch head using POST /api/status
@@ -1964,14 +1983,22 @@ export class AdminBookingsComponent implements OnInit {
 
         const returnedData = res?.data || {};
 
-        // Update local state preserving new branch head & assigned head district
+        // Update local state preserving new branch head & assigned head area & district
         const updatedBooking: Booking = {
           ...b,
           status: newStatus,
+          statusId: returnedData.statusId ?? resolvedStatusId,
+          statusCode: returnedData.statusCode ?? b.statusCode,
+          statusLabel: returnedData.statusLabel ?? newStatus,
+          statusColorCode: returnedData.statusColorCode ?? b.statusColorCode,
           branchHeadName: returnedData.branchHeadName || chosenBranchHead,
-          branchHeadId: returnedData.branchHeadId ? String(returnedData.branchHeadId) : (resolvedBranchHeadId || b.branchHeadId),
-          assignedHeadDistrictId: returnedData.assignedHeadDistrictId ?? b.assignedHeadDistrictId,
-          assignedHeadDistrictName: returnedData.assignedHeadDistrictName ?? b.assignedHeadDistrictName,
+          branchHeadId: returnedData.branchHeadId ? String(returnedData.branchHeadId) : (resolvedBranchHeadId ? String(resolvedBranchHeadId) : b.branchHeadId),
+          assignedHeadDistrictId: returnedData.assignedHeadDistrictId ?? resolvedDistrictId,
+          assignedHeadDistrictName: returnedData.assignedHeadDistrictName ?? resolvedDistrictName,
+          assigned_head_area_id: returnedData.assignedHeadAreaId ?? resolvedAreaId,
+          assigned_head_area_name: returnedData.assignedHeadAreaName ?? resolvedAreaName,
+          areaId: returnedData.assignedHeadAreaId ?? resolvedAreaId ?? b.areaId,
+          areaName: returnedData.assignedHeadAreaName ?? resolvedAreaName ?? b.areaName,
           scheduledDate: scheduleDate || b.scheduledDate,
           notes: b.notes,
           staffNotes: returnedData.staffNotes || notes || b.staffNotes,

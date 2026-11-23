@@ -68,7 +68,7 @@ router.post('/:id/status', optionalAuth, (req, res, next) => statusController.sa
 
 
 // DELETE /api/bookings/:id - Soft-delete booking
-router.delete('/:id', (req, res, next) => bookingsController.delete(req, res, next));
+router.delete('/:id', optionalAuth, (req, res, next) => bookingsController.delete(req, res, next));
 
 export default router;
 

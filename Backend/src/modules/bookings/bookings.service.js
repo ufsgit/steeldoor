@@ -161,13 +161,25 @@ export class BookingsService {
   /**
    * Delete (soft-delete) a booking using delete_booking SP
    */
-  async deleteBooking(id) {
+  async deleteBooking(id, actionUser = {}) {
     const bookingId = parseInt(id, 10);
     if (isNaN(bookingId)) {
       return false;
     }
 
-    const [results] = await pool.query('CALL delete_booking(?)', [bookingId]);
+    const actionById = actionUser.actionById ?? actionUser.action_by_id ?? null;
+    const actionByName = actionUser.actionByName ?? actionUser.action_by_name ?? 'Admin';
+    const actionByRoleId = actionUser.actionByRoleId ?? actionUser.action_by_role_id ?? 1;
+
+    const [results] = await pool.query(
+      'CALL delete_booking(?, ?, ?, ?)',
+      [
+        bookingId,
+        actionById ? parseInt(actionById, 10) : null,
+        actionByName ? String(actionByName).trim() : null,
+        actionByRoleId ? parseInt(actionByRoleId, 10) : null
+      ]
+    );
     const row = results?.[0]?.[0];
     return Boolean(row && (row.affected_rows > 0 || row.success == 1));
   }

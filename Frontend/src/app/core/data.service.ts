@@ -516,8 +516,14 @@ export class DataService {
     });
   }
 
-  deleteBooking(id: string | number): Observable<any> {
-    return this.http.delete(this.url(`/api/bookings/${id}`));
+  deleteBooking(id: string | number, payload?: { actionById?: number | string | null; actionByName?: string | null; actionByRoleId?: number | null }): Observable<any> {
+    const user = this.auth.currentUser();
+    const body = {
+      actionById: payload?.actionById ?? (user?.id ? Number(user.id) : null),
+      actionByName: payload?.actionByName ?? user?.name ?? 'Admin',
+      actionByRoleId: payload?.actionByRoleId ?? Number(user?.roleId ?? user?.dbRoleId ?? (user as any)?.role_id ?? 1)
+    };
+    return this.http.delete(this.url(`/api/bookings/${id}`), { body });
   }
 
   updateBooking(id: string | number, data: Partial<Booking>): Observable<Booking> {
@@ -531,16 +537,24 @@ export class DataService {
   saveStatus(payload: {
     clientId: number | string;
     clientName?: string;
-    status: string;
+    status?: string;
+    statusId?: number | null;
     scheduleDate?: string | null;
     notes?: string | null;
     staffNotes?: string | null;
     createdBy?: number | string | null;
     createdByName?: string | null;
+    actionByRoleId?: number | null;
     branchHeadId?: number | string | null;
     branchHeadName?: string | null;
+    assignedHeadDistrictId?: number | string | null;
+    assignedHeadDistrictName?: string | null;
+    assignedHeadAreaId?: number | string | null;
+    assignedHeadAreaName?: string | null;
     districtId?: number | string | null;
     districtName?: string | null;
+    areaId?: number | string | null;
+    areaName?: string | null;
   }): Observable<{ success: boolean; message: string; data: any }> {
     return this.http.post<{ success: boolean; message: string; data: any }>(this.url('/api/status'), payload);
   }

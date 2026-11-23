@@ -61,11 +61,14 @@ export class StatusService {
       statusCode: row.status_code ?? row.statusCode ?? 'New',
       statusLabel: row.status_label ?? row.statusLabel ?? row.status ?? 'New',
       statusColorCode: row.status_color_code ?? row.statusColorCode ?? '#3b82f6',
+      statusIsFollowup: row.status_is_followup ?? 0,
       scheduleDate: this.formatDateOnly(row.schedule_date),
       notes: row.notes || '',
       staffNotes: row.staff_notes ?? row.staffNotes ?? '',
       assignedHeadDistrictId: row.assigned_head_district_id ?? null,
       assignedHeadDistrictName: row.assigned_head_district_name ?? null,
+      assignedHeadAreaId: row.assigned_head_area_id ?? null,
+      assignedHeadAreaName: row.assigned_head_area_name ?? null,
       branchHeadId: row.branch_head_id ?? null,
       branchHeadName: row.branch_head_name ?? null,
       createdBy: row.created_by,
@@ -76,50 +79,63 @@ export class StatusService {
   }
 
   /**
-   * Save client status update using sp_save_client_status
+   * Save client status update using update_booking_status_or_branch_head
    */
   async saveStatus(data) {
-    const clientId = parseInt(data.clientId ?? data.client_id ?? data.id, 10);
-    if (!clientId || isNaN(clientId)) {
-      throw new Error('client_id is required and must be a valid number.');
+    const bookingId = parseInt(data.clientId ?? data.client_id ?? data.bookingId ?? data.booking_id ?? data.id, 10);
+    if (!bookingId || isNaN(bookingId)) {
+      throw new Error('booking_id / client_id is required and must be a valid number.');
     }
 
-    const clientName = data.clientName ?? data.client_name ?? null;
-    let status = String(data.status || '').trim();
-    if (!status) {
-      throw new Error('status is required (e.g. Scheduled, Completed, Cancelled).');
+    // Resolve status_id if passed as number or lookup if passed by name/code
+    let statusId = data.statusId ?? data.status_id ?? null;
+    if (statusId !== null && statusId !== undefined) {
+      statusId = parseInt(statusId, 10);
+      if (isNaN(statusId) || statusId <= 0) statusId = null;
     }
 
-    // Normalize status value
-    const lower = status.toLowerCase();
-    if (lower === 'scheduled') {
-      status = 'Scheduled';
-    } else if (lower === 'completed' || lower === 'finished') {
-      status = 'Completed';
-    } else if (lower === 'cancelled' || lower === 'rejected') {
-      status = 'Cancelled';
-    } else if (lower === 'new') {
-      status = 'New';
+    if (!statusId && data.status) {
+      const statusStr = String(data.status).trim().toLowerCase();
+      const options = await this.getStatusOptions();
+      const matched = options.find(o => 
+        (o.code && o.code.toLowerCase() === statusStr) || 
+        (o.label && o.label.toLowerCase() === statusStr)
+      );
+      if (matched) {
+        statusId = matched.id;
+      }
     }
 
     const rawScheduleDate = data.scheduleDate ?? data.schedule_date ?? data.scheduledDate ?? null;
     const scheduleDate = this.normalizeDate(rawScheduleDate);
     const staffNotes = data.staffNotes ?? data.staff_notes ?? data.notes ?? null;
-    const createdBy = data.createdBy ?? data.created_by ?? data.userId ?? null;
-    const createdByName = data.createdByName ?? data.created_by_name ?? data.userName ?? null;
+    const actionById = data.createdBy ?? data.created_by ?? data.userId ?? data.actionById ?? data.action_by_id ?? null;
+    const actionByName = data.createdByName ?? data.created_by_name ?? data.userName ?? data.actionByName ?? data.action_by_name ?? null;
+    const actionByRoleId = data.actionByRoleId ?? data.action_by_role_id ?? data.roleId ?? data.role_id ?? null;
+
     const branchHeadId = data.branchHeadId ?? data.branch_head_id ?? data.branchManagerId ?? null;
+    const branchHeadName = data.branchHeadName ?? data.branch_head_name ?? null;
+    const assignedHeadDistrictId = data.assignedHeadDistrictId ?? data.assigned_head_district_id ?? data.districtId ?? data.district_id ?? null;
+    const assignedHeadDistrictName = data.assignedHeadDistrictName ?? data.assigned_head_district_name ?? data.districtName ?? data.district_name ?? null;
+    const assignedHeadAreaId = data.assignedHeadAreaId ?? data.assigned_head_area_id ?? data.areaId ?? data.area_id ?? null;
+    const assignedHeadAreaName = data.assignedHeadAreaName ?? data.assigned_head_area_name ?? data.areaName ?? data.area_name ?? null;
 
     const [results] = await pool.query(
-      `CALL update_booking_status_or_branch_head(?, ?, ?, ?, ?, ?, ?, ?)`,
+      `CALL update_booking_status_or_branch_head(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        clientId,
-        clientName,
-        status,
-        scheduleDate,
-        staffNotes,
-        createdBy,
-        createdByName,
-        branchHeadId ? parseInt(branchHeadId, 10) : null
+        bookingId,                                                    // 1. p_booking_id
+        statusId ? parseInt(statusId, 10) : null,                     // 2. p_status_id
+        scheduleDate,                                                 // 3. p_schedule_date
+        staffNotes ? String(staffNotes).trim() : null,                // 4. p_staff_notes
+        actionById ? parseInt(actionById, 10) : null,                 // 5. p_action_by_id
+        actionByName ? String(actionByName).trim() : null,            // 6. p_action_by_name
+        actionByRoleId ? parseInt(actionByRoleId, 10) : null,         // 7. p_action_by_role_id
+        branchHeadId ? parseInt(branchHeadId, 10) : null,             // 8. p_branch_head_id
+        branchHeadName ? String(branchHeadName).trim() : null,        // 9. p_branch_head_name
+        assignedHeadDistrictId ? parseInt(assignedHeadDistrictId, 10) : null, // 10. p_assigned_head_district_id
+        assignedHeadDistrictName ? String(assignedHeadDistrictName).trim() : null, // 11. p_assigned_head_district_name
+        assignedHeadAreaId ? parseInt(assignedHeadAreaId, 10) : null, // 12. p_assigned_head_area_id
+        assignedHeadAreaName ? String(assignedHeadAreaName).trim() : null // 13. p_assigned_head_area_name
       ]
     );
 

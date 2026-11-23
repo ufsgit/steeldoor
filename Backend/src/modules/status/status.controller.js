@@ -12,7 +12,8 @@ export class StatusController {
         ...req.body,
         clientId: req.params.id || req.body.clientId || req.body.client_id,
         createdBy: user.id ?? req.body.createdBy ?? req.body.created_by ?? null,
-        createdByName: user.name ?? req.body.createdByName ?? req.body.created_by_name ?? null
+        createdByName: user.name ?? req.body.createdByName ?? req.body.created_by_name ?? null,
+        actionByRoleId: user.role_id ?? user.roleId ?? req.body.actionByRoleId ?? req.body.action_by_role_id ?? req.body.roleId ?? null
       };
 
       if (!payload.clientId) {

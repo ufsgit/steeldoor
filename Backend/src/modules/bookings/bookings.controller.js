@@ -215,7 +215,16 @@ export class BookingsController {
   async delete(req, res, next) {
     try {
       const { id } = req.params;
-      const success = await bookingsService.deleteBooking(id);
+      const user = req.user || {};
+      const actionById = user.id ?? req.body?.actionById ?? req.body?.action_by_id ?? null;
+      const actionByName = user.name ?? req.body?.actionByName ?? req.body?.action_by_name ?? 'Admin';
+      const actionByRoleId = user.role_id ?? user.roleId ?? req.body?.actionByRoleId ?? req.body?.action_by_role_id ?? 1;
+
+      const success = await bookingsService.deleteBooking(id, {
+        actionById,
+        actionByName,
+        actionByRoleId
+      });
 
       if (!success) {
         return res.status(404).json({ error: 'Booking not found or already deleted.' });
