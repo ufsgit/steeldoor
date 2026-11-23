@@ -504,7 +504,8 @@ export class AreaMultiSelectComponent implements ControlValueAccessor, OnChanges
     if (typeof window === 'undefined') return;
     const rect = this.elementRef.nativeElement.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
-    this.openUpward = spaceBelow < 280 && rect.top > 280;
+    // Prefer opening downward unless space below is extremely tight (< 160px) and top has plenty of room
+    this.openUpward = spaceBelow < 160 && rect.top > 320;
   }
 
   // ControlValueAccessor

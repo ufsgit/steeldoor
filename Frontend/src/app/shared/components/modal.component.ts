@@ -16,8 +16,11 @@ import { CommonModule } from '@angular/common';
       <!-- Modal Dialog -->
       <div class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
         <div
-          class="relative w-full max-w-lg bg-surface rounded-2xl border border-border shadow-elevated transition-all"
-          [ngClass]="overflowVisible ? 'overflow-visible' : 'overflow-hidden'"
+          class="relative w-full bg-surface rounded-2xl border border-border shadow-elevated transition-all"
+          [ngClass]="[
+            maxWidthClass || 'max-w-lg',
+            overflowVisible ? 'overflow-visible' : 'overflow-hidden'
+          ]"
           (click)="$event.stopPropagation()"
         >
           <!-- Header -->
@@ -48,6 +51,7 @@ export class ModalComponent {
   @Input() isOpen = false;
   @Input() title = '';
   @Input() overflowVisible = false;
+  @Input() maxWidthClass = 'max-w-lg';
   @Output() closeModal = new EventEmitter<void>();
 
   close(): void {

@@ -279,22 +279,22 @@ export interface SystemUser {
         [isOpen]="modalOpen"
         [title]="modalTitle"
         [overflowVisible]="true"
+        [maxWidthClass]="'max-w-4xl'"
         (closeModal)="closeUserModal()"
       >
         <div class="space-y-4">
-          <!-- Name -->
-          <div class="space-y-1.5">
-            <label class="block text-xs font-bold text-gray-700">Name <span class="text-red-500">*</span></label>
-            <input
-              type="text"
-              [(ngModel)]="formName"
-              placeholder="e.g. Ramesh Menon"
-              class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
-            />
-          </div>
+          <!-- Row 1 (3 Columns): Name, Username, Password -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-gray-700">Name <span class="text-red-500">*</span></label>
+              <input
+                type="text"
+                [(ngModel)]="formName"
+                placeholder="e.g. Ramesh Menon"
+                class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
+              />
+            </div>
 
-          <!-- Username & Password -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="space-y-1.5">
               <label class="block text-xs font-bold text-gray-700">Username <span class="text-red-500">*</span></label>
               <input
@@ -319,8 +319,8 @@ export interface SystemUser {
             </div>
           </div>
 
-          <!-- Role & District -->
-          <div class="grid grid-cols-1 gap-3 relative z-40" [ngClass]="formRole === 'branch_head' ? 'sm:grid-cols-2' : ''">
+          <!-- Row 2 (3 Columns): System Role, Phone, Email -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 relative z-30">
             <div class="space-y-1.5">
               <label class="block text-xs font-bold text-gray-700">System Role <span class="text-red-500">*</span></label>
               <select
@@ -335,74 +335,6 @@ export interface SystemUser {
               </select>
             </div>
 
-            @if (formRole === 'branch_head') {
-              <div class="space-y-1.5 animate-fadeIn relative z-40">
-                <label class="block text-xs font-bold text-gray-700 flex items-center justify-between">
-                  <span>Assigned District Hub <span class="text-red-500">*</span></span>
-                  @if (isLoadingDistricts()) {
-                    <span class="text-[11px] text-[#0f9d58] font-normal flex items-center gap-1">
-                      <span class="inline-block w-3 h-3 border-2 border-[#0f9d58] border-t-transparent rounded-full animate-spin"></span>
-                      Loading districts...
-                    </span>
-                  }
-                </label>
-                <app-infinite-dropdown
-                  [loadImmediately]="true"
-                  [fetchFn]="fetchDistrictsFn"
-                  [initialSelectedItem]="selectedDistrictOption"
-                  [(ngModel)]="formDistrictIdRegular"
-                  (selectionChange)="onDistrictChange($event)"
-                  placeholder="Select District..."
-                  searchPlaceholder="Search district..."
-                  [clearable]="false"
-                  emptyMessage="No districts found"
-                ></app-infinite-dropdown>
-              </div>
-            }
-          </div>
-
-          <!-- Assigned Area: Shown when role is branch_head -->
-          @if (formRole === 'branch_head') {
-            @if (formDistrictId()) {
-              <div class="space-y-1.5 animate-fadeIn relative z-30">
-                <label class="block text-xs font-bold text-gray-700 flex items-center justify-between">
-                  <span>Assigned Area <span class="text-red-500">*</span></span>
-                  @if (isLoadingAreas()) {
-                    <span class="text-[11px] text-[#0f9d58] font-normal flex items-center gap-1">
-                      <span class="inline-block w-3 h-3 border-2 border-[#0f9d58] border-t-transparent rounded-full animate-spin"></span>
-                      Loading areas...
-                    </span>
-                  }
-                </label>
-                <app-area-multi-select
-                  [areas]="availableAreas()"
-                  [currentUserId]="editingUserId()"
-                  [isLoading]="isLoadingAreas()"
-                  [(ngModel)]="formAreaIdsRegular"
-                  (selectionChange)="onAreasChange($event)"
-                  (selectedIdsChange)="onAreaIdsChange($event)"
-                  placeholder="Select Area(s)..."
-                  searchPlaceholder="Search area or pincode..."
-                  [clearable]="true"
-                  emptyMessage="No areas found for this district"
-                ></app-area-multi-select>
-              </div>
-            } @else {
-              <!-- Before selecting district, show disabled placeholder box so user knows Area is right here -->
-              <div class="space-y-1.5 animate-fadeIn relative z-30">
-                <label class="block text-xs font-bold text-gray-700">Assigned Area <span class="text-red-500">*</span></label>
-                <div class="w-full flex items-center justify-between text-xs px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed select-none">
-                  <span>Select District first to view & choose area...</span>
-                  <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-            }
-          }
-
-          <!-- Phone & Email -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-10">
             <div class="space-y-1.5">
               <label class="block text-xs font-bold text-gray-700">Phone Number</label>
               <input
@@ -424,8 +356,72 @@ export interface SystemUser {
             </div>
           </div>
 
-          <!-- Address -->
-          <div class="space-y-1.5 relative z-0">
+          <!-- Row 3: District & Area (Only for branch_head) -->
+          @if (formRole === 'branch_head') {
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 relative z-20 items-start">
+              <!-- District Hub (1 column) -->
+              <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-gray-700 flex items-center justify-between">
+                  <span>Assigned District Hub <span class="text-red-500">*</span></span>
+                  @if (isLoadingDistricts()) {
+                    <span class="text-[11px] text-[#0f9d58] font-normal flex items-center gap-1">
+                      <span class="inline-block w-3 h-3 border-2 border-[#0f9d58] border-t-transparent rounded-full animate-spin"></span>
+                      Loading...
+                    </span>
+                  }
+                </label>
+                <app-infinite-dropdown
+                  [loadImmediately]="true"
+                  [fetchFn]="fetchDistrictsFn"
+                  [initialSelectedItem]="selectedDistrictOption"
+                  [(ngModel)]="formDistrictIdRegular"
+                  (selectionChange)="onDistrictChange($event)"
+                  placeholder="Select District..."
+                  searchPlaceholder="Search district..."
+                  [clearable]="false"
+                  emptyMessage="No districts found"
+                ></app-infinite-dropdown>
+              </div>
+
+              <!-- Assigned Areas (Spans 2 columns) -->
+              <div class="sm:col-span-2 space-y-1.5">
+                @if (formDistrictId()) {
+                  <label class="block text-xs font-bold text-gray-700 flex items-center justify-between">
+                    <span>Assigned Area(s) <span class="text-red-500">*</span></span>
+                    @if (isLoadingAreas()) {
+                      <span class="text-[11px] text-[#0f9d58] font-normal flex items-center gap-1">
+                        <span class="inline-block w-3 h-3 border-2 border-[#0f9d58] border-t-transparent rounded-full animate-spin"></span>
+                        Loading areas...
+                      </span>
+                    }
+                  </label>
+                  <app-area-multi-select
+                    [areas]="availableAreas()"
+                    [currentUserId]="editingUserId()"
+                    [isLoading]="isLoadingAreas()"
+                    [(ngModel)]="formAreaIdsRegular"
+                    (selectionChange)="onAreasChange($event)"
+                    (selectedIdsChange)="onAreaIdsChange($event)"
+                    placeholder="Select Area(s)..."
+                    searchPlaceholder="Search area or pincode..."
+                    [clearable]="true"
+                    emptyMessage="No areas found for this district"
+                  ></app-area-multi-select>
+                } @else {
+                  <label class="block text-xs font-bold text-gray-700">Assigned Area(s) <span class="text-red-500">*</span></label>
+                  <div class="w-full flex items-center justify-between text-xs px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed select-none">
+                    <span>Select District first to view & choose areas...</span>
+                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Row 4: Address / Location (Full Width) -->
+          <div class="space-y-1.5 relative z-10">
             <label class="block text-xs font-bold text-gray-700">Address / Location</label>
             <textarea
               rows="2"
