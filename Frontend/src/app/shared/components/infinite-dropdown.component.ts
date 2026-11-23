@@ -287,8 +287,6 @@ export class InfiniteDropdownComponent implements ControlValueAccessor, OnInit, 
     }
     if (changes['fetchFn'] && !changes['fetchFn'].firstChange) {
       this.resetAndReload();
-    } else if (changes['fetchFn'] && changes['fetchFn'].firstChange && this.loadImmediately && this.items.length === 0) {
-      this.loadPage(1, true);
     }
   }
 
@@ -361,7 +359,7 @@ export class InfiniteDropdownComponent implements ControlValueAccessor, OnInit, 
   }
 
   private loadPage(page: number, isInitial: boolean = false, search: string = this.searchQuery): void {
-    if (!this.fetchFn) return;
+    if (!this.fetchFn || this.isLoadingInitial || this.isSearching || this.isLoadingMore) return;
 
     if (page === 1) {
       if (isInitial) this.isLoadingInitial = true;

@@ -699,10 +699,17 @@ export class UsersService {
    * Fetch available districts for Branch Head
    */
   /**
-   * Fetch Branch Heads for status update modal
+   * Fetch Branch Heads for status update modal with pagination
    */
-  async getBranchHeadsForStatusUpdate() {
-    const [results] = await pool.query('CALL get_branch_heads_for_status_update()');
+  async getBranchHeadsForStatusUpdate(search = null, page = 1, limit = 20) {
+    const cleanSearch = search ? String(search).trim() : null;
+    const cleanPage = page ? Math.max(1, Number(page)) : 1;
+    const cleanLimit = limit ? Math.max(1, Number(limit)) : 20;
+
+    const [results] = await pool.query(
+      'CALL get_branch_heads_for_status_update(?, ?, ?)',
+      [cleanSearch, cleanPage, cleanLimit]
+    );
     return results?.[0] || [];
   }
 

@@ -96,9 +96,15 @@ export class UsersController {
 
   async getBranchHeadsForStatusUpdate(req, res, next) {
     try {
-      const data = await usersService.getBranchHeadsForStatusUpdate();
+      const search = req.query.search ?? req.query.q ?? null;
+      const page = req.query.page !== undefined ? Math.max(1, Number(req.query.page) || 1) : 1;
+      const limit = req.query.limit !== undefined ? Math.max(1, Number(req.query.limit) || 20) : 20;
+
+      const data = await usersService.getBranchHeadsForStatusUpdate(search, page, limit);
       res.json({
         success: true,
+        page,
+        limit,
         count: data.length,
         data
       });

@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { DataService } from '../../../../core/data.service';
 import { AuthService } from '../../../../core/auth.service';
 import { Booking, District, BookingStatus, BranchHead, User, StatusOption } from '../../../../core/models';
 import { matchesDistrict } from '../../../../core/role-utils';
-import { DistrictDropdownComponent, DropdownComponent, DropdownOption } from '../../../../shared/components';
+import { DistrictDropdownComponent, DropdownComponent, DropdownOption, InfiniteDropdownComponent, InfiniteDropdownOption } from '../../../../shared/components';
 import { BookingDetailedComponent } from './detailed/booking-detailed.component';
 import { ToastService } from '../../../../shared/toast/toast.service';
 import { environment } from '../../../../../environments/environment';
@@ -15,7 +17,7 @@ import { environment } from '../../../../../environments/environment';
 @Component({
   selector: 'app-admin-bookings',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, DistrictDropdownComponent, DropdownComponent, BookingDetailedComponent],
+  imports: [CommonModule, RouterModule, FormsModule, DistrictDropdownComponent, DropdownComponent, InfiniteDropdownComponent, BookingDetailedComponent],
   template: `
     <div class="w-full flex-1 flex flex-col bg-white">
       
@@ -1010,17 +1012,16 @@ import { environment } from '../../../../../environments/environment';
               <div class="bg-gray-50 border border-gray-200 rounded-xl p-3.5 space-y-3">
                 <div>
                   <label class="block font-medium text-gray-700 mb-1">Select Branch Head *</label>
-                  <select
-                    [(ngModel)]="statusBranchHeadName"
-                    class="w-full px-2.5 py-2 bg-white rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs font-medium text-gray-800"
-                  >
-                    <option value="">Select Branch Head</option>
-                    @for (head of availableBranchHeadOptions(); track head.id) {
-                      <option [value]="head.name">
-                        {{ head.name }}{{ head.districtName ? ' (' + head.districtName + ')' : '' }}
-                      </option>
-                    }
-                  </select>
+                  <app-infinite-dropdown
+                    [fetchFn]="fetchBranchHeadsForStatusDropdown"
+                    [initialSelectedItem]="statusInitialSelectedBranchHead"
+                    [(ngModel)]="statusSelectedDropdownValue"
+                    (selectionChange)="onBranchHeadSelect($event)"
+                    placeholder="Search Branch Head, Area or District..."
+                    searchPlaceholder="Type to search..."
+                    [loadImmediately]="true"
+                    [clearable]="false"
+                  ></app-infinite-dropdown>
                 </div>
               </div>
 
@@ -1108,7 +1109,17 @@ export class AdminBookingsComponent implements OnInit {
   districts = signal<District[]>([]);
   branchHeads: BranchHead[] = [];
   branchHeadUsers: any[] = [];
-  branchHeadDropdownOptions = signal<Array<{ id: number; name: string; district_id: number; district_name: string }>>([]);
+  branchHeadDropdownOptions = signal<Array<{
+    branch_head_id: number;
+    branch_head_name: string;
+    district_id: number;
+    district_name: string;
+    area_id: number;
+    area_name: string;
+    area_pincode?: string;
+    display_label?: string;
+  }>>([]);
+  statusSelectedAreaId = signal<number | null>(null);
 
   isCompany = computed(() => {
     const u = this.authService.currentUser();
@@ -1141,42 +1152,50 @@ export class AdminBookingsComponent implements OnInit {
   });
 
   availableBranchHeadOptions = computed(() => {
-    const list: Array<{ id: string | number; name: string; districtName?: string }> = [];
-    const seen = new Set<string>();
+    const list: Array<{
+      id: string | number;
+      name: string;
+      districtName?: string;
+      areaName?: string;
+      displayLabel: string;
+      areaId?: number;
+      branchHeadId?: number;
+    }> = [];
 
-    // 1. Add current booking's assigned head as default option even if not yet in or missing from API response
+    // 1. Add current booking's assigned head as default option if present
     const currentBookingHead = this.selectedBooking()?.branchHeadName || this.statusBranchHeadName;
-    if (currentBookingHead && !seen.has(currentBookingHead.toLowerCase())) {
-      seen.add(currentBookingHead.toLowerCase());
+    const currentDist = (this.selectedBooking()?.districtName || '').trim();
+    const currentArea = (this.selectedBooking()?.areaName || '').trim();
+
+    if (currentBookingHead) {
       list.push({
-        id: this.selectedBooking()?.branchHeadId || 'current',
+        id: this.selectedBooking()?.branchHeadId ? `bh_${this.selectedBooking()?.branchHeadId}_current` : 'current',
         name: currentBookingHead,
-        districtName: (this.selectedBooking()?.districtName || '').trim()
+        districtName: currentDist,
+        areaName: currentArea,
+        displayLabel: `${currentBookingHead}${currentDist || currentArea ? ` (${[currentDist, currentArea].filter(Boolean).join(' - ')})` : ''}`,
+        branchHeadId: this.selectedBooking()?.branchHeadId ? Number(this.selectedBooking()?.branchHeadId) : undefined,
+        areaId: this.selectedBooking()?.areaId ? Number(this.selectedBooking()?.areaId) : undefined
       });
     }
 
-    // 2. Add options from the status update API
+    // 2. Add options from the status update API (each row represents a Branch Head + District + Area)
     for (const h of this.branchHeadDropdownOptions()) {
-      if (h.name && !seen.has(h.name.toLowerCase())) {
-        seen.add(h.name.toLowerCase());
-        list.push({
-          id: h.id,
-          name: h.name,
-          districtName: (h.district_name || '').trim()
-        });
-      }
-    }
+      const bhId = h.branch_head_id;
+      const bhName = h.branch_head_name;
+      const dName = (h.district_name || '').trim();
+      const aName = (h.area_name || '').trim();
+      const label = h.display_label || `${bhName} (${dName}${aName ? ' - ' + aName : ''})`;
 
-    // 3. Fallback to branchHeadUsers or branchHeads if any
-    for (const u of this.branchHeadUsers) {
-      if (u.name && !seen.has(u.name.toLowerCase())) {
-        seen.add(u.name.toLowerCase());
-        list.push({
-          id: u.id,
-          name: u.name,
-          districtName: (u.districtName || u.district_name || '').replace(/\s+hub$/i, '').trim()
-        });
-      }
+      list.push({
+        id: `bh_${bhId}_area_${h.area_id}`,
+        name: bhName,
+        districtName: dName,
+        areaName: aName,
+        displayLabel: label,
+        branchHeadId: bhId,
+        areaId: h.area_id
+      });
     }
 
     return list;
@@ -1326,9 +1345,80 @@ export class AdminBookingsComponent implements OnInit {
   pendingStatusChange = signal<string | null>(null);
   statusDistrictName = '';
   statusBranchHeadName = '';
+  statusSelectedDropdownValue: number | string | null = null;
+  statusBranchHeadId: number | null = null;
+  statusInitialSelectedBranchHead: InfiniteDropdownOption | null = null;
   statusScheduleDate = '';
   statusNotes = '';
   isSubmittingStatus = signal(false);
+
+  fetchBranchHeadsForStatusDropdown = (search: string, page: number, pageSize: number): Observable<InfiniteDropdownOption[]> => {
+    return this.dataService.getBranchHeadsForStatusUpdate(search, page, pageSize).pipe(
+      map(heads => {
+        const list: InfiniteDropdownOption[] = [];
+        const seen = new Set<string | number>();
+
+        // If page === 1, include currently assigned branch head if not already present
+        if (page === 1) {
+          const b = this.selectedBooking();
+          const currHead = b?.branchHeadName || this.statusBranchHeadName;
+          if (currHead && !search) {
+            const currDist = (b?.districtName || '').trim();
+            const currArea = (b?.areaName || '').trim();
+            const currAreaId = b?.areaId ? Number(b.areaId) : null;
+            if (currAreaId) {
+              seen.add(currAreaId);
+            }
+            list.push({
+              label: currHead,
+              value: currAreaId || `bh_${b?.branchHeadId || '0'}`,
+              subtext: [currDist, currArea].filter(Boolean).join(' - ') || 'Current Assignment',
+              branchHeadName: currHead,
+              branchHeadId: b?.branchHeadId ? Number(b.branchHeadId) : null,
+              districtName: currDist,
+              areaName: currArea,
+              areaId: currAreaId
+            });
+          }
+        }
+
+        for (const h of heads || []) {
+          const aId = Number(h.area_id);
+          if (!seen.has(aId)) {
+            seen.add(aId);
+            list.push({
+              label: h.branch_head_name,
+              value: aId,
+              subtext: `${h.district_name || ''} - ${h.area_name || ''}${h.area_pincode ? ' (' + h.area_pincode + ')' : ''}`,
+              branchHeadName: h.branch_head_name,
+              branchHeadId: h.branch_head_id,
+              districtName: h.district_name,
+              areaName: h.area_name,
+              areaId: aId
+            });
+          }
+        }
+
+        return list;
+      })
+    );
+  };
+
+  onBranchHeadSelect(item: InfiniteDropdownOption | null): void {
+    if (item) {
+      this.statusSelectedDropdownValue = item.value;
+      this.statusBranchHeadId = item['branchHeadId'] || null;
+      this.statusBranchHeadName = item['branchHeadName'] || item.label;
+      if (item['areaId']) {
+        this.statusSelectedAreaId.set(item['areaId']);
+      }
+    } else {
+      this.statusSelectedDropdownValue = null;
+      this.statusBranchHeadId = null;
+      this.statusBranchHeadName = '';
+      this.statusSelectedAreaId.set(null);
+    }
+  }
 
   autoAssignBranchHeadForDistrict(districtName: string): void {
     if (!districtName) {
@@ -1739,23 +1829,28 @@ export class AdminBookingsComponent implements OnInit {
 
     this.pendingStatusChange.set(newStatus);
 
-    // Fetch branch heads for status update
-    this.dataService.getBranchHeadsForStatusUpdate().subscribe({
-      next: (heads) => {
-        this.branchHeadDropdownOptions.set(heads || []);
-        if (!this.statusBranchHeadName && b.districtName) {
-          const cleanDist = b.districtName.replace(/\s+hub$/i, '').trim().toLowerCase();
-          const matched = heads.find(h => (h.district_name || '').toLowerCase() === cleanDist);
-          if (matched) {
-            this.statusBranchHeadName = matched.name;
-          }
-        }
-      },
-      error: (err) => console.error('Error fetching branch heads:', err)
-    });
-
     // Pre-fill Branch Head directly from the booking
     this.statusBranchHeadName = b.branchHeadName || '';
+    this.statusBranchHeadId = b.branchHeadId ? Number(b.branchHeadId) : null;
+    if (this.statusBranchHeadName) {
+      const currDist = (b.districtName || '').trim();
+      const currArea = (b.areaName || '').trim();
+      const currAreaId = b.areaId ? Number(b.areaId) : null;
+      this.statusSelectedDropdownValue = currAreaId || `bh_${this.statusBranchHeadId || '0'}`;
+      this.statusInitialSelectedBranchHead = {
+        label: this.statusBranchHeadName,
+        value: this.statusSelectedDropdownValue,
+        subtext: [currDist, currArea].filter(Boolean).join(' - ') || 'Current Assignment',
+        branchHeadName: this.statusBranchHeadName,
+        branchHeadId: this.statusBranchHeadId,
+        districtName: currDist,
+        areaName: currArea,
+        areaId: currAreaId
+      };
+    } else {
+      this.statusSelectedDropdownValue = null;
+      this.statusInitialSelectedBranchHead = null;
+    }
 
     // Pre-fill status notes from existing staffNotes
     this.statusNotes = b.staffNotes || (b as any).staff_notes || '';
@@ -1778,6 +1873,9 @@ export class AdminBookingsComponent implements OnInit {
     this.pendingStatusChange.set(null);
     this.statusDistrictName = '';
     this.statusBranchHeadName = '';
+    this.statusBranchHeadId = null;
+    this.statusSelectedDropdownValue = null;
+    this.statusInitialSelectedBranchHead = null;
     this.statusScheduleDate = '';
     this.statusNotes = '';
   }
@@ -1823,16 +1921,20 @@ export class AdminBookingsComponent implements OnInit {
       h => h.name.toLowerCase() === chosenBranchHead.toLowerCase()
     );
     const matchedDropdownItem = this.branchHeadDropdownOptions().find(
-      h => h.name.toLowerCase() === chosenBranchHead.toLowerCase()
+      h => h.branch_head_name.toLowerCase() === chosenBranchHead.toLowerCase()
     );
 
-    let resolvedBranchHeadId = null;
-    if (matchedDropdownItem && matchedDropdownItem.id) {
-      resolvedBranchHeadId = String(matchedDropdownItem.id);
-    } else if (matchedOption && matchedOption.id && matchedOption.id !== 'current') {
-      resolvedBranchHeadId = String(matchedOption.id);
-    } else if (b.branchHeadName && b.branchHeadName.toLowerCase() === chosenBranchHead.toLowerCase()) {
-      resolvedBranchHeadId = b.branchHeadId ? String(b.branchHeadId) : null;
+    let resolvedBranchHeadId = this.statusBranchHeadId ? String(this.statusBranchHeadId) : null;
+    if (!resolvedBranchHeadId) {
+      if (matchedDropdownItem && matchedDropdownItem.branch_head_id) {
+        resolvedBranchHeadId = String(matchedDropdownItem.branch_head_id);
+      } else if (matchedOption && matchedOption.branchHeadId) {
+        resolvedBranchHeadId = String(matchedOption.branchHeadId);
+      } else if (matchedOption && matchedOption.id && matchedOption.id !== 'current') {
+        resolvedBranchHeadId = String(matchedOption.id).replace(/^bh_(\d+).*/, '$1');
+      } else if (b.branchHeadName && b.branchHeadName.toLowerCase() === chosenBranchHead.toLowerCase()) {
+        resolvedBranchHeadId = b.branchHeadId ? String(b.branchHeadId) : null;
+      }
     }
 
     // Keep the booking's original district unchanged
