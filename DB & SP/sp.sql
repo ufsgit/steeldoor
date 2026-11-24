@@ -1126,14 +1126,14 @@ BEGIN
         SET v_booking_id = LAST_INSERT_ID();
         
         INSERT INTO booking_history (
-            booking_id, booking_name,action_type, 
+            booking_id, booking_name, action_type_id,action_type, 
             customer_note, staff_note,
             new_status_id, new_status_code, new_status_label, new_status_color_code, 
             to_branch_head_id, to_branch_head_name,
             to_assigned_head_district_id, to_assigned_head_district_name,
             action_by_id, action_by_name, action_by_role_id
         ) VALUES (
-            v_booking_id, p_name, 'New Booking Created', 
+            v_booking_id, p_name, 1,'New Booking Created', 
             p_notes, NULL,
             v_status_id, v_status_code, v_status_label, v_status_color_code,
             v_branch_head_id, v_branch_head_name,
@@ -1171,12 +1171,13 @@ BEGIN
         -- 3. Log history if customer name was updated
         IF p_name IS NOT NULL AND TRIM(p_name) <> '' AND (v_old_name IS NULL OR v_old_name <> TRIM(p_name)) THEN
             INSERT INTO booking_history (
-                booking_id, booking_name, action_type,
+                booking_id, booking_name, action_type_id, action_type,
                 customer_note, staff_note,
                 action_by_id, action_by_name, action_by_role_id
             ) VALUES (
                 v_booking_id, 
                 TRIM(p_name), 
+                5,
                 CONCAT('Customer Name Updated from "', COALESCE(v_old_name, ''), '" to "', TRIM(p_name), '"'),
                 NULL, 
                 NULL,
@@ -1190,11 +1191,11 @@ BEGIN
         -- 4. Log history if customer note was updated
         IF p_notes IS NOT NULL AND (v_old_notes IS NULL OR v_old_notes <> p_notes) THEN
             INSERT INTO booking_history (
-                booking_id, booking_name, action_type,
+                booking_id, booking_name, action_type_id, action_type,
                 customer_note, staff_note,
                 action_by_id, action_by_name, action_by_role_id
             ) VALUES (
-                v_booking_id, COALESCE(TRIM(p_name), v_old_name), 'Customer Notes Updated',
+                v_booking_id, COALESCE(TRIM(p_name), v_old_name), 6,'Customer Notes Updated',
                 p_notes, NULL,
                 p_login_id, p_login_name, p_login_role_id
             );
