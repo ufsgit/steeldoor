@@ -157,7 +157,7 @@ export interface InfiniteDropdownOption {
             (scroll)="onScroll($event)"
             class="max-h-56 overflow-y-auto py-1 divide-y divide-gray-50/50"
           >
-            @for (item of items; track item.value) {
+            @for (item of items; track ($index + '_' + item.value)) {
               <div
                 role="option"
                 [attr.aria-selected]="isSelected(item)"
@@ -254,6 +254,7 @@ export class InfiniteDropdownComponent implements ControlValueAccessor, OnInit, 
 
   private searchSubject = new Subject<string>();
   private searchSubscription?: Subscription;
+  private currentRequest$?: Subscription;
 
   private onChange: (val: any) => void = () => {};
   private onTouched: () => void = () => {};
@@ -292,6 +293,7 @@ export class InfiniteDropdownComponent implements ControlValueAccessor, OnInit, 
 
   ngOnDestroy(): void {
     this.searchSubscription?.unsubscribe();
+    this.currentRequest$?.unsubscribe();
   }
 
   @HostListener('document:click', ['$event'])
@@ -332,13 +334,12 @@ export class InfiniteDropdownComponent implements ControlValueAccessor, OnInit, 
 
   onSearchInput(val: string): void {
     this.isSearching = true;
-    this.searchSubject.next(val.trim());
+    this.searchSubject.next(val ? val.trim() : '');
     this.cdr.markForCheck();
   }
 
   clearSearch(): void {
     this.searchQuery = '';
-    this.isSearching = false;
     this.performSearch('');
   }
 
@@ -359,17 +360,29 @@ export class InfiniteDropdownComponent implements ControlValueAccessor, OnInit, 
   }
 
   private loadPage(page: number, isInitial: boolean = false, search: string = this.searchQuery): void {
-    if (!this.fetchFn || this.isLoadingInitial || this.isSearching || this.isLoadingMore) return;
+    if (!this.fetchFn) return;
+
+    // For infinite scroll next pages, don't duplicate request if already loading or no more items
+    if (page > 1 && (this.isLoadingMore || !this.hasMore)) {
+      return;
+    }
 
     if (page === 1) {
-      if (isInitial) this.isLoadingInitial = true;
-      else this.isSearching = true;
+      if (isInitial) {
+        this.isLoadingInitial = true;
+        this.isSearching = false;
+      } else {
+        this.isSearching = true;
+      }
     } else {
       this.isLoadingMore = true;
     }
     this.cdr.markForCheck();
 
-    this.fetchFn(search, page, this.pageSize).subscribe({
+    // Cancel any previous search / page request still in flight
+    this.currentRequest$?.unsubscribe();
+
+    this.currentRequest$ = this.fetchFn(search, page, this.pageSize).subscribe({
       next: (data) => {
         const fetched = data || [];
         if (page === 1) {

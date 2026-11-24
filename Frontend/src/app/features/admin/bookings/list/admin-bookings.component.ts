@@ -1388,19 +1388,20 @@ export class AdminBookingsComponent implements OnInit {
         }
 
         for (const h of heads || []) {
-          const aId = Number(h.area_id);
-          if (!seen.has(aId)) {
-            seen.add(aId);
+          const aId = Number(h.area_id) || 0;
+          const comboKey = `${h.branch_head_id}_${aId}`;
+          if (!seen.has(comboKey)) {
+            seen.add(comboKey);
             list.push({
               label: h.branch_head_name,
-              value: aId,
+              value: aId > 0 ? aId : `bh_${h.branch_head_id}`,
               subtext: `${h.district_name || ''} - ${h.area_name || ''}${h.area_pincode ? ' (' + h.area_pincode + ')' : ''}`,
               branchHeadName: h.branch_head_name,
               branchHeadId: h.branch_head_id,
               districtId: h.district_id,
               districtName: h.district_name,
               areaName: h.area_name,
-              areaId: aId
+              areaId: aId > 0 ? aId : null
             });
           }
         }
