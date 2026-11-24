@@ -41,6 +41,25 @@ export interface BrochuresResponse {
 export class BrochuresService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl.replace(/\/$/, '')}/brochures`;
+  private dynamicShareBaseUrl: string | null = null;
+
+  constructor() {
+    this.fetchShareConfig();
+  }
+
+  fetchShareConfig(): void {
+    const configUrl = `${environment.apiUrl.replace(/\/api\/?$/, '')}/api/uploads/share-config`;
+    this.http.get<{ success: boolean; shareBaseUrl: string }>(configUrl).subscribe({
+      next: (res) => {
+        if (res?.shareBaseUrl) {
+          this.dynamicShareBaseUrl = res.shareBaseUrl;
+        }
+      },
+      error: () => {
+        // Keep fallback based on environment and hostname
+      }
+    });
+  }
 
   /**
    * Fetch all brochures with optional search query and pagination
@@ -88,36 +107,37 @@ export class BrochuresService {
   }
 
   /**
-   * Formats the shareable public URL that can be copied and sent to customers via WhatsApp.
-   * Ensures:
-   * 1. In local dev, uses a wildcard DNS domain (192.168.2.147.sslip.io) so WhatsApp detects a valid
-   *    public TLD (.io) and renders it as an active, clickable blue hyperlink (not plain text),
-   *    which automatically navigates to the browser and resolves to your local server to load the actual image.
-   * 2. In production, uses environment.fileUrl (https://steeldoorapi.ufstech.co.in).
-   * 3. Spaces and special characters are percent-encoded with encodeURI() so WhatsApp links don't break.
+   * Universal method to format any public file URL (documents, brochures, images, PDFs)
+   * for WhatsApp sharing and external viewing using the live production domain.
    */
-  getShareUrl(brochure: Brochure): string {
-    const rawPath = brochure.file_url || brochure.file_path || `/uploads/brochures/${brochure.file_name}`;
-    let cleanPath = rawPath.startsWith('/') ? rawPath.substring(1) : rawPath;
+  getPublicFileShareUrl(rawPath: string): string {
+    if (!rawPath) return '';
 
-    // Strip any existing domain if rawPath is already absolute
+    let cleanPath = rawPath.startsWith('/') ? rawPath.substring(1) : rawPath;
     cleanPath = cleanPath.replace(/^https?:\/\/[^\/]+\//, '');
 
-    let base = environment.fileUrl || 'http://localhost:5000';
+    // Ensure it begins with uploads/ if it's a relative filename
+    if (!cleanPath.startsWith('uploads/')) {
+      cleanPath = `uploads/${cleanPath}`;
+    }
 
-    if (!environment.production) {
-      if (typeof window !== 'undefined' && window.location?.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        const h = window.location.hostname;
-        const domainHost = /^\d+\.\d+\.\d+\.\d+$/.test(h) ? `${h}.sslip.io` : h;
-        base = `http://${domainHost}:5000`;
-      } else {
-        base = 'http://192.168.2.147.sslip.io:5000';
-      }
+    // Determine base URL: prioritize dynamic config or environment.fileUrl, falling back to official live domain
+    let base = this.dynamicShareBaseUrl || environment.fileUrl || 'https://steeldoorapi.ufstech.co.in';
+
+    if (base.includes('localhost') || base.includes('127.0.0.1')) {
+      base = 'https://steeldoorapi.ufstech.co.in';
     }
 
     base = base.replace(/\/+$/, '');
-    const fullUrl = `${base}/${cleanPath}`;
-    return encodeURI(fullUrl);
+    return encodeURI(`${base}/${cleanPath}`);
+  }
+
+  /**
+   * Formats the shareable public URL for brochures
+   */
+  getShareUrl(brochure: Brochure): string {
+    const rawPath = brochure.file_url || brochure.file_path || `/uploads/brochures/${brochure.file_name}`;
+    return this.getPublicFileShareUrl(rawPath);
   }
 
   /**

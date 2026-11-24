@@ -1,3 +1,4 @@
+import os from 'os';
 import { pool } from '../../../db.js';
 
 export class UploadsController {
@@ -127,6 +128,52 @@ export class UploadsController {
     } catch (err) {
       next(err);
     }
+  }
+
+  /**
+   * Helper to detect local network IPv4 address dynamically
+   */
+  getLanIp() {
+    try {
+      const nets = os.networkInterfaces();
+      for (const name of Object.keys(nets)) {
+        for (const net of nets[name]) {
+          if (net.family === 'IPv4' && !net.internal) {
+            if (
+              net.address.startsWith('192.168.') ||
+              net.address.startsWith('10.') ||
+              /^172\.(1[6-9]|2\d|3[01])\./.test(net.address)
+            ) {
+              return net.address;
+            }
+          }
+        }
+      }
+      for (const name of Object.keys(nets)) {
+        for (const net of nets[name]) {
+          if (net.family === 'IPv4' && !net.internal) {
+            return net.address;
+          }
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return 'localhost';
+  }
+
+  /**
+   * GET /api/uploads/share-config
+   * Returns current active share base URL for public file links (e.g. WhatsApp sharing)
+   */
+  getShareConfig(req, res) {
+    const publicUrl = process.env.PUBLIC_FILE_URL || process.env.SHARE_BASE_URL || 'https://steeldoorapi.ufstech.co.in';
+    const shareBaseUrl = publicUrl.replace(/\/+$/, '');
+
+    return res.json({
+      success: true,
+      shareBaseUrl
+    });
   }
 }
 

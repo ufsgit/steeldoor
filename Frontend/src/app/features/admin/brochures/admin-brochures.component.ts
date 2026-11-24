@@ -369,24 +369,16 @@ import { ToastService } from '../../../shared/toast/toast.service';
                     </button>
                   </div>
 
-                  <!-- Delete Button (Direct animated delete) -->
+                  <!-- Delete Button (Prompt confirmation before deleting) -->
                   <button
                     type="button"
-                    (click)="deleteBrochure(item, $event)"
-                    [disabled]="isCardDeleting(item.id)"
-                    class="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-40"
+                    (click)="promptDeleteBrochure(item, $event)"
+                    class="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                     title="Delete brochure"
                   >
-                    @if (isCardDeleting(item.id)) {
-                      <svg class="w-4 h-4 text-red-500 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                      </svg>
-                    } @else {
-                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    }
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
                   </button>
                 </div>
 
@@ -435,6 +427,76 @@ import { ToastService } from '../../../shared/toast/toast.service';
           </div>
         }
 
+        <!-- Delete Confirmation Alert Modal -->
+        @if (deleteModalOpen() && brochureToDelete()) {
+          <div class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+            <!-- Backdrop -->
+            <div
+              class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-fadeIn"
+              (click)="cancelDelete()"
+            ></div>
+
+            <!-- Dialog Box -->
+            <div
+              role="dialog"
+              aria-modal="true"
+              class="relative w-full max-w-sm bg-white rounded-3xl border border-gray-200 shadow-2xl p-6 sm:p-7 flex flex-col items-center text-center animate-scaleUp z-10"
+              (click)="$event.stopPropagation()"
+            >
+              <!-- Close button in top-right -->
+              <button
+                type="button"
+                (click)="cancelDelete()"
+                class="absolute top-4 right-4 w-8 h-8 rounded-full border border-gray-200 text-gray-400 hover:text-gray-700 hover:bg-gray-50 flex items-center justify-center transition-colors cursor-pointer"
+                aria-label="Close dialog"
+              >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <!-- Status Icon -->
+              <div class="w-16 h-16 rounded-2xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center mb-4 shadow-2xs">
+                <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+
+              <!-- Title & Message -->
+              <h3 class="text-lg font-bold text-gray-900 mb-1">Delete Brochure</h3>
+              <p class="text-sm text-gray-500 leading-relaxed mb-6">
+                Are you sure you want to delete <strong class="text-gray-800">"{{ brochureToDelete()?.title }}"</strong>? This action cannot be undone.
+              </p>
+
+              <!-- Action Buttons: OK and Cancel -->
+              <div class="grid grid-cols-2 gap-3 w-full">
+                <button
+                  type="button"
+                  (click)="confirmDelete()"
+                  [disabled]="isDeleting()"
+                  class="w-full py-2.5 px-4 rounded-xl font-bold text-sm bg-red-600 hover:bg-red-700 text-white shadow-soft transition-all cursor-pointer flex items-center justify-center gap-2 focus:ring-4 focus:ring-red-200 disabled:opacity-50"
+                >
+                  @if (isDeleting()) {
+                    <span class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Deleting...</span>
+                  } @else {
+                    <span>OK</span>
+                  }
+                </button>
+
+                <button
+                  type="button"
+                  (click)="cancelDelete()"
+                  [disabled]="isDeleting()"
+                  class="w-full py-2.5 px-4 rounded-xl font-bold text-sm border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition-all cursor-pointer flex items-center justify-center"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
       </div>
     </div>
   `
@@ -460,6 +522,11 @@ export class AdminBrochuresComponent implements OnInit, OnDestroy {
   isDragging = signal<boolean>(false);
   copiedId = signal<number | null>(null);
   deletingIds = signal<Set<number>>(new Set<number>());
+
+  // Delete Confirmation Alert Modal State
+  deleteModalOpen = signal<boolean>(false);
+  brochureToDelete = signal<Brochure | null>(null);
+  isDeleting = signal<boolean>(false);
 
   isCardDeleting(id: number): boolean {
     return this.deletingIds().has(id);
@@ -766,54 +833,51 @@ export class AdminBrochuresComponent implements OnInit, OnDestroy {
     document.body.removeChild(textarea);
   }
 
-  deleteBrochure(item: Brochure, event?: Event): void {
+  promptDeleteBrochure(item: Brochure, event?: Event): void {
     if (event) {
       event.stopPropagation();
       event.preventDefault();
     }
+    this.brochureToDelete.set(item);
+    this.deleteModalOpen.set(true);
+  }
 
+  cancelDelete(): void {
+    this.deleteModalOpen.set(false);
+    this.brochureToDelete.set(null);
+  }
+
+  confirmDelete(): void {
+    const item = this.brochureToDelete();
+    if (!item) return;
+
+    this.isDeleting.set(true);
     const targetId = item.id;
-    if (this.deletingIds().has(targetId)) return;
 
-    // 1. Instantly trigger smooth deletion animation on the card
-    this.deletingIds.update(set => {
-      const next = new Set(set);
-      next.add(targetId);
-      return next;
-    });
-
-    // 2. Perform backend delete call
     this.brochuresService.deleteBrochure(targetId).subscribe({
       next: () => {
-        // 3. Wait 420ms for the slide/fade/shrink animation to complete smoothly
-        setTimeout(() => {
-          this.brochures.update(list => list.filter(b => b.id !== targetId));
-          this.totalRecords.update(n => Math.max(0, n - 1));
-          this.deletingIds.update(set => {
-            const next = new Set(set);
-            next.delete(targetId);
-            return next;
-          });
-          this.toast.success(`Brochure "${item.title}" deleted.`);
+        this.isDeleting.set(false);
+        this.deleteModalOpen.set(false);
+        this.brochureToDelete.set(null);
 
-          // If current page is left empty and we're past page 1, retreat one page
-          if (this.brochures().length === 0 && this.currentPage() > 1) {
-            this.currentPage.update(p => p - 1);
-          }
-          // Silently re-sync with backend pagination
-          this.loadBrochures(true);
-        }, 420);
+        this.brochures.update(list => list.filter(b => b.id !== targetId));
+        this.totalRecords.update(n => Math.max(0, n - 1));
+        this.toast.success(`Brochure "${item.title}" deleted.`);
+
+        if (this.brochures().length === 0 && this.currentPage() > 1) {
+          this.currentPage.update(p => p - 1);
+        }
+        this.loadBrochures(true);
       },
       error: (err) => {
-        // Revert card animation state on error
-        this.deletingIds.update(set => {
-          const next = new Set(set);
-          next.delete(targetId);
-          return next;
-        });
+        this.isDeleting.set(false);
         this.toast.error('Failed to delete brochure: ' + (err.error?.error || err.message));
       }
     });
+  }
+
+  deleteBrochure(item: Brochure, event?: Event): void {
+    this.promptDeleteBrochure(item, event);
   }
 
   formatFileSize(bytes?: number): string {

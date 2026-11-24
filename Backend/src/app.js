@@ -72,9 +72,19 @@ app.get('/api/health', (req, res) => {
 
 // Static files serving (for uploaded documents and images)
 const uploadsDir = path.resolve(__dirname, '..', 'uploads');
-app.use('/uploads', express.static(uploadsDir));
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-app.use('/uploads', express.static(path.join(process.cwd(), 'Backend', 'uploads')));
+const staticOptions = {
+  setHeaders: (res, filePath) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    const ext = path.extname(filePath).toLowerCase();
+    if (['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.pdf'].includes(ext)) {
+      res.setHeader('Content-Disposition', 'inline');
+    }
+  }
+};
+app.use('/uploads', express.static(uploadsDir, staticOptions));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), staticOptions));
+app.use('/uploads', express.static(path.join(process.cwd(), 'Backend', 'uploads'), staticOptions));
 
 // ---------------- Mount Module Routes ----------------
 

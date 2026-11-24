@@ -34,6 +34,9 @@ const handleUploads = (req, res, next) => {
 };
 
 
+// GET /api/uploads/share-config
+router.get('/share-config', (req, res) => uploadsController.getShareConfig(req, res));
+
 // POST /api/uploads/multiple
 router.post('/multiple', handleUploads, (req, res, next) => uploadsController.uploadMultiple(req, res, next));
 

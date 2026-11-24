@@ -1302,29 +1302,16 @@ export class BookingDetailedComponent implements OnInit, OnChanges, OnDestroy {
   getFullFileUrl(doc: string): string {
     if (!doc) return '';
     if (doc.startsWith('http://') || doc.startsWith('https://')) return encodeURI(doc);
-    const cleanDoc = doc.startsWith('/') ? doc.slice(1) : doc;
+    let cleanDoc = doc.startsWith('/') ? doc.slice(1) : doc;
+    if (!cleanDoc.startsWith('uploads/')) {
+      cleanDoc = `uploads/${cleanDoc}`;
+    }
     const baseApi = environment.apiUrl ? environment.apiUrl.replace(/\/api\/?$/, '') : '';
     return encodeURI(`${baseApi}/${cleanDoc}`);
   }
 
   getPublicShareFileUrl(doc: string): string {
-    if (!doc) return '';
-    let cleanDoc = doc.startsWith('/') ? doc.slice(1) : doc;
-    cleanDoc = cleanDoc.replace(/^https?:\/\/[^\/]+\//, '');
-
-    let base = environment.fileUrl || 'http://localhost:5000';
-    if (!environment.production) {
-      if (typeof window !== 'undefined' && window.location?.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        const h = window.location.hostname;
-        const domainHost = /^\d+\.\d+\.\d+\.\d+$/.test(h) ? `${h}.sslip.io` : h;
-        base = `http://${domainHost}:5000`;
-      } else {
-        base = 'http://192.168.2.147.sslip.io:5000';
-      }
-    }
-
-    base = base.replace(/\/+$/, '');
-    return encodeURI(`${base}/${cleanDoc}`);
+    return this.brochuresService.getPublicFileShareUrl(doc);
   }
 
   copySingleBrochureLink(b: Brochure, event: Event): void {
