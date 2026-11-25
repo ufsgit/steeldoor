@@ -1301,12 +1301,16 @@ export class BookingDetailedComponent implements OnInit, OnChanges, OnDestroy {
 
   getFullFileUrl(doc: string): string {
     if (!doc) return '';
+    const baseApi = environment.apiUrl ? environment.apiUrl.replace(/\/api\/?$/, '') : '';
+    const uploadMatch = doc.match(/^https?:\/\/[^/]+(\/uploads\/.+)$/i);
+    if (uploadMatch && !environment.production && baseApi.includes('localhost')) {
+      return encodeURI(`${baseApi}${uploadMatch[1]}`);
+    }
     if (doc.startsWith('http://') || doc.startsWith('https://')) return encodeURI(doc);
     let cleanDoc = doc.startsWith('/') ? doc.slice(1) : doc;
     if (!cleanDoc.startsWith('uploads/')) {
       cleanDoc = `uploads/${cleanDoc}`;
     }
-    const baseApi = environment.apiUrl ? environment.apiUrl.replace(/\/api\/?$/, '') : '';
     return encodeURI(`${baseApi}/${cleanDoc}`);
   }
 

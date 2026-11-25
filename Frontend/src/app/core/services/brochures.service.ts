@@ -41,25 +41,6 @@ export interface BrochuresResponse {
 export class BrochuresService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl.replace(/\/$/, '')}/brochures`;
-  private dynamicShareBaseUrl: string | null = null;
-
-  constructor() {
-    this.fetchShareConfig();
-  }
-
-  fetchShareConfig(): void {
-    const configUrl = `${environment.apiUrl.replace(/\/api\/?$/, '')}/api/uploads/share-config`;
-    this.http.get<{ success: boolean; shareBaseUrl: string }>(configUrl).subscribe({
-      next: (res) => {
-        if (res?.shareBaseUrl) {
-          this.dynamicShareBaseUrl = res.shareBaseUrl;
-        }
-      },
-      error: () => {
-        // Keep fallback based on environment and hostname
-      }
-    });
-  }
 
   /**
    * Fetch all brochures with optional search query and pagination
@@ -107,27 +88,27 @@ export class BrochuresService {
   }
 
   /**
-   * Universal method to format any public file URL (documents, brochures, images, PDFs)
-   * for WhatsApp sharing and external viewing using the live production domain.
+   * Returns the complete ready-to-share URL (backend already returns full URLs in file_url/documents;
+   * safely falls back to environment.fileUrl only if an older relative path is encountered).
    */
   getPublicFileShareUrl(rawPath: string): string {
     if (!rawPath) return '';
+    const trimmed = rawPath.trim();
 
-    let cleanPath = rawPath.startsWith('/') ? rawPath.substring(1) : rawPath;
-    cleanPath = cleanPath.replace(/^https?:\/\/[^\/]+\//, '');
+    // Only accept external http(s) URLs directly if they aren't stale local/IP upload URLs
+    if (/^https?:\/\//i.test(trimmed) && !/(localhost|127\.0\.0\.1|192\.168\.|\.sslip\.io)/i.test(trimmed)) {
+      return encodeURI(trimmed);
+    }
 
-    // Ensure it begins with uploads/ if it's a relative filename
+    let cleanPath = trimmed.replace(/^https?:\/\/[^/]+\//, '').replace(/^\/+/, '');
     if (!cleanPath.startsWith('uploads/')) {
       cleanPath = `uploads/${cleanPath}`;
     }
 
-    // Determine base URL: prioritize dynamic config or environment.fileUrl, falling back to official live domain
-    let base = this.dynamicShareBaseUrl || environment.fileUrl || 'https://steeldoorapi.ufstech.co.in';
-
+    let base = environment.fileUrl || 'https://steeldoorapi.ufstech.co.in';
     if (base.includes('localhost') || base.includes('127.0.0.1')) {
       base = 'https://steeldoorapi.ufstech.co.in';
     }
-
     base = base.replace(/\/+$/, '');
     return encodeURI(`${base}/${cleanPath}`);
   }
@@ -141,15 +122,23 @@ export class BrochuresService {
   }
 
   /**
-   * Formats internal in-browser view URL for opening documents directly in the local admin tab
+   * Formats internal in-browser view URL for opening documents directly in the admin tab
    */
   getViewUrl(brochure: Brochure): string {
     const rawPath = brochure.file_url || brochure.file_path || `/uploads/brochures/${brochure.file_name}`;
+    if (!rawPath) return '';
+
+    const baseApi = environment.apiUrl ? environment.apiUrl.replace(/\/api\/?$/, '') : '';
+    const uploadMatch = rawPath.match(/^https?:\/\/[^/]+(\/uploads\/.+)$/i);
+    if (uploadMatch && !environment.production && baseApi.includes('localhost')) {
+      return encodeURI(`${baseApi}${uploadMatch[1]}`);
+    }
+
     if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
       return encodeURI(rawPath);
     }
     const cleanPath = rawPath.startsWith('/') ? rawPath.substring(1) : rawPath;
-    const base = (environment.fileUrl || 'http://localhost:5000').replace(/\/+$/, '');
+    const base = (environment.fileUrl || 'https://steeldoorapi.ufstech.co.in').replace(/\/+$/, '');
     return encodeURI(`${base}/${cleanPath}`);
   }
 }

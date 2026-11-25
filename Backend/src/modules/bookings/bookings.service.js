@@ -1,11 +1,12 @@
 import { pool } from '../../../db.js';
 import { notificationsService } from '../notifications/notifications.service.js';
+import { toPublicFileUrl } from '../../utils/fileUrl.util.js';
 
 export class BookingsService {
   /**
    * Create a new booking using save_booking SP (p_id = NULL)
    */
-  async createBooking(data) {
+  async createBooking(data, req = null) {
     const name = data.name;
     const mobile = data.mobile;
     const address = data.address;
@@ -52,7 +53,7 @@ export class BookingsService {
     );
 
     const rows = results?.[0] || [];
-    const formatted = rows.length > 0 ? this.formatBookingRecord(rows[0]) : null;
+    const formatted = rows.length > 0 ? this.formatBookingRecord(rows[0], req) : null;
 
     // Send push notification to Branch Head if assigned
     if (formatted && formatted.branchHeadId) {
@@ -74,7 +75,7 @@ export class BookingsService {
   /**
    * Update an existing booking using save_booking SP (p_id = bookingId)
    */
-  async updateBooking(id, data = {}) {
+  async updateBooking(id, data = {}, req = null) {
     const bookingId = parseInt(id, 10);
     if (isNaN(bookingId)) {
       return null;
@@ -128,7 +129,7 @@ export class BookingsService {
     );
 
     const rows = results?.[0] || [];
-    const formatted = rows.length > 0 ? this.formatBookingRecord(rows[0]) : null;
+    const formatted = rows.length > 0 ? this.formatBookingRecord(rows[0], req) : null;
 
     // Send push notification to Branch Head if assigned
     if (formatted && formatted.branchHeadId) {
@@ -150,12 +151,12 @@ export class BookingsService {
   /**
    * Unified save handler (calls create if id is null/0, else update)
    */
-  async saveBooking(data = {}) {
+  async saveBooking(data = {}, req = null) {
     const id = data.id ? parseInt(data.id, 10) : null;
     if (id) {
-      return this.updateBooking(id, data);
+      return this.updateBooking(id, data, req);
     }
-    return this.createBooking(data);
+    return this.createBooking(data, req);
   }
 
   /**
@@ -202,7 +203,8 @@ export class BookingsService {
     dateFrom = null,
     dateTo = null,
     filterRole = null,
-    isFollowUp = null
+    isFollowUp = null,
+    req = null
   } = {}) {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.max(1, parseInt(limit, 10) || 15);
@@ -239,7 +241,7 @@ export class BookingsService {
 
     
 
-    const formattedRows = rows.map(b => this.formatBookingRecord(b));
+    const formattedRows = rows.map(b => this.formatBookingRecord(b, req));
     const total = Number(meta.total_records ?? formattedRows.length);
 
     return {
@@ -256,7 +258,7 @@ export class BookingsService {
   /**
    * Helper to normalize booking documents and field names
    */
-  formatBookingRecord(b) {
+  formatBookingRecord(b, req = null) {
     let docs = [];
     if (b.documents) {
       if (Array.isArray(b.documents)) {
@@ -271,6 +273,12 @@ export class BookingsService {
         docs = [b.documents];
       }
     }
+    if (!Array.isArray(docs)) {
+      docs = docs ? [docs] : [];
+    }
+    docs = docs
+      .filter(d => typeof d === 'string' && d.trim().length > 0)
+      .map(d => toPublicFileUrl(d, req));
 
     const statusCode = b.statusCode || b.status_code || b.status || 'New';
     const statusLabel = b.statusLabel || b.status_label || statusCode;

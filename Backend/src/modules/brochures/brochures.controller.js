@@ -1,6 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import { brochuresService } from './brochures.service.js';
+import { toPublicFileUrl } from '../../utils/fileUrl.util.js';
 
 export class BrochuresController {
   /**
@@ -15,10 +16,10 @@ export class BrochuresController {
 
       const { rows, pagination } = await brochuresService.getAll({ search, page, limit });
 
-      // Append clean URL paths
+      // Return complete public file URLs directly from backend
       const formatted = rows.map(item => ({
         ...item,
-        file_url: `/uploads/brochures/${item.file_name}`
+        file_url: toPublicFileUrl(`/uploads/brochures/${item.file_name}`, req)
       }));
 
       return res.json({
@@ -65,7 +66,7 @@ export class BrochuresController {
         message: 'Brochure document uploaded successfully',
         data: {
           ...created,
-          file_url: `/uploads/brochures/${file.filename}`
+          file_url: toPublicFileUrl(`/uploads/brochures/${file.filename}`, req)
         }
       });
     } catch (err) {

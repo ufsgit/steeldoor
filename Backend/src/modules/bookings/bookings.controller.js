@@ -1,4 +1,5 @@
 import { bookingsService } from './bookings.service.js';
+import { normalizeRelativeUploadPath } from '../../utils/fileUrl.util.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -72,8 +73,8 @@ function processIncomingDocuments(rawDocs, reqFiles = []) {
         }
       }
 
-      // Normal URL or relative path
-      processed.push(item);
+      // Normal URL or relative path -> store clean relative /uploads/... path in DB
+      processed.push(normalizeRelativeUploadPath(item));
     }
   }
 
@@ -119,7 +120,8 @@ export class BookingsController {
         dateFrom,
         dateTo,
         filterRole: targetFilterRole,
-        isFollowUp
+        isFollowUp,
+        req
       });
       return res.json(result);
     } catch (err) {
@@ -166,7 +168,7 @@ export class BookingsController {
         districtName: isBranchHead ? user.districtName : (req.body.districtName ?? null)
       };
 
-      const newBooking = await bookingsService.createBooking(bookingData);
+      const newBooking = await bookingsService.createBooking(bookingData, req);
       return res.status(201).json(newBooking);
     } catch (err) {
       next(err);
@@ -197,7 +199,7 @@ export class BookingsController {
         loginId: user.id ?? req.body.loginId ?? req.body.login_id ?? null,
         loginName: user.name ?? req.body.loginName ?? req.body.login_name ?? null
       };
-      const updatedBooking = await bookingsService.updateBooking(id, updateData);
+      const updatedBooking = await bookingsService.updateBooking(id, updateData, req);
       
       if (!updatedBooking) {
         return res.status(404).json({ error: 'Booking not found or has been deleted.' });

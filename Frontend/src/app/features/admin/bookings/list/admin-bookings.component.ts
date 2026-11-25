@@ -2095,11 +2095,18 @@ export class AdminBookingsComponent implements OnInit {
 
   getFullFileUrl(filePath: string): string {
     if (!filePath) return '';
+    const baseApi = environment.apiUrl ? environment.apiUrl.replace(/\/api\/?$/, '') : '';
+    const uploadMatch = filePath.match(/^https?:\/\/[^/]+(\/uploads\/.+)$/i);
+    if (uploadMatch && !environment.production && baseApi.includes('localhost')) {
+      return `${baseApi}${uploadMatch[1]}`;
+    }
     if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
       return filePath;
     }
     const cleanPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
-    const base = (environment.fileUrl || 'http://localhost:5000').replace(/\/$/, '');
+    const base = (!environment.production && baseApi.includes('localhost'))
+      ? baseApi
+      : (environment.fileUrl || 'https://steeldoorapi.ufstech.co.in').replace(/\/$/, '');
     return `${base}${cleanPath}`;
   }
 
