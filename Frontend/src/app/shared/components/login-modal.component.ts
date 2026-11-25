@@ -164,7 +164,10 @@ export class LoginModalComponent implements OnInit {
       next: res => {
         this.isLoading.set(false);
         this.close();
-        this.toast.success(`Welcome back, ${res.user.name}!`);
+        this.toast.success(
+          `Welcome back, ${res.user.name}! You have signed in successfully.`,
+          'Signed In!'
+        );
         const redirect = this.auth.getRedirectUrlForRole(res.user.role);
         this.router.navigate([redirect]);
       },

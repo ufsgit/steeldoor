@@ -51,26 +51,26 @@ export const SITE_CONFIG: SiteConfig = {
   logoFull: 'logo.png',
   navbarColor: '#ffff', // Navbar / Header background color (change here anytime)
   navbarTextColor: 'black', // Navbar link / text color
-  navbarTextHoverColor: '#f6ab07ff', // Navbar link hover text color
+  navbarTextHoverColor: '#ea1f25', // Navbar link hover text color
 
   // Book Installation Button (Colors & Hover Effects)
-  bookBtnBg: '#054e17ff', // Button background color
-  bookBtnHoverBg: '#dd7777ff', // Button hover background color
-  bookBtnText: '#fcfcfcff', // Button text / icon color
+  bookBtnBg: '#ea1f25', // Button background color
+  bookBtnHoverBg: '#c5161b', // Button hover background color
+  bookBtnText: '#ffffff', // Button text / icon color
 
   // Login Button (Colors & Hover Effects)
-  loginBtnBg: '#054e17ff', // Button background color
-  loginBtnHoverBg: '#dd7777ff', // Button hover background color
-  loginBtnText: '#fcfcfcff', // Button text / icon color
-  loginBtnBorder: '#080f0ee9', // Button border color
+  loginBtnBg: '#ea1f25', // Button background color
+  loginBtnHoverBg: '#c5161b', // Button hover background color
+  loginBtnText: '#ffffff', // Button text / icon color
+  loginBtnBorder: '#c5161b', // Button border color
 
   // Admin User Profile Pill Button (Colors & Hover Effects)
   adminProfileBtnBg: 'transparent', // Button background color
-  adminProfileBtnHoverBg: '#25d577ff', // Button hover background color
-  adminProfileBtnText: '#0c5af6ff', // Text & arrow color
+  adminProfileBtnHoverBg: '#fef2f2', // Button hover background color
+  adminProfileBtnText: '#1f2937', // Text & arrow color
   adminProfileBtnBorder: '#e5e7eb', // Border color
-  adminProfileBadgeBg: '#d1fae5', // Avatar badge background
-  adminProfileBadgeText: '#047857', // Avatar badge text color
+  adminProfileBadgeBg: '#fee2e2', // Avatar badge background
+  adminProfileBadgeText: '#c5161b', // Avatar badge text color
 
   // Footer Details
   copyright: 'FitMate. All rights reserved.',

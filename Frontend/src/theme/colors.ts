@@ -6,24 +6,24 @@
  */
 
 export const themeColors = {
-  // Brand Green Palette (Deep forest green with fresh emerald accents)
-  primary: '#14532d',
-  'primary-dark': '#0d381e',
-  'primary-light': '#1b6e3b',
-  'primary-hover': '#166534',
-  accent: '#10b981',
-  'accent-dark': '#047857',
-  'accent-light': '#34d399',
+  // Brand Red Palette (FitMate Logo Red #ea1f25 with deep crimson hover accents)
+  primary: '#ea1f25',
+  'primary-dark': '#9e1116',
+  'primary-light': '#ef4444',
+  'primary-hover': '#c5161b',
+  accent: '#dc2626',
+  'accent-dark': '#b91c1c',
+  'accent-light': '#f87171',
 
-  // Neutrals & Surfaces (Warm off-white, steel-grey hints)
-  background: '#f8faf7',
+  // Neutrals & Surfaces (Clean warm off-white, steel-grey hints)
+  background: '#faf7f8',
   surface: '#ffffff',
-  'surface-hover': '#f1f5f0',
-  'surface-muted': '#f0f4f1',
+  'surface-hover': '#f9f4f4',
+  'surface-muted': '#f4efef',
   'surface-elevated': '#ffffff',
 
-  border: '#dbe4dc',
-  'border-hover': '#c2d1c4',
+  border: '#e6dede',
+  'border-hover': '#d4c4c4',
 
   // Typography Tokens
   text: '#0f172a',

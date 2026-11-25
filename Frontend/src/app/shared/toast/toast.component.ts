@@ -68,7 +68,7 @@ import { ToastService, ToastMessage } from './toast.service';
           <h3 class="text-lg font-bold text-text mb-1">
             {{ toast.title || (toast.type === 'danger' ? 'Error' : 'Notice') }}
           </h3>
-          <p class="text-sm text-text-muted leading-relaxed mb-6 max-w-xs sm:max-w-sm">
+          <p class="text-sm text-text-muted leading-relaxed mb-6 max-w-sm">
             {{ toast.message }}
           </p>
 

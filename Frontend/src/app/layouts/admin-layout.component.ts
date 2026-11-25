@@ -104,14 +104,14 @@ import { SITE_CONFIG } from '../core/site-config';
                     <a
                       routerLink="/admin/users"
                       (click)="closeAllDropdowns()"
-                      class="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-[#0f9d58] font-medium transition-colors cursor-pointer"
+                      class="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-[#ea1f25] font-medium transition-colors cursor-pointer"
                     >
                       Users
                     </a>
                     <a
                       routerLink="/admin/areas"
                       (click)="closeAllDropdowns()"
-                      class="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-[#0f9d58] font-medium transition-colors cursor-pointer"
+                      class="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-[#ea1f25] font-medium transition-colors cursor-pointer"
                     >
                       District Areas
                     </a>

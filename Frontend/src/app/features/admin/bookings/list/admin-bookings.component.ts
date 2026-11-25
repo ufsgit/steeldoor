@@ -29,9 +29,9 @@ import { environment } from '../../../../../environments/environment';
           id="tab-all-orders"
           (click)="setStatus(null)"
           class="flex items-center gap-2 pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0"
-          [ngClass]="(selectedStatusId() === null && !isFollowupTabActive()) ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
+          [ngClass]="(selectedStatusId() === null && !isFollowupTabActive()) ? 'text-[#ea1f25] border-b-2 border-[#ea1f25] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
         >
-          <svg class="w-4.5 h-4.5 text-[#0f9d58]" viewBox="0 0 24 24" fill="currentColor">
+          <svg class="w-4.5 h-4.5 text-[#ea1f25]" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H5v-4h7v4zm0-6H5V7h7v4zm7 6h-5v-4h5v4zm0-6h-5V7h5v4z"/>
           </svg>
           <span class="whitespace-nowrap">All Orders</span>
@@ -43,7 +43,7 @@ import { environment } from '../../../../../environments/environment';
           id="tab-follow-ups"
           (click)="setFollowupTab()"
           class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0 whitespace-nowrap"
-          [ngClass]="isFollowupTabActive() ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
+          [ngClass]="isFollowupTabActive() ? 'text-[#ea1f25] border-b-2 border-[#ea1f25] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
         >
           Follow-ups
         </button>
@@ -55,7 +55,7 @@ import { environment } from '../../../../../environments/environment';
             [id]="'tab-status-' + opt.id"
             (click)="setStatus(opt.id)"
             class="pb-3 pt-3.5 -mb-px transition-colors cursor-pointer shrink-0 whitespace-nowrap"
-            [ngClass]="(!isFollowupTabActive() && selectedStatusId() === opt.id) ? 'text-[#0f9d58] border-b-2 border-[#0f9d58] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
+            [ngClass]="(!isFollowupTabActive() && selectedStatusId() === opt.id) ? 'text-[#ea1f25] border-b-2 border-[#ea1f25] font-bold' : 'text-gray-600 hover:text-gray-900 font-semibold border-b-2 border-transparent'"
           >
             {{ opt.label || opt.code }}
           </button>
@@ -73,7 +73,7 @@ import { environment } from '../../../../../environments/environment';
               [(ngModel)]="filterSearchInput"
               (keydown.enter)="applyFilters()"
               placeholder="Search client name or ph no..."
-              class="w-full h-[36px] text-[13px] px-3.5 rounded-md border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#0f9d58] font-normal"
+              class="w-full h-[36px] text-[13px] px-3.5 rounded-md border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#ea1f25] font-normal"
             />
           </div>
 
@@ -151,7 +151,7 @@ import { environment } from '../../../../../environments/environment';
             <div class="w-40 sm:w-44 h-[36px] relative shrink-0">
               <select
                 [(ngModel)]="filterCustomerRoleInput"
-                class="w-full h-full text-[13px] px-3 pr-7 rounded-md border border-gray-200 bg-white text-gray-700 focus:outline-none focus:border-[#0f9d58] font-normal appearance-none cursor-pointer"
+                class="w-full h-full text-[13px] px-3 pr-7 rounded-md border border-gray-200 bg-white text-gray-700 focus:outline-none focus:border-[#ea1f25] font-normal appearance-none cursor-pointer"
               >
                 <option value="">All Customers</option>
                 <option value="1">Company</option>
@@ -190,7 +190,7 @@ import { environment } from '../../../../../environments/environment';
             (click)="applyFilters()"
             class="h-[36px] px-3.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-[13px] flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
           >
-            <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-3.5 h-3.5 text-[#ea1f25]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
             <span>Search</span>
@@ -199,7 +199,7 @@ import { environment } from '../../../../../environments/environment';
           <!-- + New Enquiry Green Button -->
           <a
             routerLink="/admin/bookings/new"
-            class="h-[36px] px-4 rounded-md bg-[#246b3f] hover:bg-[#1e5834] text-white font-semibold text-[13px] flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+            class="h-[36px] px-4 rounded-md bg-[#ea1f25] hover:bg-[#c5161b] text-white font-semibold text-[13px] flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
           >
             <svg class="w-4 h-4 fill-none shrink-0" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" d="M12 4v16m8-8H4"/>
@@ -301,7 +301,7 @@ import { environment } from '../../../../../environments/environment';
                   </td>
 
                   <!-- A · CLIENT NAME -->
-                  <td class="py-2.5 px-3.5 font-bold text-[15px] text-gray-950 group-hover:text-[#0f9d58] transition-colors whitespace-nowrap truncate tracking-tight border-r border-gray-200" [title]="b.clientName || ''" [class.border-b]="!last" [class.border-gray-200]="!last">
+                  <td class="py-2.5 px-3.5 font-bold text-[15px] text-gray-950 group-hover:text-[#ea1f25] transition-colors whitespace-nowrap truncate tracking-tight border-r border-gray-200" [title]="b.clientName || ''" [class.border-b]="!last" [class.border-gray-200]="!last">
                     {{ b.clientName }}
                   </td>
 
@@ -327,10 +327,10 @@ import { environment } from '../../../../../environments/environment';
 
                   <!-- F · STATUS (Soft rounded-rectangle badges matching Image 1) -->
                   <td class="py-2 px-3.5 whitespace-nowrap" [class.border-b]="!last" [class.border-gray-200]="!last">
-                    <!-- NEW (Soft warm cream/emerald rounded rectangle) -->
+                    <!-- NEW (Soft FitMate red rounded rectangle) -->
                     @if (isStatus(b, 'NEW')) {
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#e6f4ea] text-[#137333]">
-                        <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#fef2f2] text-[#c5161b]">
+                        <span class="w-2 h-2 rounded-full bg-[#ea1f25]"></span>
                         <span>NEW</span>
                       </span>
                     }
@@ -343,10 +343,10 @@ import { environment } from '../../../../../environments/environment';
                       </span>
                     }
 
-                    <!-- Scheduled (Soft pale green rounded rectangle) -->
+                    <!-- Scheduled (Soft violet rounded rectangle) -->
                     @if (isStatus(b, 'Scheduled') && !b.isDelayed) {
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#e6f4ea] text-[#137333]">
-                        <span class="w-2 h-2 rounded-full bg-[#137333]"></span>
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-[#ede9fe] text-[#6d28d9]">
+                        <span class="w-2 h-2 rounded-full bg-[#7c3aed]"></span>
                         <span>Scheduled</span>
                       </span>
                     }
@@ -427,7 +427,7 @@ import { environment } from '../../../../../environments/environment';
             type="button"
             (click)="nextPage()"
             [disabled]="currentPage() >= totalPages()"
-            class="text-gray-900 hover:text-[#0f9d58] disabled:opacity-40 disabled:hover:text-gray-900 cursor-pointer font-bold transition-colors"
+            class="text-gray-900 hover:text-[#ea1f25] disabled:opacity-40 disabled:hover:text-gray-900 cursor-pointer font-bold transition-colors"
           >
             Next
           </button>
@@ -453,7 +453,7 @@ import { environment } from '../../../../../environments/environment';
             <!-- Header -->
             <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-[#e6f4ea] text-[#0f9d58] flex items-center justify-center">
+                <div class="w-8 h-8 rounded-lg bg-red-50 text-[#ea1f25] flex items-center justify-center">
                   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
@@ -482,7 +482,7 @@ import { environment } from '../../../../../environments/environment';
               <!-- Column 1: Client & Contact Info -->
               <div class="p-6 space-y-4 text-xs">
                 <div class="pb-1 border-b border-gray-100 flex items-center gap-1.5 text-gray-700 font-bold uppercase tracking-wider text-[11px]">
-                  <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg class="w-3.5 h-3.5 text-[#ea1f25]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                   <span>Customer & Booking Info</span>
@@ -496,7 +496,7 @@ import { environment } from '../../../../../environments/environment';
                     maxlength="150"
                     [(ngModel)]="editName"
                     placeholder="Enter customer name"
-                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#ea1f25] text-xs"
                   />
                   @if (!editName.trim() && editName.length > 0) {
                     <p class="text-[10px] text-red-500 mt-0.5">Name cannot be empty.</p>
@@ -515,7 +515,7 @@ import { environment } from '../../../../../environments/environment';
                     (paste)="onMobilePaste($event)"
                     (input)="onMobileInput($event)"
                     placeholder="Enter mobile number"
-                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs font-mono"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#ea1f25] text-xs font-mono"
                   />
                   @if (!editMobile.trim() && editMobile.length > 0) {
                     <p class="text-[10px] text-red-500 mt-0.5">Mobile number cannot be empty.</p>
@@ -531,7 +531,7 @@ import { environment } from '../../../../../environments/environment';
                     maxlength="1000"
                     [(ngModel)]="editAddress"
                     placeholder="Enter complete address"
-                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#ea1f25] text-xs"
                   ></textarea>
                 </div>
 
@@ -542,7 +542,7 @@ import { environment } from '../../../../../environments/environment';
                     maxlength="1000"
                     [(ngModel)]="editNotes"
                     placeholder="Fitting requirements, door specifications, masonry status, delivery notes..."
-                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#ea1f25] text-xs"
                   ></textarea>
                 </div>
 
@@ -550,7 +550,7 @@ import { environment } from '../../../../../environments/environment';
                 <div>
                   <label class="block font-semibold text-gray-700 uppercase tracking-wider text-[11px] mb-1 flex items-center justify-between">
                     <span class="flex items-center gap-1.5">
-                      <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+                      <span class="w-2 h-2 rounded-full bg-[#ea1f25]"></span>
                       <span>GOOGLE MAP LINK</span>
                     </span>
                     <span class="text-[10px] font-normal normal-case text-gray-400">Optional</span>
@@ -560,7 +560,7 @@ import { environment } from '../../../../../environments/environment';
                       type="url"
                       [(ngModel)]="editMapLink"
                       placeholder="Paste Google Maps link (e.g. https://maps.app.goo.gl/...)"
-                      class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
+                      class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#ea1f25] text-xs"
                     />
                   </div>
                 </div>
@@ -570,7 +570,7 @@ import { environment } from '../../../../../environments/environment';
               <div class="p-6 space-y-4 text-xs bg-gray-50/40">
                 <div class="pb-1 border-b border-gray-100 flex items-center justify-between">
                   <div class="flex items-center gap-1.5 text-gray-700 font-bold uppercase tracking-wider text-[11px]">
-                    <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="w-3.5 h-3.5 text-[#ea1f25]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                     </svg>
                     <span>Documents & Attachments</span>
@@ -579,7 +579,7 @@ import { environment } from '../../../../../environments/environment';
                 </div>
 
                 <!-- Upload Drop Area -->
-                <div class="border border-dashed border-gray-300 rounded-xl p-4 bg-white text-center hover:border-[#0f9d58] transition-colors">
+                <div class="border border-dashed border-gray-300 rounded-xl p-4 bg-white text-center hover:border-[#ea1f25] transition-colors">
                   <input
                     type="file"
                     multiple
@@ -590,7 +590,7 @@ import { environment } from '../../../../../environments/environment';
                   />
                   @if (isUploadingEditDocs()) {
                     <div class="flex items-center justify-center gap-2 py-2 text-xs text-gray-600">
-                      <svg class="animate-spin h-4 w-4 text-[#0f9d58]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg class="animate-spin h-4 w-4 text-[#ea1f25]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                       </svg>
@@ -600,7 +600,7 @@ import { environment } from '../../../../../environments/environment';
                     <button
                       type="button"
                       (click)="editFileInput.click()"
-                      class="text-xs text-[#0f9d58] font-semibold hover:underline flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
+                      class="text-xs text-[#ea1f25] font-semibold hover:underline flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
                     >
                       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -617,7 +617,7 @@ import { environment } from '../../../../../environments/environment';
                     <div class="flex items-center justify-between p-2.5 rounded-lg bg-white border border-gray-200 text-xs shadow-2xs">
                       <div class="flex items-center gap-2 min-w-0 pr-2">
                         @if (isImageFile(doc)) {
-                          <div class="w-6 h-6 rounded bg-emerald-50 text-[#0f9d58] flex items-center justify-center shrink-0">
+                          <div class="w-6 h-6 rounded bg-red-50 text-[#ea1f25] flex items-center justify-center shrink-0">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
@@ -665,7 +665,7 @@ import { environment } from '../../../../../environments/environment';
                 type="button"
                 (click)="saveEditedBooking()"
                 [disabled]="isSavingEdit() || !editName.trim() || editName.length > 150 || !editMobile.trim() || !isNumeric(editMobile) || editMobile.length > 25 || editAddress.length > 1000 || editNotes.length > 1000"
-                class="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg bg-[#0f9d58] hover:bg-[#0c8248] disabled:opacity-50 text-white text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                class="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg bg-[#ea1f25] hover:bg-[#c5161b] disabled:opacity-50 text-white text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
               >
                 @if (isSavingEdit()) {
                   <svg class="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
@@ -710,7 +710,7 @@ import { environment } from '../../../../../environments/environment';
                   maxlength="150"
                   [(ngModel)]="newClientName"
                   placeholder="e.g. Rahul Sharma"
-                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
+                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#ea1f25]"
                 />
               </div>
 
@@ -725,7 +725,7 @@ import { environment } from '../../../../../environments/environment';
                     maxlength="25"
                     [(ngModel)]="newPhone"
                     placeholder="e.g. 9847012345"
-                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#ea1f25]"
                   />
                 </div>
                 <div>
@@ -733,7 +733,7 @@ import { environment } from '../../../../../environments/environment';
                   <select
                     name="status"
                     [(ngModel)]="newStatus"
-                    class="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-[#ea1f25]"
                   >
                     <option value="Pending">Pending</option>
                     <option value="Accepted">Accepted</option>
@@ -782,7 +782,7 @@ import { environment } from '../../../../../environments/environment';
                   rows="2"
                   [(ngModel)]="newAddress"
                   placeholder="e.g. Door No. 12/450, Civil Station Road, Near Metro"
-                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
+                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#ea1f25]"
                 ></textarea>
               </div>
 
@@ -794,7 +794,7 @@ import { environment } from '../../../../../environments/environment';
                   rows="2"
                   [(ngModel)]="newNotes"
                   placeholder="e.g. Frame measurement needed, double steel door specification..."
-                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
+                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#ea1f25]"
                 ></textarea>
               </div>
 
@@ -802,7 +802,7 @@ import { environment } from '../../../../../environments/environment';
               <div>
                 <label class="block font-medium text-gray-700 uppercase tracking-wider text-[11px] mb-1 flex items-center justify-between">
                   <span class="flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+                    <span class="w-2 h-2 rounded-full bg-[#ea1f25]"></span>
                     <span>GOOGLE MAP LINK</span>
                   </span>
                   <span class="text-[11px] font-normal normal-case text-gray-400">Optional</span>
@@ -813,7 +813,7 @@ import { environment } from '../../../../../environments/environment';
                     name="newMapLink"
                     [(ngModel)]="newMapLink"
                     placeholder="https://maps.app.goo.gl/... or https://maps.google.com/?q=..."
-                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#ea1f25] text-xs"
                   />
                 </div>
               </div>
@@ -826,7 +826,7 @@ import { environment } from '../../../../../environments/environment';
                   name="head"
                   [(ngModel)]="newHead"
                   placeholder="Assigned Head (optional)"
-                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
+                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#ea1f25]"
                 />
               </div>
 
@@ -849,7 +849,7 @@ import { environment } from '../../../../../environments/environment';
                   />
                   @if (isUploadingDocuments()) {
                     <div class="flex flex-col items-center justify-center gap-1.5 py-1">
-                      <svg class="animate-spin h-5 w-5 text-[#0f9d58]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg class="animate-spin h-5 w-5 text-[#ea1f25]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                       </svg>
@@ -871,7 +871,7 @@ import { environment } from '../../../../../environments/environment';
                   <div class="flex flex-wrap gap-2 mt-2">
                     @for (doc of newDocuments(); track $index) {
                       <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 border border-gray-200 text-[11px] text-gray-700">
-                        <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="w-3.5 h-3.5 text-[#ea1f25]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
                         <span class="truncate max-w-[140px]" [title]="doc">{{ getDocumentName(doc) }}</span>
@@ -902,7 +902,7 @@ import { environment } from '../../../../../environments/environment';
                 <button
                   type="submit"
                   [disabled]="isSubmitting"
-                  class="px-4 py-2 rounded-lg bg-[#246b3f] hover:bg-[#1e5834] text-white font-semibold cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
+                  class="px-4 py-2 rounded-lg bg-[#ea1f25] hover:bg-[#c5161b] text-white font-semibold cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
                 >
                   @if (isSubmitting) {
                     <svg class="animate-spin w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none">
@@ -982,7 +982,7 @@ import { environment } from '../../../../../environments/environment';
                 <span class="w-8 h-8 rounded-full flex items-center justify-center"
                   [ngClass]="{
                     'bg-blue-100 text-blue-700': pendingStatusChange() === 'Scheduled',
-                    'bg-emerald-100 text-[#0f9d58]': pendingStatusChange() === 'Completed',
+                    'bg-emerald-100 text-[#137333]': pendingStatusChange() === 'Completed',
                     'bg-rose-100 text-rose-700': pendingStatusChange() === 'Cancelled',
                     'bg-gray-100 text-gray-700': pendingStatusChange() === 'New'
                   }"
@@ -1051,7 +1051,7 @@ import { environment } from '../../../../../environments/environment';
                   rows="2"
                   [(ngModel)]="statusNotes"
                   placeholder="Add any remarks or details regarding this status update..."
-                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0f9d58] text-xs"
+                  class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#ea1f25] text-xs"
                 ></textarea>
               </div>
             </div>
@@ -1073,7 +1073,8 @@ import { environment } from '../../../../../environments/environment';
                 class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white shadow-sm transition-all cursor-pointer disabled:opacity-50"
                 [ngClass]="{
                   'bg-blue-600 hover:bg-blue-700': pendingStatusChange() === 'Scheduled',
-                  'bg-[#0f9d58] hover:bg-[#0c8248]': pendingStatusChange() === 'Completed' || pendingStatusChange() === 'New',
+                  'bg-emerald-600 hover:bg-emerald-700': pendingStatusChange() === 'Completed',
+                  'bg-[#ea1f25] hover:bg-[#c5161b]': pendingStatusChange() === 'New',
                   'bg-rose-600 hover:bg-rose-700': pendingStatusChange() === 'Cancelled'
                 }"
               >
@@ -1645,7 +1646,10 @@ export class AdminBookingsComponent implements OnInit {
         this.isDeletingBooking.set(false);
         this.showDeleteConfirmModal.set(false);
         this.selectedBooking.set(null);
-        this.toastService.success(`Booking #${b.id} deleted successfully!`);
+        this.toastService.success(
+          `Booking #${b.id} has been permanently removed from your records.`,
+          'Booking Deleted'
+        );
         this.fetchBookingsFromApi();
       },
       error: (err) => {
@@ -1817,7 +1821,10 @@ export class AdminBookingsComponent implements OnInit {
         this.bookingDetailedDrawer?.fetchInitialHistory();
         this.bookingDetailedDrawer?.fetchDocuments();
 
-        this.toastService.success(`Booking #${b.id} updated successfully!`);
+        this.toastService.success(
+          `All changes to booking #${b.id} have been saved successfully.`,
+          'Booking Updated!'
+        );
       },
       error: (err) => {
         this.isSavingEdit.set(false);
@@ -2014,7 +2021,10 @@ export class AdminBookingsComponent implements OnInit {
         // Immediately reload history API for this booking so the new status update record appears right away
         this.bookingDetailedDrawer?.fetchInitialHistory();
 
-        this.toastService.success(res?.message || `Status changed to ${newStatus} successfully!`);
+        this.toastService.success(
+          res?.message || `Booking status has been updated to "${newStatus}" and logged in history.`,
+          'Status Updated!'
+        );
       },
       error: (err) => {
         this.isSubmittingStatus.set(false);
@@ -2263,7 +2273,11 @@ export class AdminBookingsComponent implements OnInit {
         this.resetEnquiryForm();
         this.isSubmitting = false;
         this.newEnquiryModalOpen.set(false);
-        this.toastService.success('Enquiry and booking created successfully!');
+        this.toastService.success(
+          'Your booking enquiry has been completed and added to the list. Our team will follow up shortly.',
+          'Booking Created!',
+          5500
+        );
         this.fetchBookingsFromApi();
       },
       error: () => {
@@ -2307,7 +2321,10 @@ export class AdminBookingsComponent implements OnInit {
         this.resetEnquiryForm();
         this.isSubmitting = false;
         this.newEnquiryModalOpen.set(false);
-        this.toastService.success('Enquiry saved successfully!');
+        this.toastService.success(
+          'Your booking enquiry details have been saved successfully.',
+          'Enquiry Saved!'
+        );
         this.fetchBookingsFromApi();
       }
     });

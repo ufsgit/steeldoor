@@ -17,7 +17,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
     <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 animate-fadeIn">
       
       <!-- Back Link & Header -->
-      <div class="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-200">
+      <div class="mb-6 pb-4 border-b border-gray-200">
         <div>
           <button
             type="button"
@@ -31,35 +31,6 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
           </button>
           <h1 class="text-2xl font-bold text-gray-900 tracking-tight">New Booking</h1>
         </div>
-
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            (click)="goBack()"
-            class="px-4 py-2 rounded-xl border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            (click)="saveBooking()"
-            [disabled]="isSubmitting || !name.trim() || name.length > 150 || !mobile.trim() || !isNumeric(mobile) || mobile.length > 25 || address.length > 1000 || notes.length > 1000"
-            class="px-5 py-2 rounded-xl bg-[#246b3f] hover:bg-[#1e5834] disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-2"
-          >
-            @if (isSubmitting) {
-              <svg class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-              </svg>
-              <span>Saving...</span>
-            } @else {
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-              </svg>
-              <span>Save Booking</span>
-            }
-          </button>
-        </div>
       </div>
 
       <!-- Main Form Card -->
@@ -68,7 +39,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
         <!-- Section 1: Customer Details & Fitting Locality (4 Columns) -->
         <div>
           <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+            <span class="w-2 h-2 rounded-full bg-[#ea1f25]"></span>
             <span>Customer & Location Details</span>
           </h2>
 
@@ -85,7 +56,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
                 required
                 maxlength="150"
                 placeholder="e.g. John Mathew"
-                class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+                class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ea1f25]"
               />
               @if (!name.trim() && name.length > 0) {
                 <p class="text-[10px] text-red-500 mt-1">Customer Name cannot be empty.</p>
@@ -108,7 +79,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
                 required
                 maxlength="25"
                 placeholder="e.g. 9847012345"
-                class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58] font-mono"
+                class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ea1f25] font-mono"
               />
               @if (!mobile.trim() && mobile.length > 0) {
                 <p class="text-[10px] text-red-500 mt-1">Mobile Number cannot be empty.</p>
@@ -162,7 +133,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
               maxlength="1000"
               rows="2"
               placeholder="Door No, Street Name, Landmark, Post"
-              class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+              class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ea1f25]"
             ></textarea>
           </div>
         </div>
@@ -170,7 +141,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
         <!-- Section 2: Installation Description (notes) -->
         <div>
           <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+            <span class="w-2 h-2 rounded-full bg-[#ea1f25]"></span>
             <span>Installation Description</span>
           </h2>
           <textarea
@@ -179,7 +150,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
             maxlength="1000"
             rows="3"
             placeholder="Fitting requirements, door specifications, masonry status, delivery notes..."
-            class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+            class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ea1f25]"
           ></textarea>
         </div>
 
@@ -187,7 +158,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
         <div>
           <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center justify-between">
             <span class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+              <span class="w-2 h-2 rounded-full bg-[#ea1f25]"></span>
               <span>GOOGLE MAP LINK</span>
             </span>
             <span class="text-xs font-normal normal-case text-gray-400">Optional</span>
@@ -198,7 +169,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
               name="mapLink"
               [(ngModel)]="mapLink"
               placeholder="Paste Google Maps URL (e.g. https://maps.app.goo.gl/... or https://maps.google.com/?q=...)"
-              class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+              class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ea1f25]"
             />
           </div>
         </div>
@@ -206,13 +177,13 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
         <!-- Section 3: Documents / Uploads (documents) -->
         <div>
           <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+            <span class="w-2 h-2 rounded-full bg-[#ea1f25]"></span>
             <span>Documents</span>
           </h2>
 
           <div class="space-y-3">
             <label
-              class="border-2 border-dashed border-gray-300 hover:border-[#0f9d58] rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50/50 hover:bg-[#0f9d58]/5"
+              class="border-2 border-dashed border-gray-300 hover:border-[#ea1f25] rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50/50 hover:bg-[#ea1f25]/5"
             >
               <input
                 type="file"
@@ -229,7 +200,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
             </label>
 
             @if (isUploading()) {
-              <div class="text-xs text-[#0f9d58] font-semibold flex items-center gap-2">
+              <div class="text-xs text-[#ea1f25] font-semibold flex items-center gap-2">
                 <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
@@ -263,6 +234,35 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../../c
               </div>
             }
           </div>
+        </div>
+
+        <!-- Bottom Form Actions -->
+        <div class="pt-5 border-t border-gray-200 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            (click)="goBack()"
+            class="px-5 py-2.5 rounded-xl border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            [disabled]="isSubmitting || !name.trim() || name.length > 150 || !mobile.trim() || !isNumeric(mobile) || mobile.length > 25 || address.length > 1000 || notes.length > 1000"
+            class="px-6 py-2.5 rounded-xl bg-[#ea1f25] hover:bg-[#c5161b] disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-2"
+          >
+            @if (isSubmitting) {
+              <svg class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>Saving...</span>
+            } @else {
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>Save Booking</span>
+            }
+          </button>
         </div>
 
       </form>
@@ -549,10 +549,18 @@ export class BookingNewComponent implements OnInit {
     this.dataService.createBooking(payload).subscribe({
       next: () => {
         this.isSubmitting = false;
-        this.toast.success('Booking created successfully!');
         if (this.authService.isAuthenticated()) {
+          this.toast.success(
+            'The new booking has been saved and added to your bookings list.',
+            'Booking Created!'
+          );
           this.router.navigate(['/admin/bookings']);
         } else {
+          this.toast.success(
+            'Your booking has been completed successfully. Our agent will contact you as soon as possible.',
+            'Booking Completed!',
+            6000
+          );
           this.router.navigate(['/']);
         }
       },

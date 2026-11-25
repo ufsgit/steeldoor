@@ -140,9 +140,9 @@ import { ModalComponent } from '../../../shared/components/modal.component';
                   [href]="mapUrl"
                   target="_blank"
                   rel="noopener"
-                  class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#0f9d58]/10 hover:bg-[#0f9d58]/20 text-[#0f9d58] text-xs font-bold uppercase tracking-wider transition-colors border border-[#0f9d58]/20"
+                  class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#ea1f25]/10 hover:bg-[#ea1f25]/20 text-[#ea1f25] text-xs font-bold uppercase tracking-wider transition-colors border border-[#ea1f25]/20"
                 >
-                  <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+                  <span class="w-2 h-2 rounded-full bg-[#ea1f25]"></span>
                   <span>GOOGLE MAP LINK</span>
                   <svg class="w-3.5 h-3.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -319,7 +319,10 @@ export class AdminBookingDetailComponent implements OnInit {
         this.isReassigning = false;
         this.reassignModalOpen = false;
         this.booking.set(updated);
-        this.toast.success(`Booking ${updated.id} reassigned to ${updated.branchHeadName}!`);
+        this.toast.success(
+          `Booking #${updated.id} has been reassigned to ${updated.branchHeadName}.`,
+          'Booking Reassigned!'
+        );
       },
       error: err => {
         this.isReassigning = false;

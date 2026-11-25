@@ -19,17 +19,17 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
       @if (submittedBooking()) {
         <!-- Success Confirmation Screen -->
         <div class="max-w-2xl mx-auto my-8 bg-white rounded-3xl border border-gray-200 shadow-xl p-8 sm:p-10 text-center space-y-6 animate-scaleUp">
-          <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-[#0f9d58] border border-emerald-100 mx-auto flex items-center justify-center shadow-xs">
+          <div class="w-16 h-16 rounded-2xl bg-red-50 text-[#ea1f25] border border-red-100 mx-auto flex items-center justify-center shadow-xs">
             <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
             </svg>
           </div>
 
           <div class="space-y-1.5">
-            <span class="text-xs font-bold uppercase tracking-wider text-[#0f9d58]">Installation Enquiry Registered</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-[#ea1f25]">Installation Enquiry Registered</span>
             <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Booking Confirmed!</h2>
             <p class="text-xs sm:text-sm text-gray-500 max-w-md mx-auto leading-relaxed">
-              Your steel door installation request has been recorded. Our regional district branch team will contact you shortly to confirm the installation schedule.
+              Your booking has been completed successfully. Our agent will contact you as soon as possible to confirm your installation schedule.
             </p>
           </div>
 
@@ -37,7 +37,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
           <div class="max-w-md mx-auto p-5 rounded-2xl bg-gray-50 border border-gray-200 space-y-3 text-left">
             <div class="flex items-center justify-between text-xs border-b border-gray-200 pb-2.5">
               <span class="text-gray-500 font-medium">Booking ID:</span>
-              <span class="font-mono font-bold text-sm text-[#0f9d58]">#{{ submittedBooking()?.id || 'NEW' }}</span>
+              <span class="font-mono font-bold text-sm text-[#ea1f25]">#{{ submittedBooking()?.id || 'NEW' }}</span>
             </div>
             <div class="flex items-center justify-between text-xs border-b border-gray-200 pb-2.5">
               <span class="text-gray-500 font-medium">Customer Name:</span>
@@ -70,7 +70,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
             </button>
             <a
               routerLink="/"
-              class="px-6 py-2.5 rounded-xl bg-[#246b3f] hover:bg-[#1e5834] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+              class="px-6 py-2.5 rounded-xl bg-[#ea1f25] hover:bg-[#c5161b] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
             >
               Return to Home
             </a>
@@ -78,7 +78,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
         </div>
       } @else {
         <!-- Back Link & Header -->
-        <div class="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-200">
+        <div class="mb-6 pb-4 border-b border-gray-200">
           <div>
             <button
               type="button"
@@ -92,35 +92,6 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
             </button>
             <h1 class="text-2xl font-bold text-gray-900 tracking-tight">New Booking</h1>
           </div>
-
-          <div class="flex items-center gap-2">
-            <button
-              type="button"
-              (click)="goBack()"
-              class="px-4 py-2 rounded-xl border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              (click)="saveBooking()"
-              [disabled]="isSubmitting || !name.trim() || !mobile.trim() || !address.trim()"
-              class="px-5 py-2 rounded-xl bg-[#246b3f] hover:bg-[#1e5834] disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-2"
-            >
-              @if (isSubmitting) {
-                <svg class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                </svg>
-                <span>Saving...</span>
-              } @else {
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                <span>Save Booking</span>
-              }
-            </button>
-          </div>
         </div>
 
         <!-- Main Form Card -->
@@ -129,7 +100,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
           <!-- Section 1: Customer Details & Fitting Locality (4 Columns) -->
           <div>
             <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+              <span class="w-2 h-2 rounded-full bg-[#ea1f25]"></span>
               <span>Customer & Location Details</span>
             </h2>
 
@@ -146,7 +117,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
                   required
                   maxlength="150"
                   placeholder="e.g. John Mathew"
-                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ea1f25]"
                 />
               </div>
 
@@ -162,7 +133,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
                   required
                   maxlength="25"
                   placeholder="e.g. +91 98470 12345"
-                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ea1f25]"
                 />
               </div>
 
@@ -197,7 +168,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
                     [(ngModel)]="areaName"
                     (ngModelChange)="onAreaSelected($event)"
                     [disabled]="!districtId"
-                    class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58] cursor-pointer disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed transition-colors"
+                    class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ea1f25] cursor-pointer disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed transition-colors"
                   >
                     <option value="">{{ !districtId ? 'Select District First...' : '-- Select Registered Area --' }}</option>
                     @for (a of districtAreas(); track a.id) {
@@ -212,7 +183,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
                     required
                     [disabled]="!districtId"
                     [placeholder]="!districtId ? 'Select district first...' : 'e.g. Edapally'"
-                    class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58] disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed transition-colors"
+                    class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ea1f25] disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed transition-colors"
                   />
                 }
               </div>
@@ -228,7 +199,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
                   required
                   rows="2"
                   placeholder="Door No, Street Name, Landmark, Post"
-                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ea1f25]"
                 ></textarea>
               </div>
             </div>
@@ -237,7 +208,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
           <!-- Section 2: Installation Description (4 Columns) -->
           <div>
             <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+              <span class="w-2 h-2 rounded-full bg-[#ea1f25]"></span>
               <span>Installation Description</span>
             </h2>
 
@@ -251,7 +222,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
                   [(ngModel)]="notes"
                   rows="3"
                   placeholder="Fitting requirements, door specifications, masonry status, delivery notes..."
-                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+                  class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ea1f25]"
                 ></textarea>
               </div>
 
@@ -259,7 +230,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
               <div class="sm:col-span-2 lg:col-span-4 mt-2">
                 <label class="block text-xs font-bold text-gray-900 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                   <span class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+                    <span class="w-2 h-2 rounded-full bg-[#ea1f25]"></span>
                     <span>GOOGLE MAP LINK</span>
                   </span>
                   <span class="text-[11px] font-normal normal-case text-gray-400">Optional</span>
@@ -270,7 +241,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
                     name="mapLink"
                     [(ngModel)]="mapLink"
                     placeholder="Paste Google Maps URL (e.g. https://maps.app.goo.gl/... or https://maps.google.com/?q=...)"
-                    class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+                    class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ea1f25]"
                   />
                 </div>
               </div>
@@ -280,7 +251,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
           <!-- Section 3: Documents (JSON) -->
           <div>
             <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-              <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+              <span class="w-2 h-2 rounded-full bg-[#ea1f25]"></span>
               <span>Documents</span>
             </h2>
 
@@ -294,7 +265,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
                 accept="image/*,.pdf,.doc,.docx"
               />
               <div class="flex flex-col items-center justify-center gap-1.5 cursor-pointer" (click)="fileInput.click()">
-                <div class="w-10 h-10 rounded-full bg-emerald-50 text-[#0f9d58] flex items-center justify-center">
+                <div class="w-10 h-10 rounded-full bg-red-50 text-[#ea1f25] flex items-center justify-center">
                   <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
@@ -308,7 +279,7 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
               <div class="flex flex-wrap gap-2 mt-3">
                 @for (file of selectedFiles; track $index) {
                   <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 border border-gray-200 text-xs text-gray-800">
-                    <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="w-3.5 h-3.5 text-[#ea1f25]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     <span class="truncate max-w-[200px] font-medium">{{ file.name }}</span>
@@ -340,16 +311,19 @@ import { District, AreaItem, Booking, CreateBookingPayload } from '../../../core
             <button
               type="submit"
               [disabled]="isSubmitting || !name.trim() || !mobile.trim() || !address.trim()"
-              class="px-6 py-2.5 rounded-xl bg-[#246b3f] hover:bg-[#1e5834] disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-2"
+              class="px-6 py-2.5 rounded-xl bg-[#ea1f25] hover:bg-[#c5161b] disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-2"
             >
               @if (isSubmitting) {
                 <svg class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                 </svg>
-                <span>Saving Booking...</span>
+                <span>Saving...</span>
               } @else {
-                <span>Submit & Create Booking</span>
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span>Save Booking</span>
               }
             </button>
           </div>
@@ -542,7 +516,11 @@ export class BookNowComponent implements OnInit {
     this.dataService.createPublicBooking(payload).subscribe({
       next: (res: any) => {
         this.isSubmitting = false;
-        this.toast.success('Booking created successfully!');
+        this.toast.success(
+          'Your booking has been completed successfully. Our agent will contact you as soon as possible.',
+          'Booking Completed!',
+          6000
+        );
         this.submittedBooking.set(res?.data || res || payload);
       },
       error: err => {

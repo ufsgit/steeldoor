@@ -4,22 +4,22 @@
 
 :root {
   /* Dynamic CSS variables mapped to the single color source: src/theme/colors.ts */
-  --color-primary: #14532d;
-  --color-primary-dark: #0d381e;
-  --color-primary-light: #1b6e3b;
-  --color-primary-hover: #166534;
-  --color-accent: #10b981;
-  --color-accent-dark: #047857;
-  --color-accent-light: #34d399;
+  --color-primary: #ea1f25;
+  --color-primary-dark: #9e1116;
+  --color-primary-light: #ef4444;
+  --color-primary-hover: #c5161b;
+  --color-accent: #dc2626;
+  --color-accent-dark: #b91c1c;
+  --color-accent-light: #f87171;
 
-  --color-background: #f8faf7;
+  --color-background: #faf7f8;
   --color-surface: #ffffff;
-  --color-surface-hover: #f1f5f0;
-  --color-surface-muted: #f0f4f1;
+  --color-surface-hover: #f9f4f4;
+  --color-surface-muted: #f4efef;
   --color-surface-elevated: #ffffff;
 
-  --color-border: #dbe4dc;
-  --color-border-hover: #c2d1c4;
+  --color-border: #e6dede;
+  --color-border-hover: #d4c4c4;
 
   --color-text: #0f172a;
   --color-text-muted: #64748b;
@@ -91,14 +91,14 @@ body {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(219, 228, 220, 0.6);
+  border: 1px solid rgba(230, 222, 222, 0.6);
 }
 
 /* Active Navigation Link */
 .nav-link-active {
   color: var(--color-primary) !important;
   font-weight: 700 !important;
-  background-color: rgba(20, 83, 45, 0.08);
+  background-color: rgba(234, 31, 37, 0.08);
 }
 
 /* Prevent text typing caret (line mark) and I-beam cursor on static text across all pages */

@@ -73,7 +73,7 @@ function tryInject<T>(token: any): T | null {
         class="w-full flex items-center justify-between text-left bg-white border transition-all cursor-pointer select-none focus:outline-none"
         [ngClass]="[
           sizeClasses,
-          isOpen ? 'border-[#0f9d58] ring-1 ring-[#0f9d58] shadow-sm' : 'border-gray-200 hover:border-gray-300',
+          isOpen ? 'border-[#ea1f25] ring-1 ring-[#ea1f25] shadow-sm' : 'border-gray-200 hover:border-gray-300',
           disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed opacity-75' : 'text-gray-800',
           customClass
         ]"
@@ -156,7 +156,7 @@ function tryInject<T>(token: any): T | null {
                   (input)="onSearchInput()"
                   (keydown)="onListKeydown($event)"
                   [placeholder]="searchPlaceholder"
-                  class="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#0f9d58] focus:ring-1 focus:ring-[#0f9d58] text-gray-800 placeholder:text-gray-400"
+                  class="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#ea1f25] focus:ring-1 focus:ring-[#ea1f25] text-gray-800 placeholder:text-gray-400"
                 />
                 @if (searchQuery) {
                   <button
@@ -188,7 +188,7 @@ function tryInject<T>(token: any): T | null {
                 class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between transition-colors select-none"
                 [ngClass]="{
                   'bg-gray-100': highlightedIndex === $index && !isSelected(item),
-                  'bg-[#0f9d58]/10 text-[#0f9d58] font-semibold': isSelected(item),
+                  'bg-[#ea1f25]/10 text-[#ea1f25] font-semibold': isSelected(item),
                   'text-gray-700': !isSelected(item),
                   'opacity-50 pointer-events-none': item.disabled
                 }"
@@ -201,7 +201,7 @@ function tryInject<T>(token: any): T | null {
                     }
                   </div>
                   @if (item.matchedArea) {
-                    <span class="text-[10px] text-[#0f9d58] font-normal flex items-center gap-1">
+                    <span class="text-[10px] text-[#ea1f25] font-normal flex items-center gap-1">
                       <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -212,7 +212,7 @@ function tryInject<T>(token: any): T | null {
                 </div>
 
                 @if (isSelected(item)) {
-                  <svg class="w-4 h-4 text-[#0f9d58] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg class="w-4 h-4 text-[#ea1f25] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                   </svg>
                 }

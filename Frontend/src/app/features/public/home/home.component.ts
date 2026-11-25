@@ -95,7 +95,7 @@ import { BannerSlide, ServiceItem, TestimonialItem } from '../../../core/models'
                     <!-- Slide Caption Content Overlay -->
                     <div class="absolute bottom-0 left-0 right-0 p-6 sm:p-8 lg:p-10 space-y-2.5 sm:space-y-3 text-left">
                       <!-- Badge Pill with Pulse Dot -->
-                      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/90 text-slate-950 text-[10px] sm:text-xs font-black tracking-wider uppercase backdrop-blur-md shadow-lg">
+                      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ea1f25]/90 text-white text-[10px] sm:text-xs font-black tracking-wider uppercase backdrop-blur-md shadow-lg">
                         <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
                         <span>{{ slide.badge }}</span>
                       </div>
@@ -148,7 +148,7 @@ import { BannerSlide, ServiceItem, TestimonialItem } from '../../../core/models'
                       (click)="goToSlide(idx)"
                       class="h-1.5 rounded-full transition-all duration-300 cursor-pointer"
                       [class.w-7]="idx === currentSlideIndex()"
-                      [class.bg-emerald-400]="idx === currentSlideIndex()"
+                      [class.bg-[#ea1f25]]="idx === currentSlideIndex()"
                       [class.w-2]="idx !== currentSlideIndex()"
                       [class.bg-white/40]="idx !== currentSlideIndex()"
                       [attr.aria-label]="'Go to slide ' + (idx + 1)"
@@ -181,7 +181,7 @@ import { BannerSlide, ServiceItem, TestimonialItem } from '../../../core/models'
                 />
                 <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent"></div>
                 <div class="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white">
-                  <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-600/90 backdrop-blur-md">
+                  <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#ea1f25]/90 backdrop-blur-md">
                     {{ service.badge || 'Certified Service' }}
                   </span>
                   <span class="text-xs font-black">{{ service.startingPrice }}</span>

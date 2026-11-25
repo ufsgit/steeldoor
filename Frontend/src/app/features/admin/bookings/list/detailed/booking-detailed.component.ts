@@ -27,7 +27,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
         <!-- Top Drawer Header Bar -->
         <div class="px-6 py-4 border-b border-gray-200 bg-white flex items-center justify-between gap-4 shrink-0">
           <div class="flex items-center gap-3 min-w-0 flex-1">
-            <div class="w-8 h-8 rounded-lg bg-[#e6f4ea] text-[#0f9d58] flex items-center justify-center font-bold text-sm shrink-0">
+            <div class="w-8 h-8 rounded-lg bg-red-50 text-[#ea1f25] flex items-center justify-center font-bold text-sm shrink-0">
               #
             </div>
             <div class="min-w-0 flex-1">
@@ -60,10 +60,10 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
               <button
                 type="button"
                 (click)="toggleShareDropdown()"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 hover:text-[#0f9d58] hover:border-[#0f9d58]/40 shadow-2xs transition-all cursor-pointer"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 hover:text-[#ea1f25] hover:border-[#ea1f25]/40 shadow-2xs transition-all cursor-pointer"
                 title="Share Options"
               >
-                <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-3.5 h-3.5 text-[#ea1f25]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
                 <span>Share</span>
@@ -86,15 +86,15 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
                   <button
                     type="button"
                     (click)="openNormalShareModal()"
-                    class="w-full px-3.5 py-2.5 text-left text-xs hover:bg-emerald-50/60 flex items-start gap-2.5 transition-colors cursor-pointer group"
+                    class="w-full px-3.5 py-2.5 text-left text-xs hover:bg-red-50/60 flex items-start gap-2.5 transition-colors cursor-pointer group"
                   >
-                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-[#0f9d58] group-hover:bg-[#0f9d58] group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+                    <div class="w-8 h-8 rounded-lg bg-red-50 text-[#ea1f25] group-hover:bg-[#ea1f25] group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
                       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </div>
                     <div>
-                      <span class="font-bold text-gray-900 group-hover:text-[#0f9d58] transition-colors block">Share Booking Details</span>
+                      <span class="font-bold text-gray-900 group-hover:text-[#ea1f25] transition-colors block">Share Booking Details</span>
                       <span class="text-[11px] text-gray-500 block leading-tight mt-0.5">Name, number, location, notes & attached documents</span>
                     </div>
                   </button>
@@ -125,7 +125,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
               <button
                 type="button"
                 (click)="onEdit.emit(booking)"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#0f9d58] text-white hover:bg-[#0c8248] shadow-2xs transition-colors cursor-pointer"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#ea1f25] text-white hover:bg-[#c5161b] shadow-2xs transition-colors cursor-pointer"
               >
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -166,7 +166,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
           <!-- ================= COLUMN 1: CONTACT & BOOKING DETAILS ================= -->
           <div class="flex flex-col h-full overflow-y-auto p-5 space-y-5 bg-[#fafafa]/50">
             <div class="flex items-center gap-2 pb-2 border-b border-gray-200">
-              <svg class="w-4 h-4 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="w-4 h-4 text-[#ea1f25]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               <h3 class="text-xs font-bold uppercase tracking-wider text-gray-700">Contact & Booking Details</h3>
@@ -194,7 +194,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
               <!-- Google Map Location Link -->
               <div>
                 <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <span class="w-1.5 h-1.5 rounded-full bg-[#0f9d58]"></span>
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#ea1f25]"></span>
                   <span>Google Map Location</span>
                 </span>
                 @if (getMapLink()) {
@@ -203,15 +203,15 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
                     target="_blank"
                     rel="noopener noreferrer"
                     (click)="$event.stopPropagation()"
-                    class="inline-flex items-center gap-2 text-xs font-semibold text-[#0f9d58] hover:text-[#0b8043] bg-[#e6f4ea] hover:bg-[#d8eedf] border border-[#0f9d58]/30 px-3 py-2 rounded-lg transition-colors break-all w-full group shadow-2xs"
+                    class="inline-flex items-center gap-2 text-xs font-semibold text-[#ea1f25] hover:text-[#c5161b] bg-red-50 hover:bg-red-100 border border-[#ea1f25]/30 px-3 py-2 rounded-lg transition-colors break-all w-full group shadow-2xs"
                     title="Open location in Google Maps"
                   >
-                    <svg class="w-4 h-4 text-[#0f9d58] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="w-4 h-4 text-[#ea1f25] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     <span class="truncate flex-1 font-medium">{{ getMapLink() }}</span>
-                    <svg class="w-3.5 h-3.5 text-[#0f9d58]/70 shrink-0 ml-auto group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="w-3.5 h-3.5 text-[#ea1f25]/70 shrink-0 ml-auto group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                   </a>
@@ -243,8 +243,8 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
 
               <div>
                 <span class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Current Status</span>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-[#e6f4ea] text-[#137333]">
-                  <span class="w-2 h-2 rounded-full bg-[#0f9d58]"></span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-[#fef2f2] text-[#c5161b]">
+                  <span class="w-2 h-2 rounded-full bg-[#ea1f25]"></span>
                   <span>{{ booking.status || 'NEW' }}</span>
                 </span>
               </div>
@@ -307,7 +307,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
                     <button
                       type="button"
                       (click)="onStatusChange.emit('Completed')"
-                      class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-[#e6f4ea] text-[#0f9d58] hover:bg-[#c9eed1] transition-colors cursor-pointer text-center"
+                      class="py-1.5 px-2 rounded-lg text-xs font-semibold bg-red-50 text-[#ea1f25] hover:bg-red-100 transition-colors cursor-pointer text-center"
                       [class.ring-2]="booking.status.toLowerCase() === 'completed'"
                     >
                       Completed
@@ -335,7 +335,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
             <!-- Column Header -->
             <div class="flex items-center justify-between pb-2 border-b border-gray-200 shrink-0">
               <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-4 h-4 text-[#ea1f25]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <h3 class="text-xs font-bold uppercase tracking-wider text-gray-700">Booking History</h3>
@@ -345,7 +345,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
             <!-- Initial Loading Spinner -->
             @if (isLoadingHistory()) {
               <div class="flex flex-col items-center justify-center py-12 space-y-2 text-gray-400">
-                <svg class="animate-spin h-6 w-6 text-[#0f9d58]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg class="animate-spin h-6 w-6 text-[#ea1f25]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                 </svg>
@@ -471,7 +471,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
                               <svg class="w-3 h-3 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                               </svg>
-                              <span class="font-bold text-[#0f9d58]">
+                              <span class="font-bold text-[#ea1f25]">
                                 {{ item.to_branch_head_name }}
                                 @if (item.to_assigned_head_district_name) {
                                   <span class="text-gray-400">({{ item.to_assigned_head_district_name }})</span>
@@ -534,7 +534,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
               <!-- Infinite Scroll Bottom Spinner -->
               @if (isLoadingMoreHistory()) {
                 <div class="flex items-center justify-center py-3 gap-2 text-xs text-gray-500">
-                  <svg class="animate-spin h-4 w-4 text-[#0f9d58]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg class="animate-spin h-4 w-4 text-[#ea1f25]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                   </svg>
@@ -555,7 +555,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
             <!-- Column Header -->
             <div class="flex items-center justify-between pb-2 border-b border-gray-200 shrink-0">
               <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-4 h-4 text-[#ea1f25]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                 </svg>
                 <h3 class="text-xs font-bold uppercase tracking-wider text-gray-700">Documents & Media</h3>
@@ -568,7 +568,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
             <!-- Documents Loading Spinner -->
             @if (isLoadingDocs()) {
               <div class="flex flex-col items-center justify-center py-12 space-y-2 text-gray-400">
-                <svg class="animate-spin h-6 w-6 text-[#0f9d58]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg class="animate-spin h-6 w-6 text-[#ea1f25]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                 </svg>
@@ -606,7 +606,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
                     <div class="flex items-center justify-between gap-2 pt-0.5">
                       <div class="flex items-center gap-2 min-w-0">
                         @if (isImageFile(doc)) {
-                          <div class="w-6 h-6 rounded-md bg-emerald-50 text-[#0f9d58] flex items-center justify-center shrink-0">
+                          <div class="w-6 h-6 rounded-md bg-red-50 text-[#ea1f25] flex items-center justify-center shrink-0">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
@@ -629,7 +629,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
                             [href]="getFullFileUrl(doc)"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold rounded-md bg-white border border-gray-200 text-gray-700 hover:text-[#0f9d58] transition-colors shadow-2xs"
+                            class="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold rounded-md bg-white border border-gray-200 text-gray-700 hover:text-[#ea1f25] transition-colors shadow-2xs"
                             title="View full image"
                           >
                             View
@@ -638,7 +638,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
                         <button
                           type="button"
                           (click)="downloadFile(doc, $event)"
-                          class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-md bg-[#0f9d58] text-white hover:bg-[#0c8248] transition-colors shadow-2xs cursor-pointer"
+                          class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-md bg-[#ea1f25] text-white hover:bg-[#c5161b] transition-colors shadow-2xs cursor-pointer"
                           title="Download document"
                         >
                           Download
@@ -668,7 +668,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
             <!-- Modal Header -->
             <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 bg-gray-50/50">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-emerald-50 text-[#0f9d58] flex items-center justify-center shrink-0">
+                <div class="w-8 h-8 rounded-lg bg-red-50 text-[#ea1f25] flex items-center justify-center shrink-0">
                   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                   </svg>
@@ -711,7 +711,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
                       type="button"
                       (click)="normalShareMode.set('docsOnly')"
                       class="px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
-                      [ngClass]="normalShareMode() === 'docsOnly' ? 'bg-white text-[#0f9d58] shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
+                      [ngClass]="normalShareMode() === 'docsOnly' ? 'bg-white text-[#ea1f25] shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
                     >
                       Document Link(s) Only
                     </button>
@@ -725,12 +725,12 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
 
               <!-- Include Docs Checkbox (Only when Full Details mode is active) -->
               @if (normalShareMode() === 'full' && documentsList().length > 0) {
-                <label class="flex items-center gap-2.5 text-xs font-semibold text-gray-700 select-none cursor-pointer p-3 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                <label class="flex items-center gap-2.5 text-xs font-semibold text-gray-700 select-none cursor-pointer p-3 rounded-xl bg-red-50/50 border border-red-100">
                   <input
                     type="checkbox"
                     [checked]="includeDocsInNormalShare()"
                     (change)="includeDocsInNormalShare.set(!includeDocsInNormalShare())"
-                    class="rounded text-[#0f9d58] focus:ring-[#0f9d58] h-4 w-4 cursor-pointer"
+                    class="rounded text-[#ea1f25] focus:ring-[#ea1f25] h-4 w-4 cursor-pointer"
                   />
                   <div class="flex-1">
                     <span class="text-gray-900 font-bold block">Include Attached Documents & Media</span>
@@ -761,7 +761,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
               <div class="flex items-center gap-2">
                 <button
                   type="button"
-                  (click)="copyText(getNormalShareText(includeDocsInNormalShare()), 'Booking details copied to clipboard!')"
+                  (click)="copyText(getNormalShareText(includeDocsInNormalShare()), 'Booking details have been copied to your clipboard and are ready to paste.', 'Booking Details Copied!')"
                   class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 shadow-2xs transition-colors cursor-pointer"
                 >
                   <svg class="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -841,7 +841,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
                     type="button"
                     (click)="brochureShareMode.set('linksOnly')"
                     class="px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
-                    [ngClass]="brochureShareMode() === 'linksOnly' ? 'bg-white text-[#0f9d58] shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
+                    [ngClass]="brochureShareMode() === 'linksOnly' ? 'bg-white text-[#ea1f25] shadow-2xs' : 'text-gray-500 hover:text-gray-900'"
                   >
                     Direct Link(s) Only
                   </button>
@@ -863,7 +863,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
                     [ngModel]="brochureSearchQuery()"
                     (ngModelChange)="brochureSearchQuery.set($event)"
                     placeholder="Search brochures..."
-                    class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]/20 focus:border-[#0f9d58] transition-colors"
+                    class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#ea1f25]/20 focus:border-[#ea1f25] transition-colors"
                   />
                 </div>
 
@@ -874,7 +874,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
                   <button
                     type="button"
                     (click)="selectAllBrochures()"
-                    class="text-xs text-[#0f9d58] hover:text-[#0b8043] font-semibold hover:underline cursor-pointer"
+                    class="text-xs text-[#ea1f25] hover:text-[#c5161b] font-semibold hover:underline cursor-pointer"
                   >
                     Select All
                   </button>
@@ -892,7 +892,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
               <!-- Brochure Checklist Items -->
               @if (isLoadingBrochures()) {
                 <div class="py-10 text-center text-xs text-gray-400 flex flex-col items-center gap-2">
-                  <svg class="animate-spin w-5 h-5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24">
+                  <svg class="animate-spin w-5 h-5 text-[#ea1f25]" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                   </svg>
@@ -915,7 +915,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
                       (click)="toggleBrochureSelection(b.id)"
                       class="flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer select-none"
                       [ngClass]="isChecked 
-                        ? 'border-[#0f9d58]/60 bg-emerald-50/30 shadow-2xs' 
+                        ? 'border-[#ea1f25]/60 bg-red-50/30 shadow-2xs' 
                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/50 bg-white'"
                     >
                       <!-- Checkbox -->
@@ -924,7 +924,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
                         [checked]="isChecked"
                         (click)="$event.stopPropagation()"
                         (change)="toggleBrochureSelection(b.id)"
-                        class="rounded text-[#0f9d58] focus:ring-[#0f9d58] h-4 w-4 cursor-pointer shrink-0"
+                        class="rounded text-[#ea1f25] focus:ring-[#ea1f25] h-4 w-4 cursor-pointer shrink-0"
                       />
 
                       <!-- Type Badge -->
@@ -953,11 +953,11 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
                       <button
                         type="button"
                         (click)="copySingleBrochureLink(b, $event)"
-                        class="p-1.5 rounded-lg border border-gray-200 hover:border-[#0f9d58] hover:text-[#0f9d58] hover:bg-emerald-50 text-gray-500 transition-colors cursor-pointer shrink-0 ml-1"
+                        class="p-1.5 rounded-lg border border-gray-200 hover:border-[#ea1f25] hover:text-[#ea1f25] hover:bg-red-50 text-gray-500 transition-colors cursor-pointer shrink-0 ml-1"
                         [title]="'Copy direct public link: ' + b.title"
                       >
                         @if (copiedBrochureId() === b.id) {
-                          <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg class="w-3.5 h-3.5 text-[#ea1f25]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                           </svg>
                         } @else {
@@ -998,7 +998,7 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
               <div class="flex items-center gap-2">
                 <button
                   type="button"
-                  (click)="copyText(getBrochureShareText(), 'Brochure links copied to clipboard!')"
+                  (click)="copyText(getBrochureShareText(), 'Selected brochure links have been copied to your clipboard and are ready to share.', 'Brochure Links Copied!')"
                   [disabled]="selectedBrochureIds().size === 0"
                   class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold text-gray-700 shadow-2xs transition-colors cursor-pointer"
                 >
@@ -1232,7 +1232,7 @@ export class BookingDetailedComponent implements OnInit, OnChanges, OnDestroy {
     if (this.isTransfered(item.action_type)) return '#f59e0b';
     if (this.isDateChanged(item.action_type)) return '#7c3aed';
     if (this.isNameUpdated(item.action_type)) return '#0284c7';
-    return '#10b981';
+    return '#ea1f25';
   }
 
   getActionBadgeLabel(item: BookingHistoryRecord): string {
@@ -1321,7 +1321,7 @@ export class BookingDetailedComponent implements OnInit, OnChanges, OnDestroy {
   copySingleBrochureLink(b: Brochure, event: Event): void {
     event.stopPropagation();
     const url = this.brochuresService.getShareUrl(b);
-    this.copyText(url, `Copied link for "${b.title}"!`);
+    this.copyText(url, `Direct share link for "${b.title}" is copied to your clipboard.`, 'Link Copied!');
     this.copiedBrochureId.set(b.id);
     setTimeout(() => {
       if (this.copiedBrochureId() === b.id) {
@@ -1654,26 +1654,26 @@ export class BookingDetailedComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
-  copyText(text: string, successMessage = 'Copied to clipboard!'): void {
+  copyText(text: string, successMessage = 'Copied to your clipboard and ready to share!', title = 'Copied!'): void {
     if (navigator?.clipboard?.writeText) {
       navigator.clipboard.writeText(text).then(() => {
-        this.toastService.success(successMessage);
+        this.toastService.success(successMessage, title);
       }).catch(() => {
-        this.fallbackCopy(text, successMessage);
+        this.fallbackCopy(text, successMessage, title);
       });
     } else {
-      this.fallbackCopy(text, successMessage);
+      this.fallbackCopy(text, successMessage, title);
     }
   }
 
-  private fallbackCopy(text: string, successMessage: string): void {
+  private fallbackCopy(text: string, successMessage: string, title = 'Copied!'): void {
     const textarea = document.createElement('textarea');
     textarea.value = text;
     document.body.appendChild(textarea);
     textarea.select();
     try {
       document.execCommand('copy');
-      this.toastService.success(successMessage);
+      this.toastService.success(successMessage, title);
     } catch {
       this.toastService.error('Could not copy automatically.');
     }
@@ -1686,7 +1686,7 @@ export class BookingDetailedComponent implements OnInit, OnChanges, OnDestroy {
       return { label: 'PDF', bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200' };
     }
     if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(ext) || mimetype.startsWith('image/')) {
-      return { label: 'IMG', bg: 'bg-emerald-50', text: 'text-[#0f9d58]', border: 'border-emerald-200' };
+      return { label: 'IMG', bg: 'bg-red-50', text: 'text-[#ea1f25]', border: 'border-red-200' };
     }
     if (['doc', 'docx'].includes(ext) || mimetype.includes('word') || mimetype.includes('officedocument')) {
       return { label: 'DOC', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200' };

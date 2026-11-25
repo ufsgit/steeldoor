@@ -56,7 +56,7 @@ export interface InfiniteDropdownOption {
         [disabled]="disabled"
         class="w-full flex items-center justify-between text-left bg-white border rounded-xl px-3.5 py-2.5 text-xs transition-all cursor-pointer select-none focus:outline-none"
         [ngClass]="[
-          isOpen ? 'border-[#0f9d58] ring-1 ring-[#0f9d58] shadow-sm' : 'border-gray-200 hover:border-gray-300',
+          isOpen ? 'border-[#ea1f25] ring-1 ring-[#ea1f25] shadow-sm' : 'border-gray-200 hover:border-gray-300',
           disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed opacity-75' : 'text-gray-800',
           customClass
         ]"
@@ -77,7 +77,7 @@ export interface InfiniteDropdownOption {
         <!-- Right icons: loading / clear / chevron -->
         <div class="flex items-center gap-1.5 shrink-0 ml-1 text-gray-400">
           @if (isLoadingInitial) {
-            <span class="inline-block w-3.5 h-3.5 border-2 border-[#0f9d58] border-t-transparent rounded-full animate-spin"></span>
+            <span class="inline-block w-3.5 h-3.5 border-2 border-[#ea1f25] border-t-transparent rounded-full animate-spin"></span>
           } @else {
             @if (clearable && value !== null && value !== undefined && value !== '' && !disabled) {
               <span
@@ -132,10 +132,10 @@ export interface InfiniteDropdownOption {
                 [(ngModel)]="searchQuery"
                 (input)="onSearchInput(searchQuery)"
                 [placeholder]="searchPlaceholder"
-                class="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#0f9d58] focus:ring-1 focus:ring-[#0f9d58] text-gray-800 placeholder:text-gray-400"
+                class="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#ea1f25] focus:ring-1 focus:ring-[#ea1f25] text-gray-800 placeholder:text-gray-400"
               />
               @if (isSearching) {
-                <span class="absolute right-2.5 inline-block w-3.5 h-3.5 border-2 border-[#0f9d58] border-t-transparent rounded-full animate-spin"></span>
+                <span class="absolute right-2.5 inline-block w-3.5 h-3.5 border-2 border-[#ea1f25] border-t-transparent rounded-full animate-spin"></span>
               } @else if (searchQuery) {
                 <button
                   type="button"
@@ -164,7 +164,7 @@ export interface InfiniteDropdownOption {
                 (click)="selectItem(item)"
                 class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between transition-colors select-none hover:bg-gray-100"
                 [ngClass]="{
-                  'bg-[#0f9d58]/10 text-[#0f9d58] font-semibold': isSelected(item),
+                  'bg-[#ea1f25]/10 text-[#ea1f25] font-semibold': isSelected(item),
                   'text-gray-700': !isSelected(item)
                 }"
               >
@@ -178,7 +178,7 @@ export interface InfiniteDropdownOption {
                 </div>
 
                 @if (isSelected(item)) {
-                  <svg class="w-4 h-4 text-[#0f9d58] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg class="w-4 h-4 text-[#ea1f25] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                   </svg>
                 }
@@ -196,8 +196,8 @@ export interface InfiniteDropdownOption {
 
             <!-- Bottom Spinner for Next Page API Call -->
             @if (isLoadingMore) {
-              <div class="py-2.5 px-3 flex items-center justify-center gap-2 text-xs text-[#0f9d58] bg-gray-50/50 border-t border-gray-100">
-                <span class="inline-block w-3.5 h-3.5 border-2 border-[#0f9d58] border-t-transparent rounded-full animate-spin"></span>
+              <div class="py-2.5 px-3 flex items-center justify-center gap-2 text-xs text-[#ea1f25] bg-gray-50/50 border-t border-gray-100">
+                <span class="inline-block w-3.5 h-3.5 border-2 border-[#ea1f25] border-t-transparent rounded-full animate-spin"></span>
                 <span class="font-medium">Loading more...</span>
               </div>
             }

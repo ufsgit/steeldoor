@@ -35,7 +35,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
           <button
             type="button"
             (click)="openCreateModal()"
-            class="px-4 py-1.5 rounded-lg bg-[#0f9d58] hover:bg-[#0b8043] text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+            class="px-4 py-1.5 rounded-lg bg-[#ea1f25] hover:bg-[#c5161b] text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
@@ -54,7 +54,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
               (click)="activeStatusFilter = tab.val"
               class="px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer"
               [ngClass]="activeStatusFilter === tab.val
-                ? 'bg-[#0f9d58] text-white border-[#0f9d58] shadow-2xs'
+                ? 'bg-[#ea1f25] text-white border-[#ea1f25] shadow-2xs'
                 : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'"
             >
               {{ tab.label }}
@@ -67,7 +67,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
             type="text"
             [(ngModel)]="searchQuery"
             placeholder="Search by name, district, email..."
-            class="w-full text-xs pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0f9d58]"
+            class="w-full text-xs pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#ea1f25]"
           />
           <svg class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -120,7 +120,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
                   {{ head.name }}
                 </td>
                 <td class="py-3.5 px-4 whitespace-nowrap">
-                  <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-red-50 text-[#c5161b] border border-red-200">
                     {{ head.districtName }} Hub
                   </span>
                 </td>
@@ -407,7 +407,10 @@ export class AdminBranchHeadsComponent implements OnInit {
             this.selectedHead.set(updated);
           }
           this.modalOpen = false;
-          this.toast.success(`Branch head ${updated.name} updated!`);
+          this.toast.success(
+            `Profile details for branch head ${updated.name} have been saved.`,
+            'Branch Head Updated!'
+          );
         },
         error: err => {
           this.toast.error(err?.error?.error || 'Failed to update branch head.');
@@ -427,7 +430,10 @@ export class AdminBranchHeadsComponent implements OnInit {
           this.branchHeads.update(list => [...list, created]);
           this.selectedHead.set(created);
           this.modalOpen = false;
-          this.toast.success(`Branch head ${created.name} registered for ${districtName}!`);
+          this.toast.success(
+            `${created.name} has been registered as a branch head for ${districtName}.`,
+            'Branch Head Registered!'
+          );
         },
         error: err => {
           this.toast.error(err?.error?.error || 'Failed to create branch head.');

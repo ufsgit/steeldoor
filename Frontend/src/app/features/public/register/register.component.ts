@@ -389,7 +389,10 @@ export class RegisterComponent implements OnInit {
 
     this.dataService.createClient(clientPayload, credentials).subscribe({
       next: () => {
-        this.toast.success('Registration successful! Logging in...');
+        this.toast.success(
+          'Your account registration is complete. Signing you in now...',
+          'Welcome to FitMate!'
+        );
         this.auth.login(credentials.username, credentials.password).subscribe({
           next: () => {
             this.isSubmitting.set(false);

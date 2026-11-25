@@ -480,7 +480,10 @@ export class AdminClientsComponent implements OnInit {
         next: updated => {
           this.clients.update(list => list.map(c => c.id === updated.id ? updated : c));
           this.clientModalOpen = false;
-          this.toast.success(`Client ${updated.name} updated!`);
+          this.toast.success(
+            `Details for client ${updated.name} have been updated successfully.`,
+            'Client Updated!'
+          );
         },
         error: err => this.toast.error(err?.error?.error || 'Failed to update client.')
       });
@@ -489,7 +492,7 @@ export class AdminClientsComponent implements OnInit {
         next: created => {
           this.clients.update(list => [...list, created]);
           this.clientModalOpen = false;
-          this.toast.success(`Client ${created.name} registered!`);
+          this.toast.success(`${created.name} has been registered successfully.`, 'Client Registered!');
         },
         error: err => this.toast.error(err?.error?.error || 'Failed to create client.')
       });
@@ -514,7 +517,10 @@ export class AdminClientsComponent implements OnInit {
         const cId = this.selectedClientForCreds!.id;
         this.clients.update(list => list.map(c => c.id === cId ? { ...c, hasLogin: true, username: this.credUsername } : c));
         this.credModalOpen = false;
-        this.toast.success('Credentials saved successfully!');
+        this.toast.success(
+          'Login credentials have been saved and activated for this client.',
+          'Credentials Saved!'
+        );
       },
       error: err => this.toast.error(err?.error?.error || 'Failed to set credentials.')
     });

@@ -34,7 +34,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
             type="button"
             (click)="setDatePreset('today')"
             class="px-3.5 py-1.5 rounded-md text-[13px] font-semibold transition-all cursor-pointer select-none"
-            [ngClass]="datePreset() === 'today' ? 'bg-[#0f9d58] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'"
+            [ngClass]="datePreset() === 'today' ? 'bg-[#ea1f25] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'"
           >
             Today
           </button>
@@ -42,7 +42,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
             type="button"
             (click)="setDatePreset('this_week')"
             class="px-3.5 py-1.5 rounded-md text-[13px] font-semibold transition-all cursor-pointer select-none"
-            [ngClass]="datePreset() === 'this_week' ? 'bg-[#0f9d58] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'"
+            [ngClass]="datePreset() === 'this_week' ? 'bg-[#ea1f25] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'"
           >
             This Week
           </button>
@@ -50,7 +50,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
             type="button"
             (click)="setDatePreset('this_month')"
             class="px-3.5 py-1.5 rounded-md text-[13px] font-semibold transition-all cursor-pointer select-none"
-            [ngClass]="datePreset() === 'this_month' ? 'bg-[#0f9d58] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'"
+            [ngClass]="datePreset() === 'this_month' ? 'bg-[#ea1f25] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'"
           >
             This Month
           </button>
@@ -58,7 +58,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
             type="button"
             (click)="setDatePreset('custom')"
             class="px-3.5 py-1.5 rounded-md text-[13px] font-semibold transition-all cursor-pointer select-none"
-            [ngClass]="datePreset() === 'custom' ? 'bg-[#0f9d58] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'"
+            [ngClass]="datePreset() === 'custom' ? 'bg-[#ea1f25] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'"
           >
             Custom Date
           </button>
@@ -80,7 +80,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
               [(ngModel)]="searchTerm"
               (ngModelChange)="onSearchChange()"
               placeholder="Search by booking name..."
-              class="w-full h-[38px] text-[13px] pl-9 pr-3.5 rounded-lg border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#0f9d58] font-normal transition-colors"
+              class="w-full h-[38px] text-[13px] pl-9 pr-3.5 rounded-lg border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#ea1f25] font-normal transition-colors"
             />
           </div>
 
@@ -163,7 +163,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
 
         <!-- Total Count Badge -->
         <div class="text-[12px] font-semibold text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-          Total Logs: <span class="text-[#0f9d58] font-bold">{{ historyList().length }}</span>
+          Total Logs: <span class="text-[#ea1f25] font-bold">{{ historyList().length }}</span>
         </div>
       </div>
 
@@ -171,7 +171,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
       <div class="w-full px-7 sm:px-10 py-6">
         @if (loading()) {
           <div class="py-16 text-center">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-2 border-[#0f9d58] border-t-transparent"></div>
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-2 border-[#ea1f25] border-t-transparent"></div>
             <p class="text-xs text-gray-500 mt-2 font-medium">Loading activity audit log...</p>
           </div>
         } @else if (historyList().length === 0) {
@@ -192,14 +192,14 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
             @for (item of historyList(); track item.history_id) {
               <div
                 (click)="openBookingTimeline(item)"
-                class="group bg-white rounded-xl border border-gray-200/80 hover:border-[#0f9d58]/50 hover:shadow-md transition-all p-5 sm:p-6 cursor-pointer relative overflow-hidden"
+                class="group bg-white rounded-xl border border-gray-200/80 hover:border-[#ea1f25]/50 hover:shadow-md transition-all p-5 sm:p-6 cursor-pointer relative overflow-hidden"
                 title="Click to view full history timeline for this booking"
               >
                 <div class="flex items-start justify-between gap-4">
                   <!-- Left side: Avatar + Title & Action Badges -->
                   <div class="flex items-start gap-3.5 min-w-0 flex-1">
                     <!-- Avatar Initial Badge -->
-                    <div class="w-10 h-10 rounded-full bg-emerald-50 text-[#0f9d58] border border-emerald-100/60 font-bold text-[14px] flex items-center justify-center shrink-0 uppercase select-none group-hover:scale-105 transition-transform">
+                    <div class="w-10 h-10 rounded-full bg-red-50 text-[#ea1f25] border border-red-100/60 font-bold text-[14px] flex items-center justify-center shrink-0 uppercase select-none group-hover:scale-105 transition-transform">
                       {{ (item.booking_name || 'B').charAt(0) }}
                     </div>
 
@@ -207,7 +207,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
                       <!-- Booking Name (without #ID badge) -->
                       <div class="flex items-center gap-2 flex-wrap min-w-0">
                         <span
-                          class="text-[14px] font-bold text-gray-900 group-hover:text-[#0f9d58] transition-colors truncate max-w-[320px] sm:max-w-[480px] md:max-w-[600px]"
+                          class="text-[14px] font-bold text-gray-900 group-hover:text-[#ea1f25] transition-colors truncate max-w-[320px] sm:max-w-[480px] md:max-w-[600px]"
                           [title]="item.booking_name || 'Booking'"
                         >
                           {{ item.booking_name || 'Booking' }}
@@ -328,7 +328,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
                         <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                         </svg>
-                        <span class="font-bold text-[#0f9d58]">
+                        <span class="font-bold text-[#ea1f25]">
                           {{ item.to_branch_head_name }}
                           @if (item.to_assigned_head_district_name) {
                             <span class="text-gray-400 font-normal">({{ item.to_assigned_head_district_name }})</span>

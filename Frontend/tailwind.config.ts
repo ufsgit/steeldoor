@@ -17,9 +17,9 @@ export default {
         sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        soft: '0 2px 15px -3px rgba(20, 83, 45, 0.07), 0 4px 6px -4px rgba(20, 83, 45, 0.05)',
+        soft: '0 2px 15px -3px rgba(234, 31, 37, 0.07), 0 4px 6px -4px rgba(234, 31, 37, 0.05)',
         card: '0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04)',
-        elevated: '0 10px 30px -5px rgba(20, 83, 45, 0.12), 0 8px 10px -6px rgba(20, 83, 45, 0.08)',
+        elevated: '0 10px 30px -5px rgba(234, 31, 37, 0.12), 0 8px 10px -6px rgba(234, 31, 37, 0.08)',
       },
       borderRadius: {
         'xl': '0.75rem',

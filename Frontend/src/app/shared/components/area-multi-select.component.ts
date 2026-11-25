@@ -46,7 +46,7 @@ import { AreaItem } from '../../core/models';
         [disabled]="disabled"
         class="w-full min-h-[42px] flex items-center justify-between text-left bg-white border rounded-xl px-3.5 py-2 text-xs transition-all cursor-pointer select-none focus:outline-none"
         [ngClass]="[
-          isOpen ? 'border-[#0f9d58] ring-1 ring-[#0f9d58] shadow-xs' : 'border-gray-200 hover:border-gray-300',
+          isOpen ? 'border-[#ea1f25] ring-1 ring-[#ea1f25] shadow-xs' : 'border-gray-200 hover:border-gray-300',
           disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed opacity-75' : 'text-gray-800',
           customClass
         ]"
@@ -59,7 +59,7 @@ import { AreaItem } from '../../core/models';
             <div class="flex items-center flex-wrap gap-1.5 py-0.5">
               @for (area of selectedAreas; track area.id) {
                 <span
-                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 max-w-full"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-red-50 text-[#c5161b] border border-red-200 max-w-full"
                   (click)="$event.stopPropagation()"
                 >
                   <span class="max-w-[130px] sm:max-w-[160px] truncate">{{ area.name }}</span>
@@ -67,7 +67,7 @@ import { AreaItem } from '../../core/models';
                     <button
                       type="button"
                       (click)="removeArea(area, $event)"
-                      class="text-emerald-700 hover:text-red-600 rounded p-0.5 hover:bg-emerald-100 transition-colors cursor-pointer"
+                      class="text-[#c5161b] hover:text-red-700 rounded p-0.5 hover:bg-red-100 transition-colors cursor-pointer"
                       title="Remove area"
                     >
                       <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -86,7 +86,7 @@ import { AreaItem } from '../../core/models';
         <!-- Right Side Icons -->
         <div class="flex items-center gap-1.5 shrink-0 ml-1 text-gray-400">
           @if (isLoading) {
-            <span class="inline-block w-3.5 h-3.5 border-2 border-[#0f9d58] border-t-transparent rounded-full animate-spin"></span>
+            <span class="inline-block w-3.5 h-3.5 border-2 border-[#ea1f25] border-t-transparent rounded-full animate-spin"></span>
           } @else {
             @if (clearable && selectedAreas.length > 0 && !disabled) {
               <span
@@ -140,7 +140,7 @@ import { AreaItem } from '../../core/models';
                 type="text"
                 [(ngModel)]="searchQuery"
                 [placeholder]="searchPlaceholder"
-                class="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#0f9d58] focus:ring-1 focus:ring-[#0f9d58] text-gray-800 placeholder:text-gray-400"
+                class="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#ea1f25] focus:ring-1 focus:ring-[#ea1f25] text-gray-800 placeholder:text-gray-400"
               />
               @if (searchQuery) {
                 <button
@@ -164,7 +164,7 @@ import { AreaItem } from '../../core/models';
                 <button
                   type="button"
                   (click)="selectAll()"
-                  class="font-semibold text-[#0f9d58] hover:text-[#0b8043] cursor-pointer hover:underline"
+                  class="font-semibold text-[#ea1f25] hover:text-[#c5161b] cursor-pointer hover:underline"
                 >
                   Select All
                 </button>
@@ -235,9 +235,9 @@ import { AreaItem } from '../../core/models';
                   role="option"
                   [attr.aria-selected]="isSelected(area.id)"
                   (click)="toggleArea(area)"
-                  class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between transition-colors select-none hover:bg-emerald-50/50"
+                  class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between transition-colors select-none hover:bg-red-50/40"
                   [ngClass]="{
-                    'bg-[#0f9d58]/10 text-[#0f9d58] font-semibold border-l-2 border-[#0f9d58]': isSelected(area.id),
+                    'bg-[#ea1f25]/10 text-[#ea1f25] font-semibold border-l-2 border-[#ea1f25]': isSelected(area.id),
                     'text-gray-700 hover:text-gray-900': !isSelected(area.id)
                   }"
                 >
@@ -245,7 +245,7 @@ import { AreaItem } from '../../core/models';
                   <div class="flex items-center gap-2.5 truncate pr-2">
                     <div
                       class="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
-                      [ngClass]="isSelected(area.id) ? 'bg-[#0f9d58] border-[#0f9d58] text-white' : 'border-emerald-500/80 bg-white hover:border-[#0f9d58]'"
+                      [ngClass]="isSelected(area.id) ? 'bg-[#ea1f25] border-[#ea1f25] text-white' : 'border-emerald-500/80 bg-white hover:border-[#ea1f25]'"
                     >
                       @if (isSelected(area.id)) {
                         <svg class="w-3 h-3 stroke-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -274,8 +274,8 @@ import { AreaItem } from '../../core/models';
             } @empty {
               <div class="py-6 px-4 text-center text-xs text-gray-500">
                 @if (isLoading) {
-                  <div class="flex items-center justify-center gap-2 text-[#0f9d58]">
-                    <span class="inline-block w-4 h-4 border-2 border-[#0f9d58] border-t-transparent rounded-full animate-spin"></span>
+                  <div class="flex items-center justify-center gap-2 text-[#ea1f25]">
+                    <span class="inline-block w-4 h-4 border-2 border-[#ea1f25] border-t-transparent rounded-full animate-spin"></span>
                     <span>Loading areas...</span>
                   </div>
                 } @else {
@@ -297,7 +297,7 @@ import { AreaItem } from '../../core/models';
               <button
                 type="button"
                 (click)="close()"
-                class="px-3 py-1 rounded-lg bg-[#0f9d58] hover:bg-[#0b8043] text-white font-semibold text-xs transition-colors cursor-pointer shadow-2xs"
+                class="px-3 py-1 rounded-lg bg-[#ea1f25] hover:bg-[#c5161b] text-white font-semibold text-xs transition-colors cursor-pointer shadow-2xs"
               >
                 Done
               </button>

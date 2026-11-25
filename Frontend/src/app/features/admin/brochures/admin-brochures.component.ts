@@ -19,7 +19,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
           <div>
             <div class="flex items-center gap-3">
               <h1 class="text-[20px] font-bold text-gray-900 tracking-tight">Brochure Documents</h1>
-              <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-50 text-[#0f9d58] border border-emerald-200">
+              <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-red-50 text-[#ea1f25] border border-red-200">
                 {{ totalRecords() }} {{ totalRecords() === 1 ? 'Doc' : 'Docs' }}
               </span>
             </div>
@@ -32,7 +32,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
           <button
             type="button"
             (click)="toggleUploadSection()"
-            class="px-4 py-2 rounded-lg bg-[#0f9d58] hover:bg-[#0b8043] text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+            class="px-4 py-2 rounded-lg bg-[#ea1f25] hover:bg-[#c5161b] text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
@@ -50,7 +50,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
           <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs animate-fadeIn">
             <div class="flex items-center justify-between pb-4 border-b border-gray-100">
               <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
-                <svg class="w-4 h-4 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-4 h-4 text-[#ea1f25]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
                 Upload Brochure Document
@@ -80,7 +80,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
                     name="title"
                     placeholder="e.g. Steel Doors Complete Catalogue 2026"
                     required
-                    class="w-full px-3.5 py-2 text-xs rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]/20 focus:border-[#0f9d58] transition-colors"
+                    class="w-full px-3.5 py-2 text-xs rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ea1f25]/20 focus:border-[#ea1f25] transition-colors"
                   />
                 </div>
 
@@ -94,7 +94,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
                     [(ngModel)]="newDescription"
                     name="description"
                     placeholder="e.g. Includes fire-rated models, warranty, and finish options"
-                    class="w-full px-3.5 py-2 text-xs rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]/20 focus:border-[#0f9d58] transition-colors"
+                    class="w-full px-3.5 py-2 text-xs rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ea1f25]/20 focus:border-[#ea1f25] transition-colors"
                   />
                 </div>
               </div>
@@ -111,9 +111,9 @@ import { ToastService } from '../../../shared/toast/toast.service';
                   (drop)="onFileDrop($event)"
                   class="border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer"
                   [ngClass]="{
-                    'border-[#0f9d58] bg-emerald-50/40': isDragging(),
+                    'border-[#ea1f25] bg-red-50/40': isDragging(),
                     'border-gray-200 hover:border-gray-300 bg-gray-50/50': !isDragging() && !selectedFile(),
-                    'border-[#0f9d58]/40 bg-emerald-50/20': selectedFile()
+                    'border-[#ea1f25]/40 bg-red-50/20': selectedFile()
                   }"
                   (click)="fileInput.click()"
                 >
@@ -154,7 +154,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                       </svg>
                       <p class="text-xs font-medium text-gray-700">
-                        <span class="text-[#0f9d58] font-bold">Click to browse</span> or drag and drop your file here
+                        <span class="text-[#ea1f25] font-bold">Click to browse</span> or drag and drop your file here
                       </p>
                       <p class="text-[11px] text-gray-400">PDF, Word (.doc, .docx), Images (.jpg, .png, .webp)</p>
                       <p class="text-[10px] text-red-500/80 font-medium">Videos (.mp4, .mov, etc.) and other files are not allowed</p>
@@ -175,7 +175,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
                 <button
                   type="submit"
                   [disabled]="isUploading() || !newTitle.trim() || !selectedFile()"
-                  class="px-5 py-2 rounded-lg bg-[#0f9d58] hover:bg-[#0b8043] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+                  class="px-5 py-2 rounded-lg bg-[#ea1f25] hover:bg-[#c5161b] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-2 cursor-pointer"
                 >
                   @if (isUploading()) {
                     <svg class="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24">
@@ -200,7 +200,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
           <!-- Search input -->
           <div class="relative w-full sm:w-80">
             @if (isSearching()) {
-              <svg class="w-4 h-4 text-[#0f9d58] animate-spin absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 text-[#ea1f25] animate-spin absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
               </svg>
@@ -215,7 +215,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
               (ngModelChange)="onSearchChange()"
               (keyup.enter)="onSearchEnter()"
               placeholder="Search by brochure name or description..."
-              class="w-full pl-9 pr-8 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]/20 focus:border-[#0f9d58] transition-colors"
+              class="w-full pl-9 pr-8 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#ea1f25]/20 focus:border-[#ea1f25] transition-colors"
             />
             @if (searchQuery) {
               <button
@@ -235,7 +235,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
         <!-- Documents List -->
         @if (isLoading() && !isSearching()) {
           <div class="py-16 text-center bg-white rounded-2xl border border-gray-200">
-            <svg class="animate-spin w-8 h-8 text-[#0f9d58] mx-auto mb-3" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin w-8 h-8 text-[#ea1f25] mx-auto mb-3" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
             </svg>
@@ -244,7 +244,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
         } @else if (filteredBrochures().length === 0) {
           <!-- Empty State -->
           <div class="py-16 text-center bg-white rounded-2xl border border-dashed border-gray-300 p-8 space-y-3">
-            <div class="w-14 h-14 rounded-full bg-emerald-50 text-[#0f9d58] mx-auto flex items-center justify-center">
+            <div class="w-14 h-14 rounded-full bg-red-50 text-[#ea1f25] mx-auto flex items-center justify-center">
               <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
@@ -271,7 +271,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
               <button
                 type="button"
                 (click)="isUploadOpen.set(true)"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0f9d58] hover:bg-[#0b8043] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#ea1f25] hover:bg-[#c5161b] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
               >
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
@@ -310,7 +310,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
                   </div>
 
                   <!-- Title -->
-                  <h3 class="text-sm font-bold text-gray-900 group-hover:text-[#0f9d58] transition-colors line-clamp-2">
+                  <h3 class="text-sm font-bold text-gray-900 group-hover:text-[#ea1f25] transition-colors line-clamp-2">
                     {{ item.title }}
                   </h3>
 
@@ -335,7 +335,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
                     <button
                       type="button"
                       (click)="viewDocument(item)"
-                      class="px-3 py-1.5 rounded-lg border border-gray-200 hover:border-[#0f9d58] hover:text-[#0f9d58] hover:bg-emerald-50/30 text-gray-700 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                      class="px-3 py-1.5 rounded-lg border border-gray-200 hover:border-[#ea1f25] hover:text-[#ea1f25] hover:bg-red-50/30 text-gray-700 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
                       title="Open document in new tab"
                     >
                       <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -351,15 +351,15 @@ import { ToastService } from '../../../shared/toast/toast.service';
                       (click)="copyShareLink(item)"
                       class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
                       [ngClass]="copiedId() === item.id 
-                        ? 'bg-emerald-50 text-[#0f9d58] border border-emerald-300' 
-                        : 'border border-gray-200 hover:border-[#0f9d58] hover:text-[#0f9d58] hover:bg-emerald-50/30 text-gray-700'"
+                        ? 'bg-red-50 text-[#ea1f25] border border-red-300' 
+                        : 'border border-gray-200 hover:border-[#ea1f25] hover:text-[#ea1f25] hover:bg-red-50/30 text-gray-700'"
                       [title]="'Shareable URL: ' + getShareUrl(item)"
                     >
                       @if (copiedId() === item.id) {
-                        <svg class="w-3.5 h-3.5 text-[#0f9d58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="w-3.5 h-3.5 text-[#ea1f25]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                         </svg>
-                        <span class="text-[#0f9d58]">Copied!</span>
+                        <span class="text-[#ea1f25]">Copied!</span>
                       } @else {
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -772,7 +772,10 @@ export class AdminBrochuresComponent implements OnInit, OnDestroy {
     this.brochuresService.uploadBrochure(title, this.newDescription.trim(), file).subscribe({
       next: (created) => {
         this.isUploading.set(false);
-        this.toast.success(`Brochure "${title}" uploaded successfully!`);
+        this.toast.success(
+          `Brochure "${title}" has been uploaded and is ready to view or share.`,
+          'Brochure Uploaded!'
+        );
         this.resetForm();
         this.searchQuery = '';
         this.currentPage.set(1);
@@ -799,7 +802,7 @@ export class AdminBrochuresComponent implements OnInit, OnDestroy {
     if (navigator?.clipboard?.writeText) {
       navigator.clipboard.writeText(url).then(() => {
         this.copiedId.set(item.id);
-        this.toast.success('Share link copied to clipboard!');
+        this.toast.success('Share link copied to your clipboard and ready to paste.', 'Link Copied!');
         setTimeout(() => {
           if (this.copiedId() === item.id) {
             this.copiedId.set(null);
@@ -821,7 +824,7 @@ export class AdminBrochuresComponent implements OnInit, OnDestroy {
     try {
       document.execCommand('copy');
       this.copiedId.set(id);
-      this.toast.success('Share link copied to clipboard!');
+      this.toast.success('Share link copied to your clipboard and ready to paste.', 'Link Copied!');
       setTimeout(() => {
         if (this.copiedId() === id) {
           this.copiedId.set(null);
@@ -862,7 +865,7 @@ export class AdminBrochuresComponent implements OnInit, OnDestroy {
 
         this.brochures.update(list => list.filter(b => b.id !== targetId));
         this.totalRecords.update(n => Math.max(0, n - 1));
-        this.toast.success(`Brochure "${item.title}" deleted.`);
+        this.toast.success(`Brochure "${item.title}" has been removed.`, 'Brochure Deleted');
 
         if (this.brochures().length === 0 && this.currentPage() > 1) {
           this.currentPage.update(p => p - 1);
@@ -894,7 +897,7 @@ export class AdminBrochuresComponent implements OnInit, OnDestroy {
       return { label: 'PDF', bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200' };
     }
     if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(ext) || mimetype.startsWith('image/')) {
-      return { label: 'IMG', bg: 'bg-emerald-50', text: 'text-[#0f9d58]', border: 'border-emerald-200' };
+      return { label: 'IMG', bg: 'bg-red-50', text: 'text-[#ea1f25]', border: 'border-red-200' };
     }
     if (['doc', 'docx'].includes(ext) || mimetype.includes('word') || mimetype.includes('officedocument')) {
       return { label: 'DOC', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200' };

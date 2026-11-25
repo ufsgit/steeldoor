@@ -23,7 +23,7 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
           <!-- Header -->
           <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4 bg-white shrink-0">
             <div class="flex items-center gap-3 min-w-0 flex-1">
-              <div class="w-9 h-9 rounded-full bg-emerald-50 text-[#0f9d58] border border-emerald-100 font-bold text-xs flex items-center justify-center uppercase shrink-0">
+              <div class="w-9 h-9 rounded-full bg-red-50 text-[#ea1f25] border border-red-100 font-bold text-xs flex items-center justify-center uppercase shrink-0">
                 {{ (bookingName || 'B').charAt(0) }}
               </div>
               <div class="min-w-0 flex-1">
@@ -59,7 +59,7 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
             <!-- Initial First Page Loader -->
             @if (loading() && timeline().length === 0) {
               <div class="py-16 text-center">
-                <div class="inline-block animate-spin rounded-full h-8 w-8 border-3 border-[#0f9d58] border-t-transparent"></div>
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-3 border-[#ea1f25] border-t-transparent"></div>
                 <p class="text-xs text-gray-500 mt-3 font-semibold">Loading booking timeline...</p>
               </div>
             } @else if (errorMsg()) {
@@ -196,7 +196,7 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
                               <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                               </svg>
-                              <span class="font-bold text-[#0f9d58]">
+                              <span class="font-bold text-[#ea1f25]">
                                 {{ item.to_branch_head_name }}
                                 @if (item.to_assigned_head_district_name) {
                                   <span class="text-gray-400">({{ item.to_assigned_head_district_name }})</span>
@@ -259,7 +259,7 @@ import { BookingHistoryService, BookingHistoryRecord } from '../../core/services
               <!-- Next Page Waiting Loading Spinner -->
               @if (loadingMore()) {
                 <div class="py-5 flex items-center justify-center gap-2.5 bg-white/70 rounded-xl border border-gray-200/60 my-3 shadow-2xs animate-fadeIn">
-                  <div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-[#0f9d58] border-t-transparent"></div>
+                  <div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-[#ea1f25] border-t-transparent"></div>
                   <span class="text-[12px] font-semibold text-gray-600">Loading next events...</span>
                 </div>
               }
@@ -417,7 +417,7 @@ export class BookingHistoryModalComponent implements OnChanges {
     if (this.isTransfered(item.action_type)) return '#f59e0b';
     if (this.isDateChanged(item.action_type)) return '#7c3aed';
     if (this.isNameUpdated(item.action_type)) return '#0284c7';
-    return '#10b981';
+    return '#ea1f25';
   }
 
   getActionBadgeLabel(item: BookingHistoryRecord): string {

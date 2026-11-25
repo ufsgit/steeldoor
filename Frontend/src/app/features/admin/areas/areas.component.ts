@@ -19,7 +19,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
         
         <!-- Left: Current State Header -->
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-emerald-50 text-[#0f9d58] border border-emerald-100 flex items-center justify-center shrink-0">
+          <div class="w-9 h-9 rounded-xl bg-red-50 text-[#ea1f25] border border-red-100 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -34,7 +34,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
               @if (states().length <= 1) {
                 <span class="text-xl font-bold text-gray-900 tracking-tight">{{ currentStateName() }}</span>
                 @if (currentStateCode()) {
-                  <span class="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-[#0f9d58] border border-emerald-200">
+                  <span class="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-red-50 text-[#ea1f25] border border-red-200">
                     {{ currentStateCode() }}
                   </span>
                 }
@@ -43,7 +43,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
                 <select
                   [ngModel]="selectedStateId()"
                   (ngModelChange)="onStateChange($event)"
-                  class="text-base font-bold text-gray-900 bg-white border border-gray-300 rounded-lg px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-[#0f9d58] cursor-pointer"
+                  class="text-base font-bold text-gray-900 bg-white border border-gray-300 rounded-lg px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-[#ea1f25] cursor-pointer"
                 >
                   @for (st of states(); track st.id) {
                     <option [value]="st.id">{{ st.name }} ({{ st.code }})</option>
@@ -63,7 +63,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
           <button
             type="button"
             (click)="openAddModal()"
-            class="px-4 py-2 rounded-xl bg-[#0f9d58] hover:bg-[#0b8043] text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+            class="px-4 py-2 rounded-xl bg-[#ea1f25] hover:bg-[#c5161b] text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
@@ -84,7 +84,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
               [disabled]="loadingAreas() && selectedDistrictId() === d.id"
               class="px-3.5 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer disabled:cursor-wait"
               [ngClass]="selectedDistrictId() === d.id
-                ? 'bg-[#0f9d58] text-white shadow-xs'
+                ? 'bg-[#ea1f25] text-white shadow-xs'
                 : 'text-gray-700 bg-white/70 hover:bg-white hover:text-gray-900 border border-transparent hover:border-gray-200'"
             >
               @if (loadingAreas() && selectedDistrictId() === d.id) {
@@ -125,12 +125,12 @@ import { ModalComponent } from '../../../shared/components/modal.component';
                   (keyup.enter)="onSearch()"
                   (input)="onSearchInput()"
                   placeholder="Search area or pincode..."
-                  class="w-full text-xs pl-8 pr-7 py-1.5 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0f9d58] text-gray-800 placeholder-gray-400"
+                  class="w-full text-xs pl-8 pr-7 py-1.5 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#ea1f25] text-gray-800 placeholder-gray-400"
                 />
                 <button
                   type="button"
                   (click)="onSearch()"
-                  class="absolute left-2.5 top-2 text-gray-400 hover:text-[#0f9d58] transition-colors cursor-pointer"
+                  class="absolute left-2.5 top-2 text-gray-400 hover:text-[#ea1f25] transition-colors cursor-pointer"
                   title="Search"
                 >
                   <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -153,7 +153,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
               <!-- <button
                 type="button"
                 (click)="onSearch()"
-                class="px-3 py-1.5 rounded-lg bg-[#0f9d58] hover:bg-[#0b8043] text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                class="px-3 py-1.5 rounded-lg bg-[#ea1f25] hover:bg-[#c5161b] text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-1 cursor-pointer shrink-0"
               >
                 <span>Search</span>
               </button> -->
@@ -163,7 +163,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
           <!-- Loading State -->
           @if (loadingAreas()) {
             <div class="py-12 flex flex-col items-center justify-center text-gray-400 gap-2">
-              <svg class="w-6 h-6 animate-spin text-[#0f9d58]" fill="none" viewBox="0 0 24 24">
+              <svg class="w-6 h-6 animate-spin text-[#ea1f25]" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
               </svg>
@@ -232,7 +232,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
               type="text"
               [(ngModel)]="formName"
               placeholder="e.g. Infopark South or Marine Drive"
-              class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+              class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ea1f25]"
             />
           </div>
 
@@ -242,7 +242,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
               type="text"
               [(ngModel)]="formPincode"
               placeholder="e.g. 682030"
-              class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0f9d58]"
+              class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ea1f25]"
             />
           </div>
 
@@ -258,7 +258,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
               type="button"
               (click)="saveArea()"
               [disabled]="!formName.trim() || saving()"
-              class="px-5 py-2 rounded-xl bg-[#0f9d58] hover:bg-[#0b8043] disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-2"
+              class="px-5 py-2 rounded-xl bg-[#ea1f25] hover:bg-[#c5161b] disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-2"
             >
               @if (saving()) {
                 <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -510,7 +510,10 @@ export class AdminAreasComponent implements OnInit {
           this.areas.update(list => list.map(a => a.id === updated.id ? updated : a));
           this.saving.set(false);
           this.modalOpen = false;
-          this.toast.success(`Area "${name}" updated successfully!`);
+          this.toast.success(
+            `Details for area "${name}" have been updated successfully.`,
+            'Area Updated!'
+          );
         },
         error: err => {
           this.saving.set(false);
@@ -529,7 +532,10 @@ export class AdminAreasComponent implements OnInit {
           }));
           this.saving.set(false);
           this.modalOpen = false;
-          this.toast.success(`Area "${name}" added to ${this.selectedDistrict()?.name}!`);
+          this.toast.success(
+            `Area "${name}" has been added to ${this.selectedDistrict()?.name} district.`,
+            'Area Added!'
+          );
         },
         error: err => {
           this.saving.set(false);
