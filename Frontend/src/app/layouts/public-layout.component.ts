@@ -102,19 +102,35 @@ import { SITE_CONFIG } from '../core/site-config';
               </svg>
             </a>
 
-            <!-- Login Button -->
-            <button
-              type="button"
-              (click)="isLoginModalOpen.set(true)"
-              class="nav-login-btn h-10 px-5 rounded-xl text-xs sm:text-sm font-bold border shadow-xs hover:shadow-soft transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2 group cursor-pointer"
-              id="nav-login-button"
-              title="Sign in to Admin, Branch Head, Customer, Company, or Dealer Portal"
-            >
-              <svg class="w-4 h-4 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-              </svg>
-              <span>Login</span>
-            </button>
+            <!-- Auth CTA: Open Portal when signed in, Login otherwise -->
+            @if (auth.isAuthenticated()) {
+              <a
+                [routerLink]="auth.getRedirectUrlForRole()"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="nav-login-btn h-10 px-5 rounded-xl text-xs sm:text-sm font-bold border shadow-xs hover:shadow-soft transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2 group cursor-pointer"
+                id="nav-portal-button"
+                [title]="'Signed in as ' + (auth.currentUser()?.username || auth.currentUser()?.name || 'User') + ' — Open Portal in a new tab'"
+              >
+                <svg class="w-4 h-4 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                <span>Open Portal</span>
+              </a>
+            } @else {
+              <button
+                type="button"
+                (click)="isLoginModalOpen.set(true)"
+                class="nav-login-btn h-10 px-5 rounded-xl text-xs sm:text-sm font-bold border shadow-xs hover:shadow-soft transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2 group cursor-pointer"
+                id="nav-login-button"
+                title="Sign in to Admin, Branch Head, Customer, Company, or Dealer Portal"
+              >
+                <svg class="w-4 h-4 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+                <span>Login</span>
+              </button>
+            }
           </div>
 
           <!-- Mobile Hamburger Toggle -->
@@ -175,16 +191,31 @@ import { SITE_CONFIG } from '../core/site-config';
 
             <!-- Mobile Auth Section -->
             <div class="pt-3 border-t border-border">
-              <button
-                type="button"
-                (click)="isLoginModalOpen.set(true); mobileMenuOpen.set(false)"
-                class="nav-login-btn w-full text-center py-2.5 rounded-xl border text-xs font-bold shadow-soft flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <svg class="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                </svg>
-                <span>Portal Login</span>
-              </button>
+              @if (auth.isAuthenticated()) {
+                <a
+                  [routerLink]="auth.getRedirectUrlForRole()"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  (click)="mobileMenuOpen.set(false)"
+                  class="nav-login-btn w-full text-center py-2.5 rounded-xl border text-xs font-bold shadow-soft flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                  <span>Open Portal</span>
+                </a>
+              } @else {
+                <button
+                  type="button"
+                  (click)="isLoginModalOpen.set(true); mobileMenuOpen.set(false)"
+                  class="nav-login-btn w-full text-center py-2.5 rounded-xl border text-xs font-bold shadow-soft flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <svg class="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  </svg>
+                  <span>Portal Login</span>
+                </button>
+              }
             </div>
           </div>
         }
@@ -219,13 +250,24 @@ import { SITE_CONFIG } from '../core/site-config';
                 <li><a routerLink="/contact" class="hover:text-accent transition-colors">Contact Us</a></li>
                 <li><a routerLink="/bookings/new" class="hover:text-accent transition-colors">Schedule Installation</a></li>
                 <li>
-                  <button
-                    type="button"
-                    (click)="isLoginModalOpen.set(true)"
-                    class="hover:text-accent transition-colors text-left cursor-pointer"
-                  >
-                    Staff & Client Login
-                  </button>
+                  @if (auth.isAuthenticated()) {
+                    <a
+                      [routerLink]="auth.getRedirectUrlForRole()"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="hover:text-accent transition-colors text-left cursor-pointer"
+                    >
+                      Open Portal
+                    </a>
+                  } @else {
+                    <button
+                      type="button"
+                      (click)="isLoginModalOpen.set(true)"
+                      class="hover:text-accent transition-colors text-left cursor-pointer"
+                    >
+                      Staff & Client Login
+                    </button>
+                  }
                 </li>
               </ul>
             </div>

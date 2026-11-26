@@ -22,7 +22,7 @@ import { environment } from '../../../../../environments/environment';
     <div class="w-full flex-1 flex flex-col bg-white">
       
       <!-- 1. Google Sheet Status Tabs Bar (All Orders, NEW, Scheduled, Completed, Cancelled) -->
-      <div class="w-full flex items-center gap-7 px-7 sm:px-10 border-b border-gray-200 overflow-x-auto text-[14px] select-none bg-white">
+      <div class="w-full flex items-center gap-6 px-3 sm:px-4 border-b border-gray-200 overflow-x-auto text-[14px] select-none bg-white">
         <!-- All Orders Tab with Google Sheet table icon -->
         <button
           type="button"
@@ -62,8 +62,8 @@ import { environment } from '../../../../../environments/environment';
         }
       </div>
 
-      <!-- 2. Filter & Action Toolbar (Balanced, matching Image 1) -->
-      <div class="w-full flex items-center justify-between gap-3 px-7 sm:px-10 py-3.5 border-b border-gray-100 bg-white">
+      <!-- 2. Filter & Action Toolbar -->
+      <div class="w-full flex flex-wrap items-center justify-between gap-3 px-3 sm:px-4 py-3.5 border-b border-gray-100 bg-white">
         <!-- Left Filter Controls -->
         <div class="flex items-center gap-2.5 flex-wrap">
           <!-- Search Input (Client Name or Phone/Mobile) -->
@@ -209,8 +209,8 @@ import { environment } from '../../../../../environments/environment';
         </div>
       </div>
 
-      <!-- 3. Google Sheet Data Table with vertical separators & rounded border box matching reference -->
-      <div class="w-full px-7 sm:px-10 pt-1 pb-2 overflow-x-auto">
+      <!-- 3. Data Table with vertical separators & balanced edge padding -->
+      <div class="w-full px-3 sm:px-4 py-3.5 overflow-x-auto">
         <div class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-2xs">
           <table class="w-full min-w-[1050px] text-left border-collapse" style="table-layout: fixed;">
             <colgroup>
@@ -229,61 +229,43 @@ import { environment } from '../../../../../environments/environment';
 
                 <!-- Column A -->
                 <th class="py-2 px-3.5 whitespace-nowrap border-r border-gray-200 bg-[#f8fafc]">
-                  <div class="flex items-center justify-between w-full">
+                  <div class="flex items-center w-full">
                     <span class="tracking-wider uppercase text-gray-600 font-bold text-[11px]">CLIENT NAME</span>
-                    <svg class="w-3 h-3 text-gray-400 shrink-0 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
                   </div>
                 </th>
 
                 <!-- Column B -->
                 <th class="py-2 px-3.5 whitespace-nowrap border-r border-gray-200 bg-[#f8fafc]">
-                  <div class="flex items-center justify-between w-full">
+                  <div class="flex items-center w-full">
                     <span class="tracking-wider uppercase text-gray-600 font-bold text-[11px]">PHONE NUMBER</span>
-                    <svg class="w-3 h-3 text-gray-400 shrink-0 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
                   </div>
                 </th>
 
                 <!-- Column C -->
                 <th class="py-2 px-3.5 whitespace-nowrap border-r border-gray-200 bg-[#f8fafc]">
-                  <div class="flex items-center justify-between w-full">
+                  <div class="flex items-center w-full">
                     <span class="tracking-wider uppercase text-gray-600 font-bold text-[11px]">DISTRICT & AREA</span>
-                    <svg class="w-3 h-3 text-gray-400 shrink-0 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
                   </div>
                 </th>
 
                 <!-- Column D -->
                 <th class="py-2 px-3.5 whitespace-nowrap border-r border-gray-200 bg-[#f8fafc]">
-                  <div class="flex items-center justify-between w-full">
+                  <div class="flex items-center w-full">
                     <span class="tracking-wider uppercase text-gray-600 font-bold text-[11px]">ASSIGNED HEAD</span>
-                    <svg class="w-3 h-3 text-gray-400 shrink-0 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
                   </div>
                 </th>
 
                 <!-- Column E -->
                 <th class="py-2 px-3.5 whitespace-nowrap border-r border-gray-200 bg-[#f8fafc]">
-                  <div class="flex items-center justify-between w-full">
+                  <div class="flex items-center w-full">
                     <span class="tracking-wider uppercase text-gray-600 font-bold text-[11px]">CREATED AT</span>
-                    <svg class="w-3 h-3 text-gray-400 shrink-0 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
                   </div>
                 </th>
 
                 <!-- Column F -->
                 <th class="py-2 px-3.5 whitespace-nowrap bg-[#f8fafc]">
-                  <div class="flex items-center justify-between w-full">
+                  <div class="flex items-center w-full">
                     <span class="tracking-wider uppercase text-gray-600 font-bold text-[11px]">STATUS</span>
-                    <svg class="w-3 h-3 text-gray-400 shrink-0 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
                   </div>
                 </th>
               </tr>
@@ -404,8 +386,8 @@ import { environment } from '../../../../../environments/environment';
         </div>
       </div>
 
-      <!-- 4. Subtle Google Sheet Bottom Bar with record count & pagination (Matching Image 1) -->
-      <div class="w-full px-7 sm:px-10 py-2.5 flex items-center justify-between text-[13px] text-gray-500 bg-white select-none">
+      <!-- 4. Bottom Bar with record count & pagination -->
+      <div class="w-full px-3 sm:px-4 py-3 flex items-center justify-between text-[13px] text-gray-500 bg-white border-t border-gray-100 select-none">
         <div>
           Showing <strong class="text-gray-900 font-bold">{{ (currentPage() - 1) * pageSize + 1 }} to {{ getEndIndex() }}</strong> of
           <strong class="text-gray-900 font-bold">{{ totalRecords() || filteredBookings().length }}</strong> orders

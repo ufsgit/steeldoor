@@ -61,28 +61,23 @@ export const roleGuard = (allowedRoles: UserRole[]): CanActivateFn => {
 
 /**
  * Root guard on `/`:
- * When the project root is opened, checks with the backend:
- * - If user is authenticated AND active AND not deleted, redirects to `/admin`.
- * - If inactive, deleted, or invalid token, cleans session and stays on `/` (public landing page).
+ * When the public home route is opened:
+ * - Allows both guests and authenticated users to view `/` without logging out.
+ * - Still validates any existing token silently with the backend and clears stale/inactive sessions.
  */
 export const rootGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
-  const router = inject(Router);
 
-  // If there's no stored token, allow landing page right away
   if (!auth.token()) {
     auth.clearSession();
     return true;
   }
 
-  // Live server validation before deciding navigation
   return auth.verifySession().pipe(
     map(res => {
-      if (res && res.user && res.user.is_active !== 0 && res.user.isActive !== 0 && res.user.is_deleted !== 1 && res.user.isDeleted !== 1) {
-        return router.createUrlTree(['/admin']);
+      if (!res || !res.user || res.user.is_active === 0 || res.user.isActive === 0 || res.user.is_deleted === 1 || res.user.isDeleted === 1) {
+        auth.clearSession();
       }
-      // If inactive or deleted, clear local session and stay on public landing page
-      auth.clearSession();
       return true;
     })
   );

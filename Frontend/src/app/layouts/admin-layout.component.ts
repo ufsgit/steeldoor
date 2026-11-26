@@ -46,7 +46,7 @@ import { SITE_CONFIG } from '../core/site-config';
 
       <!-- Top Header Row (Full Screen Edge-to-Edge) -->
       <header
-        class="w-full border-b border-gray-200 px-7 sm:px-10 py-3.5 flex items-center justify-between gap-4 shrink-0 sticky top-0 z-40 transition-colors"
+        class="w-full border-b border-gray-200 px-3 sm:px-4 py-3 flex items-center justify-between gap-4 shrink-0 sticky top-0 z-40 transition-colors"
         [style.backgroundColor]="siteConfig.navbarColor"
         [style.--nav-text]="siteConfig.navbarTextColor"
         [style.--nav-text-hover]="siteConfig.navbarTextHoverColor"
@@ -58,8 +58,8 @@ import { SITE_CONFIG } from '../core/site-config';
         [style.--profile-badge-text]="siteConfig.adminProfileBadgeText"
       >
         
-        <!-- Left: Google Sheets Green Icon + App Title + Top Menus -->
-        <div class="flex items-center gap-6 shrink-0">
+        <!-- Left: Logo in Left Corner + App Title + Top Menus -->
+        <div class="flex items-center gap-4 sm:gap-5 shrink-0">
           <a routerLink="/admin" class="flex items-center gap-2.5 group cursor-pointer">
             <img [src]="siteConfig.logo" [alt]="siteConfig.brandName" class="w-8 h-8 rounded-[6px] object-cover shadow-2xs group-hover:scale-105 transition-transform shrink-0" />
             <span class="text-[18px] font-bold tracking-tight" [style.color]="siteConfig.navbarTextColor">
@@ -146,8 +146,23 @@ import { SITE_CONFIG } from '../core/site-config';
           </nav>
         </div>
 
-        <!-- Right: Username dropdown with Logout -->
-        <div class="relative flex items-center gap-3">
+        <!-- Right: Home Portal link + Username dropdown with Logout -->
+        <div class="relative flex items-center gap-2.5 sm:gap-3">
+          <!-- Home Portal Pill (opens Home page in a new tab, keeping session active) -->
+          <a
+            routerLink="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            (click)="closeAllDropdowns()"
+            class="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-full border border-gray-200 bg-white hover:bg-red-50 hover:border-[#ea1f25]/40 text-gray-700 hover:text-[#ea1f25] text-xs font-semibold shadow-2xs transition-all cursor-pointer group"
+            title="Open public Home page in a new tab without logging out"
+          >
+            <svg class="w-4 h-4 text-[#ea1f25] group-hover:scale-105 transition-transform shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <span class="hidden sm:inline">Home Portal</span>
+          </a>
+
           <!-- User Profile Pill -->
           <button
             type="button"

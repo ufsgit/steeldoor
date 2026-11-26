@@ -13,7 +13,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
   standalone: true,
   imports: [CommonModule, FormsModule, ModalComponent],
   template: `
-    <div class="bg-white rounded-2xl border border-gray-200 shadow-xs p-4 sm:p-6 space-y-4 animate-fadeIn">
+    <div class="m-3 sm:m-4 bg-white rounded-2xl border border-gray-200 shadow-xs p-4 sm:p-5 space-y-4 animate-fadeIn">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-4">
         <h1 class="text-xl font-bold text-gray-900 tracking-tight">

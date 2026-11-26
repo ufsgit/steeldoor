@@ -18,7 +18,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
     <div class="w-full flex-1 flex flex-col bg-white">
       
       <!-- Top Title & Subtitle Bar -->
-      <div class="w-full px-7 sm:px-10 pt-6 pb-4 bg-white border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="w-full px-3 sm:px-4 pt-5 pb-4 bg-white border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 class="text-[20px] font-bold text-gray-900 tracking-tight flex items-center gap-2.5">
             <span>Booking Activity & Audit History</span>
@@ -66,7 +66,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
       </div>
 
       <!-- Action & Filter Toolbar -->
-      <div class="relative z-30 w-full flex items-center justify-between gap-3 px-7 sm:px-10 py-3.5 border-b border-gray-100 bg-white flex-wrap">
+      <div class="relative z-30 w-full flex items-center justify-between gap-3 px-3 sm:px-4 py-3.5 border-b border-gray-100 bg-white flex-wrap">
         <div class="flex items-center gap-3 flex-wrap flex-1 relative z-30">
           <!-- Search Input -->
           <div class="w-full sm:w-[320px] relative shrink-0">
@@ -168,7 +168,7 @@ type DatePreset = 'today' | 'this_week' | 'this_month' | 'custom';
       </div>
 
       <!-- Main Activity Feed Body -->
-      <div class="w-full px-7 sm:px-10 py-6">
+      <div class="w-full px-3 sm:px-4 py-5">
         @if (loading()) {
           <div class="py-16 text-center">
             <div class="inline-block animate-spin rounded-full h-8 w-8 border-2 border-[#ea1f25] border-t-transparent"></div>

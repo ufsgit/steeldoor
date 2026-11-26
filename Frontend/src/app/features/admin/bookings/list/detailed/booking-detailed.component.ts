@@ -55,8 +55,8 @@ import { BrochuresService, Brochure } from '../../../../../core/services/brochur
 
           <!-- Header Action Buttons -->
           <div class="flex items-center gap-2">
-            <!-- Share Dropdown Button -->
-            <div class="relative inline-block text-left" (click)="$event.stopPropagation()">
+            <!-- Share Dropdown Button (hidden; underlying share logic preserved) -->
+            <div class="relative hidden text-left" (click)="$event.stopPropagation()">
               <button
                 type="button"
                 (click)="toggleShareDropdown()"

@@ -12,7 +12,7 @@ import { SimpleChartComponent, ChartDatum } from '../../../shared/components/sim
   standalone: true,
   imports: [CommonModule, RouterModule, StatusChipComponent, SimpleChartComponent],
   template: `
-    <div class="space-y-6 animate-fadeIn">
+    <div class="p-3 sm:p-4 space-y-6 animate-fadeIn">
       <!-- Title & Quick Action -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-5">
         <div>

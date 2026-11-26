@@ -9,152 +9,108 @@ import { BannerSlide, ServiceItem, TestimonialItem } from '../../../core/models'
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="space-y-16 lg:space-y-24 pb-20">
-      <!-- HERO SECTION WITH EXPANDED BANNER SLIDER -->
-      <section class="relative overflow-hidden pt-2 sm:pt-4 pb-12 lg:pt-4 lg:pb-16">
-        <!-- Background decorative ambient glows -->
-        <div class="absolute top-10 right-1/4 w-[500px] h-[500px] bg-accent/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute bottom-0 left-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="space-y-14 lg:space-y-20 pb-20">
+      <!-- HERO SECTION: FULL-SCREEN BANNER SLIDER -->
+      <section class="relative w-full overflow-hidden">
+        <div
+          class="relative w-full h-[480px] sm:h-[580px] lg:h-[calc(100vh-88px)] lg:min-h-[560px] lg:max-h-[820px] bg-slate-900 group select-none overflow-hidden"
+          (mouseenter)="pauseAutoplay()"
+          (mouseleave)="resumeAutoplay()"
+        >
+          <!-- Slides Container -->
+          @for (slide of banners; track slide.id; let idx = $index) {
+            <div
+              class="absolute inset-0 transition-all duration-700 ease-in-out"
+              [class.opacity-100]="idx === currentSlideIndex()"
+              [class.opacity-0]="idx !== currentSlideIndex()"
+              [class.pointer-events-none]="idx !== currentSlideIndex()"
+              [class.scale-100]="idx === currentSlideIndex()"
+              [class.scale-105]="idx !== currentSlideIndex()"
+            >
+              <!-- Full-Screen Installation Banner Image -->
+              <img
+                [src]="slide.image"
+                [alt]="slide.title"
+                [style.objectPosition]="bannerImagePositions[idx] || 'center center'"
+                class="w-full h-full object-cover"
+                (error)="onBannerImageError(idx)"
+              />
 
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+              <!-- Balanced Scrims keeping subject & FitMate uniforms clear -->
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/35 via-45% to-transparent"></div>
+              <div class="absolute inset-0 bg-gradient-to-r from-slate-950/60 via-slate-950/15 to-transparent"></div>
 
-            <!-- LEFT COLUMN: Value Proposition & Stats -->
-            <div class="lg:col-span-5 space-y-6 text-left">
-              <!-- Main Hero Headline -->
-              <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-text tracking-tight leading-tight">
-                Steel Doors & Frames — <span class="text-primary block sm:inline">Installed Right.</span>
-              </h1>
-
-              <!-- Subtitle Description -->
-              <p class="text-sm sm:text-base text-text-muted leading-relaxed">
-                Expert steel door installation and precision frame mounting across Kerala. Fast booking and certified doorstep service.
-              </p>
-
-              <!-- Action CTA Button -->
-              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
-                <a
-                  routerLink="/bookings/new"
-                  class="px-7 py-3.5 rounded-xl bg-primary hover:bg-primary-hover text-text-inverted font-bold text-sm shadow-soft transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 group cursor-pointer"
-                >
-                  <svg class="w-4 h-4 text-accent group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                  </svg>
-                  <span>Book Installation</span>
-                </a>
-              </div>
-
-              <!-- Trust Stats Micro-Counter -->
-              <div class="pt-6 grid grid-cols-3 gap-4 border-t border-border/80">
-                <div>
-                  <div class="text-2xl sm:text-3xl font-black text-primary">500+</div>
-                  <div class="text-xs text-text-muted font-medium mt-1">Dealers</div>
-                </div>
-                <div>
-                  <div class="text-2xl sm:text-3xl font-black text-primary">12,400+</div>
-                  <div class="text-xs text-text-muted font-medium mt-1">Installed</div>
-                </div>
-                <div>
-                  <div class="text-2xl sm:text-3xl font-black text-primary flex items-center gap-1">
-                    4.9<span class="text-amber-500 text-xl leading-none">★</span>
+              <!-- Slide Caption Content Overlay (aligned with navbar container width) -->
+              <div class="absolute inset-x-0 bottom-0 z-10">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 sm:pb-10 lg:pb-12 pr-24 sm:pr-32 space-y-2.5 text-left">
+                  <!-- Badge Pill with Pulse Dot -->
+                  <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#ea1f25] text-white text-[10px] sm:text-xs font-black tracking-wider uppercase shadow-lg">
+                    <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                    <span>{{ slide.badge }}</span>
                   </div>
-                  <div class="text-xs text-text-muted font-medium mt-1">Rating</div>
+
+                  <!-- Slide Headline -->
+                  <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black text-white leading-tight drop-shadow-md max-w-2xl">
+                    {{ slide.title }}
+                  </h1>
+
+                  <!-- Slide Subtitle Description -->
+                  <p class="text-xs sm:text-sm lg:text-base text-slate-200 line-clamp-2 max-w-xl drop-shadow-sm font-medium pb-4 sm:pb-0">
+                    {{ slide.description }}
+                  </p>
                 </div>
               </div>
             </div>
+          }
 
-            <!-- RIGHT COLUMN: Enriched & Taller Interactive Banner Carousel -->
-            <div class="lg:col-span-7 relative">
-              <div
-                class="relative rounded-[2rem] overflow-hidden shadow-2xl border border-border/80 bg-slate-900 group h-[460px] sm:h-[520px] lg:h-[560px] xl:h-[600px] select-none"
-                (mouseenter)="pauseAutoplay()"
-                (mouseleave)="resumeAutoplay()"
-              >
-                <!-- Slides Container -->
+          <!-- Carousel Navigation Arrows -->
+          <button
+            type="button"
+            (click)="prevSlide()"
+            class="absolute left-4 sm:left-6 lg:left-8 top-[42%] sm:top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900/55 hover:bg-slate-900/90 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all cursor-pointer opacity-85 hover:opacity-100 hover:border-[#ea1f25]/60 group-hover:scale-105 z-20"
+            aria-label="Previous Slide"
+          >
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            (click)="nextSlide()"
+            class="absolute right-4 sm:right-6 lg:right-8 top-[42%] sm:top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900/55 hover:bg-slate-900/90 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all cursor-pointer opacity-85 hover:opacity-100 hover:border-[#ea1f25]/60 group-hover:scale-105 z-20"
+            aria-label="Next Slide"
+          >
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          <!-- Carousel Top Counter (aligned to max-w-7xl right edge) -->
+          <div class="absolute inset-x-0 top-5 sm:top-6 z-20 pointer-events-none">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-end">
+              <div class="px-3 py-1 rounded-full bg-slate-900/65 text-white/95 backdrop-blur-md border border-white/15 text-[11px] font-mono font-bold tracking-widest tabular-nums">
+                0{{ currentSlideIndex() + 1 }} / 0{{ banners.length }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Carousel Bottom Indicators (aligned to max-w-7xl right edge) -->
+          <div class="absolute inset-x-0 bottom-5 sm:bottom-10 lg:bottom-12 z-20 pointer-events-none">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-end">
+              <div class="flex items-center gap-1.5 pointer-events-auto">
                 @for (slide of banners; track slide.id; let idx = $index) {
-                  <div
-                    class="absolute inset-0 transition-all duration-700 ease-in-out"
-                    [class.opacity-100]="idx === currentSlideIndex()"
-                    [class.opacity-0]="idx !== currentSlideIndex()"
-                    [class.pointer-events-none]="idx !== currentSlideIndex()"
-                    [class.scale-100]="idx === currentSlideIndex()"
-                    [class.scale-105]="idx !== currentSlideIndex()"
-                  >
-                    <!-- Real High-Resolution Installation Banner Image -->
-                    <img
-                      [src]="slide.image"
-                      [alt]="slide.title"
-                      class="w-full h-full object-cover object-center"
-                      (error)="onBannerImageError(idx)"
-                    />
-
-                    <!-- Rich Gradient Overlays -->
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
-                    <div class="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-transparent to-transparent"></div>
-
-                    <!-- Slide Caption Content Overlay -->
-                    <div class="absolute bottom-0 left-0 right-0 p-6 sm:p-8 lg:p-10 space-y-2.5 sm:space-y-3 text-left">
-                      <!-- Badge Pill with Pulse Dot -->
-                      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ea1f25]/90 text-white text-[10px] sm:text-xs font-black tracking-wider uppercase backdrop-blur-md shadow-lg">
-                        <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-                        <span>{{ slide.badge }}</span>
-                      </div>
-
-                      <!-- Slide Headline -->
-                      <h2 class="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-tight drop-shadow-md">
-                        {{ slide.title }}
-                      </h2>
-
-                      <!-- Slide Subtitle Description -->
-                      <p class="text-xs sm:text-sm text-slate-200 line-clamp-2 max-w-xl drop-shadow-sm font-medium">
-                        {{ slide.description }}
-                      </p>
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    (click)="goToSlide(idx)"
+                    class="h-1.5 rounded-full transition-all duration-300 cursor-pointer"
+                    [class.w-8]="idx === currentSlideIndex()"
+                    [class.bg-[#ea1f25]]="idx === currentSlideIndex()"
+                    [class.w-2]="idx !== currentSlideIndex()"
+                    [class.bg-white/40]="idx !== currentSlideIndex()"
+                    [attr.aria-label]="'Go to slide ' + (idx + 1)"
+                  ></button>
                 }
-
-                <!-- Carousel Navigation Arrows -->
-                <button
-                  type="button"
-                  (click)="prevSlide()"
-                  class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all cursor-pointer opacity-80 hover:opacity-100 group-hover:scale-105 z-20"
-                  aria-label="Previous Slide"
-                >
-                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-
-                <button
-                  type="button"
-                  (click)="nextSlide()"
-                  class="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all cursor-pointer opacity-80 hover:opacity-100 group-hover:scale-105 z-20"
-                  aria-label="Next Slide"
-                >
-                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-
-                <!-- Carousel Bottom Indicators & Counter -->
-                <div class="absolute top-4 right-4 z-20 px-2.5 py-1 rounded-full bg-slate-900/60 text-white/90 backdrop-blur-md border border-white/10 text-[11px] font-mono font-bold tracking-widest">
-                  0{{ currentSlideIndex() + 1 }} / 0{{ banners.length }}
-                </div>
-
-                <div class="absolute bottom-3 right-6 z-20 flex items-center gap-1.5">
-                  @for (slide of banners; track slide.id; let idx = $index) {
-                    <button
-                      type="button"
-                      (click)="goToSlide(idx)"
-                      class="h-1.5 rounded-full transition-all duration-300 cursor-pointer"
-                      [class.w-7]="idx === currentSlideIndex()"
-                      [class.bg-[#ea1f25]]="idx === currentSlideIndex()"
-                      [class.w-2]="idx !== currentSlideIndex()"
-                      [class.bg-white/40]="idx !== currentSlideIndex()"
-                      [attr.aria-label]="'Go to slide ' + (idx + 1)"
-                    ></button>
-                  }
-                </div>
               </div>
             </div>
           </div>
@@ -176,7 +132,7 @@ import { BannerSlide, ServiceItem, TestimonialItem } from '../../../core/models'
                 <img
                   [src]="banners[sIdx % banners.length]?.image || '/images/banners/banner-laser-calibration.jpg'"
                   [alt]="service.title"
-                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  class="w-full h-full object-cover object-[center_35%] group-hover:scale-105 transition-transform duration-500"
                   (error)="onServiceImageError($event, sIdx)"
                 />
                 <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent"></div>
@@ -375,6 +331,13 @@ export class HomeComponent implements OnInit, OnDestroy {
   currentSlideIndex = signal(0);
   private autoplayIntervalId: any = null;
   private isPaused = false;
+
+  readonly bannerImagePositions = [
+    'center 42%',
+    'center 42%',
+    'center 30%',
+    'center 52%'
+  ];
 
   banners: BannerSlide[] = [
     {

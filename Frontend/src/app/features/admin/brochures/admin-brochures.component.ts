@@ -14,7 +14,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
     <div class="w-full flex-1 flex flex-col bg-gray-50/50 min-h-screen">
       
       <!-- Top Title & Subtitle Bar -->
-      <div class="w-full px-7 sm:px-10 pt-6 pb-5 bg-white border-b border-gray-200">
+      <div class="w-full px-3 sm:px-4 pt-5 pb-4 bg-white border-b border-gray-200">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-3">
@@ -43,7 +43,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
       </div>
 
       <!-- Main Body Container -->
-      <div class="w-full px-7 sm:px-10 py-6 max-w-7xl mx-auto space-y-6">
+      <div class="w-full px-3 sm:px-4 py-5 max-w-7xl mx-auto space-y-6">
 
         <!-- Upload Card (Collapsible) -->
         @if (isUploadOpen()) {

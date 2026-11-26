@@ -15,7 +15,7 @@ import { ModalComponent } from '../../../shared/components/modal.component';
   standalone: true,
   imports: [CommonModule, FormsModule, ModalComponent],
   template: `
-    <div class="space-y-6 animate-fadeIn">
+    <div class="p-3 sm:p-4 space-y-6 animate-fadeIn">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
