@@ -71,6 +71,34 @@ export class UsersService {
       [...params, limitNum, offset]
     );
 
+    // Enrich rows with distinct assigned district names from area_assigned (supports multi-district assignments)
+    if (rows.length > 0) {
+      try {
+        const userIds = rows.map(r => r.id);
+        const [areaDistRows] = await pool.query(
+          `SELECT 
+             user_id,
+             GROUP_CONCAT(DISTINCT district_name ORDER BY district_name ASC SEPARATOR ', ') AS assignedDistrictNames
+           FROM area_assigned
+           WHERE user_id IN (?) AND district_name IS NOT NULL AND district_name != ''
+           GROUP BY user_id`,
+          [userIds]
+        );
+        const distMap = new Map();
+        for (const r of (areaDistRows || [])) {
+          distMap.set(Number(r.user_id), r.assignedDistrictNames);
+        }
+        for (const u of rows) {
+          const multiDist = distMap.get(Number(u.id));
+          if (multiDist) {
+            u.districtName = multiDist;
+          }
+        }
+      } catch (e) {
+        console.warn('[UsersService] district enrichment warning:', e.message);
+      }
+    }
+
     // Role counts across all non-deleted users
     const [roleCountRows] = await pool.query(
       'SELECT role, role_id, COUNT(*) AS count FROM users WHERE is_deleted = 0 GROUP BY role, role_id'
@@ -161,7 +189,9 @@ export class UsersService {
     };
 
     let resolvedDistrictName = null;
-    let resolvedDistrictId = districtId ? Number(districtId) : null;
+    const rawCreateDistIds = Array.isArray(data.districtIds) ? data.districtIds : [];
+    const fallbackCreateDistId = rawCreateDistIds.map(d => Number(d)).find(d => !isNaN(d) && d > 0) || null;
+    let resolvedDistrictId = districtId ? Number(districtId) : fallbackCreateDistId;
 
     if (resolvedDistrictId) {
       const [distRows] = await pool.query('SELECT name FROM districts WHERE id = ?', [resolvedDistrictId]);
@@ -282,31 +312,16 @@ export class UsersService {
     }
 
     // Save into area_assigned if areas are specified
-    if (cleanAreaIds.length > 0 && targetUserId && resolvedDistrictId) {
+    if (cleanAreaIds.length > 0 && targetUserId) {
       try {
-        const [areaRows] = await pool.query('SELECT id, name, pincode FROM areas WHERE id IN (?)', [cleanAreaIds]);
-        const areaMap = new Map();
-        for (const a of (areaRows || [])) {
-          areaMap.set(Number(a.id), a);
-        }
-
-        for (const aId of cleanAreaIds) {
-          const aData = areaMap.get(Number(aId));
-          const finalAreaName = aData?.name || areaName || null;
-          const finalPincode = aData?.pincode || null;
-          await pool.query(
-            `INSERT INTO area_assigned (user_id, user_name, district_id, district_name, area_id, area_name, area_pincode)
-             VALUES (?, ?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE 
-               user_name = VALUES(user_name),
-               district_id = VALUES(district_id),
-               district_name = VALUES(district_name),
-               area_id = VALUES(area_id),
-               area_name = VALUES(area_name),
-               area_pincode = VALUES(area_pincode)`,
-            [targetUserId, name.trim(), resolvedDistrictId, resolvedDistrictName, Number(aId), finalAreaName, finalPincode]
-          );
-        }
+        await this._syncUserAssignedAreas(
+          targetUserId,
+          name.trim(),
+          resolvedDistrictId,
+          resolvedDistrictName,
+          cleanAreaIds,
+          areaName
+        );
       } catch (e) {
         console.warn('[UsersService] area_assigned insert warning:', e.message);
       }
@@ -388,7 +403,32 @@ export class UsersService {
     } = data;
 
     let resolvedDistrictName = null;
-    let resolvedDistrictId = districtId !== undefined ? (districtId ? Number(districtId) : null) : undefined;
+    const rawUpdateDistIds = Array.isArray(data.districtIds) ? data.districtIds : [];
+    const fallbackUpdateDistId = rawUpdateDistIds.map(d => Number(d)).find(d => !isNaN(d) && d > 0) || null;
+    let resolvedDistrictId = districtId !== undefined
+      ? (districtId ? Number(districtId) : fallbackUpdateDistId)
+      : (fallbackUpdateDistId || undefined);
+
+    const rawAreaIds = Array.isArray(data.areaIds) ? data.areaIds : (Array.isArray(areaId) ? areaId : (areaId ? [areaId] : []));
+    const cleanAreaIds = rawAreaIds.map(aId => Number(aId)).filter(aId => !isNaN(aId) && aId > 0);
+
+    if (cleanAreaIds.length > 0) {
+      try {
+        const [dupArea] = await pool.query(
+          `SELECT aa.area_name, aa.user_name, u.name 
+           FROM area_assigned aa
+           LEFT JOIN users u ON u.id = aa.user_id
+           WHERE aa.area_id IN (?) AND aa.user_id != ? AND (u.is_deleted = 0 OR u.is_deleted IS NULL)
+           LIMIT 1`,
+          [cleanAreaIds, id]
+        );
+        if (dupArea && dupArea.length > 0) {
+          throw new Error(`Area "${dupArea[0].area_name}" is already assigned to another Branch Head (${dupArea[0].name || dupArea[0].user_name}).`);
+        }
+      } catch (err) {
+        if (err.message && err.message.includes('Area')) throw err;
+      }
+    }
 
     if (resolvedDistrictId) {
       const [distRows] = await pool.query('SELECT name FROM districts WHERE id = ?', [resolvedDistrictId]);
@@ -405,26 +445,7 @@ export class UsersService {
         }
       }
 
-      const rawAreaIds = Array.isArray(data.areaIds) ? data.areaIds : (Array.isArray(areaId) ? areaId : (areaId ? [areaId] : []));
-      const cleanAreaIds = rawAreaIds.map(aId => Number(aId)).filter(aId => !isNaN(aId) && aId > 0);
-
-      if (cleanAreaIds.length > 0) {
-        try {
-          const [dupArea] = await pool.query(
-            `SELECT aa.area_name, aa.user_name, u.name 
-             FROM area_assigned aa
-             LEFT JOIN users u ON u.id = aa.user_id
-             WHERE aa.area_id IN (?) AND aa.user_id != ? AND (u.is_deleted = 0 OR u.is_deleted IS NULL)
-             LIMIT 1`,
-            [cleanAreaIds, id]
-          );
-          if (dupArea && dupArea.length > 0) {
-            throw new Error(`Area "${dupArea[0].area_name}" is already assigned to another Branch Head (${dupArea[0].name || dupArea[0].user_name}).`);
-          }
-        } catch (err) {
-          if (err.message && err.message.includes('Area')) throw err;
-        }
-      } else if (isBranchHead) {
+      if (cleanAreaIds.length === 0 && isBranchHead) {
         const [duplicateBranchHeads] = await pool.query(
           `SELECT id, name FROM users 
            WHERE (role_id = 3 OR role = 'branch_head') 
@@ -495,44 +516,13 @@ export class UsersService {
     // Save/update area_assigned if areaIds or areaId is specified
     if (data.areaIds !== undefined || areaId !== undefined) {
       try {
-        const rawAreaIds = Array.isArray(data.areaIds) ? data.areaIds : (Array.isArray(areaId) ? areaId : (areaId ? [areaId] : []));
-        const cleanAreaIds = rawAreaIds.map(aId => Number(aId)).filter(aId => !isNaN(aId) && aId > 0);
+        const [uRows] = await pool.query('SELECT name, district_id, district_name FROM users WHERE id = ?', [id]);
+        const uData = uRows?.[0] || {};
+        const uName = name ? name.trim() : uData.name;
+        const uDistId = resolvedDistrictId || uData.district_id;
+        const uDistName = resolvedDistrictName || uData.district_name;
 
-        if (cleanAreaIds.length > 0) {
-          const [uRows] = await pool.query('SELECT name, district_id, district_name FROM users WHERE id = ?', [id]);
-          const uData = uRows?.[0] || {};
-          const uDistId = resolvedDistrictId || uData.district_id;
-          const uDistName = resolvedDistrictName || uData.district_name;
-
-          // Delete any existing areas not in cleanAreaIds for this user
-          await pool.query('DELETE FROM area_assigned WHERE user_id = ? AND area_id NOT IN (?)', [id, cleanAreaIds]);
-
-          const [areaRows] = await pool.query('SELECT id, name, pincode FROM areas WHERE id IN (?)', [cleanAreaIds]);
-          const areaMap = new Map();
-          for (const a of (areaRows || [])) {
-            areaMap.set(Number(a.id), a);
-          }
-
-          for (const aId of cleanAreaIds) {
-            const aData = areaMap.get(Number(aId));
-            const finalAreaName = aData?.name || areaName || null;
-            const finalPincode = aData?.pincode || null;
-            await pool.query(
-              `INSERT INTO area_assigned (user_id, user_name, district_id, district_name, area_id, area_name, area_pincode)
-               VALUES (?, ?, ?, ?, ?, ?, ?)
-               ON DUPLICATE KEY UPDATE 
-                 user_name = VALUES(user_name),
-                 district_id = VALUES(district_id),
-                 district_name = VALUES(district_name),
-                 area_id = VALUES(area_id),
-                 area_name = VALUES(area_name),
-                 area_pincode = VALUES(area_pincode)`,
-              [id, (name ? name.trim() : uData.name), uDistId, uDistName, Number(aId), finalAreaName, finalPincode]
-            );
-          }
-        } else {
-          await pool.query('DELETE FROM area_assigned WHERE user_id = ?', [id]);
-        }
+        await this._syncUserAssignedAreas(id, uName, uDistId, uDistName, cleanAreaIds, areaName);
       } catch (e) {
         console.warn('[UsersService] area_assigned update warning:', e.message);
       }
@@ -685,12 +675,57 @@ export class UsersService {
   }
 
   /**
+   * Synchronize a user's area_assigned rows while preserving each area's own district metadata.
+   */
+  async _syncUserAssignedAreas(userId, userName, fallbackDistrictId, fallbackDistrictName, cleanAreaIds, fallbackAreaName = null) {
+    if (!userId) return;
+    if (!cleanAreaIds || cleanAreaIds.length === 0) {
+      await pool.query('DELETE FROM area_assigned WHERE user_id = ?', [userId]);
+      return;
+    }
+
+    await pool.query('DELETE FROM area_assigned WHERE user_id = ? AND area_id NOT IN (?)', [userId, cleanAreaIds]);
+
+    const [areaRows] = await pool.query(
+      `SELECT a.id, a.name, a.pincode, a.district_id, d.name AS district_name
+       FROM areas a
+       LEFT JOIN districts d ON a.district_id = d.id
+       WHERE a.id IN (?)`,
+      [cleanAreaIds]
+    );
+    const areaMap = new Map();
+    for (const a of (areaRows || [])) {
+      areaMap.set(Number(a.id), a);
+    }
+
+    for (const aId of cleanAreaIds) {
+      const aData = areaMap.get(Number(aId));
+      const finalAreaName = aData?.name || fallbackAreaName || null;
+      const finalPincode = aData?.pincode || null;
+      const finalDistrictId = aData?.district_id ? Number(aData.district_id) : fallbackDistrictId;
+      const finalDistrictName = aData?.district_name || fallbackDistrictName || null;
+      await pool.query(
+        `INSERT INTO area_assigned (user_id, user_name, district_id, district_name, area_id, area_name, area_pincode)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE 
+           user_name = VALUES(user_name),
+           district_id = VALUES(district_id),
+           district_name = VALUES(district_name),
+           area_id = VALUES(area_id),
+           area_name = VALUES(area_name),
+           area_pincode = VALUES(area_pincode)`,
+        [userId, userName, finalDistrictId, finalDistrictName, Number(aId), finalAreaName, finalPincode]
+      );
+    }
+  }
+
+  /**
    * Fetch assigned area IDs for a specific user (on edit user)
    */
   async getUserAssignedAreas(userId) {
     if (!userId) return [];
     const [rows] = await pool.query(
-      'SELECT area_id, area_name, district_id, district_name FROM area_assigned WHERE user_id = ?',
+      'SELECT area_id, area_name, district_id, district_name FROM area_assigned WHERE user_id = ? ORDER BY district_name ASC, area_name ASC',
       [Number(userId)]
     );
     return rows || [];

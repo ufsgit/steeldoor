@@ -36,21 +36,47 @@ export class AreasService {
   }
 
   /**
-   * 2b. CALL sp_get_district_areas_assignment_status(?, ?, ?)
-   * Returns active areas for a district with assignment status
+   * 2b. CALL get_district_areas_assignment_status(?, ?, ?, ?, ?)
+   * Returns paginated active areas filtered strictly by selected district IDs (CSV) with assignment status
    */
-  async getAreasAssignmentStatus(districtId, search = null, userId = null) {
-    if (!districtId) return [];
-    const cleanSearch = search && search.trim() ? search.trim() : null;
+  async getAreasAssignmentStatus(districtIds = null, search = null, userId = null, page = 1, limit = 20) {
+    let districtIdsParam = null;
+    if (Array.isArray(districtIds)) {
+      const tokens = districtIds
+        .flatMap(v => String(v).split(','))
+        .map(s => s.trim())
+        .filter(s => s !== '' && s !== '0');
+      districtIdsParam = tokens.length > 0 ? tokens.join(',') : null;
+    } else if (districtIds !== undefined && districtIds !== null) {
+      const trimmed = String(districtIds).trim();
+      if (trimmed.toUpperCase() === 'ALL') {
+        districtIdsParam = 'ALL';
+      } else {
+        const tokens = trimmed
+          .split(',')
+          .map(s => s.trim())
+          .filter(s => s !== '' && s !== '0');
+        districtIdsParam = tokens.length > 0 ? tokens.join(',') : null;
+      }
+    }
+
+    const cleanSearch = search && String(search).trim() ? String(search).trim() : null;
     const userIdParam = userId !== undefined && userId !== null && userId !== '' ? Number(userId) : null;
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.max(1, Number(limit) || 20);
 
     const [results] = await pool.query(
-      'CALL sp_get_district_areas_assignment_status(?, ?, ?)',
-      [Number(districtId), cleanSearch, userIdParam]
+      'CALL get_district_areas_assignment_status(?, ?, ?, ?, ?)',
+      [districtIdsParam, cleanSearch, userIdParam, pageNum, limitNum]
     );
     const rows = results?.[0] || [];
+    const meta = results?.[1]?.[0] || {};
+    const total = Number(meta.total ?? rows.length);
+    const resolvedPage = Number(meta.page ?? pageNum);
+    const resolvedLimit = Number(meta.limit ?? limitNum);
+    const totalPages = Number(meta.total_pages ?? Math.max(1, Math.ceil(total / resolvedLimit)));
 
-    return rows.map(r => ({
+    const mappedRows = rows.map(r => ({
       id: Number(r.id),
       district_id: Number(r.district_id),
       districtId: Number(r.district_id),
@@ -63,6 +89,16 @@ export class AreasService {
       isAssignedToOther: Boolean(Number(r.is_assigned_to_other) === 1),
       isAvailable: !r.is_assigned_to_other || Number(r.is_assigned_to_other) === 0
     }));
+
+    return {
+      rows: mappedRows,
+      pagination: {
+        total,
+        page: resolvedPage,
+        limit: resolvedLimit,
+        totalPages
+      }
+    };
   }
 
   /**

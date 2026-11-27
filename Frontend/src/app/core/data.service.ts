@@ -17,6 +17,7 @@ import {
   Client,
   CreateBookingPayload,
   District,
+  PaginatedAreasResponse,
   ReassignBookingPayload,
   ServiceItem,
   SiteContent,
@@ -120,20 +121,87 @@ export class DataService {
     );
   }
 
-  getAreasWithAssignmentStatus(districtId: number | string, search?: string, userId?: number | string | null): Observable<AreaItem[]> {
+  getAreasWithAssignmentStatus(
+    districtIdOrIds?: number | string | Array<number | string> | null,
+    search?: string,
+    userId?: number | string | null
+  ): Observable<AreaItem[]> {
+    const opts: {
+      districtId?: number | string | null;
+      districtIds?: Array<number | string> | string | null;
+      search?: string;
+      userId?: number | string | null;
+      page?: number;
+      limit?: number;
+    } = {
+      search,
+      userId,
+      page: 1,
+      limit: 100000
+    };
+    if (Array.isArray(districtIdOrIds)) {
+      opts.districtIds = districtIdOrIds;
+    } else {
+      opts.districtId = districtIdOrIds ?? null;
+    }
+    return this.getPaginatedAreasWithAssignmentStatus(opts).pipe(map(res => res.data));
+  }
+
+  getPaginatedAreasWithAssignmentStatus(options: {
+    districtId?: number | string | null;
+    districtIds?: Array<number | string> | string | null;
+    search?: string;
+    userId?: number | string | null;
+    page?: number;
+    limit?: number;
+  }): Observable<PaginatedAreasResponse> {
     if (isPlatformServer(this.platformId)) {
-      return of([]);
+      return of({ data: [], pagination: { total: 0, page: 1, limit: options.limit || 20, totalPages: 1 } });
     }
-    let params = new HttpParams().set('districtId', String(districtId));
-    if (search && search.trim()) {
-      params = params.set('search', search.trim());
+    const page = Math.max(1, Number(options.page) || 1);
+    const limit = Math.max(1, Number(options.limit) || 20);
+    let params = new HttpParams()
+      .set('page', String(page))
+      .set('limit', String(limit));
+
+    if (options.districtIds !== undefined && options.districtIds !== null) {
+      const csv = Array.isArray(options.districtIds)
+        ? options.districtIds.map(d => Number(d)).filter(d => !isNaN(d) && d > 0).join(',')
+        : String(options.districtIds).trim();
+      if (csv) {
+        params = params.set('districtIds', csv);
+      }
+    } else if (options.districtId !== undefined && options.districtId !== null && options.districtId !== '' && Number(options.districtId) > 0) {
+      params = params.set('districtIds', String(options.districtId));
     }
-    if (userId !== undefined && userId !== null && userId !== '') {
-      params = params.set('userId', String(userId));
+    if (options.search && options.search.trim()) {
+      params = params.set('search', options.search.trim());
     }
-    return this.http.get<{ success: boolean; data: AreaItem[] }>(this.url('/api/areas/assignment-status'), { params }).pipe(
-      map(res => res?.data || []),
-      catchError(() => this.getAreasByDistrict(districtId, search))
+    if (options.userId !== undefined && options.userId !== null && options.userId !== '') {
+      params = params.set('userId', String(options.userId));
+    }
+
+    return this.http.get<{ success: boolean; data: AreaItem[]; pagination?: any }>(
+      this.url('/api/areas/assignment-status'),
+      { params }
+    ).pipe(
+      map(res => {
+        const rows = res?.data || [];
+        const p = res?.pagination;
+        return {
+          data: rows,
+          pagination: {
+            total: Number(p?.total ?? rows.length),
+            page: Number(p?.page ?? page),
+            limit: Number(p?.limit ?? limit),
+            totalPages: Number(p?.totalPages ?? Math.max(1, Math.ceil((Number(p?.total ?? rows.length)) / limit)))
+          }
+        };
+      }),
+      catchError(() => of({
+        data: [],
+        pagination: { total: 0, page, limit, totalPages: 1 }
+      }))
     );
   }
 

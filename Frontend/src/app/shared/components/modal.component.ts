@@ -10,11 +10,17 @@ import { CommonModule } from '@angular/common';
       <!-- Backdrop -->
       <div
         class="fixed inset-0 z-50 bg-text/50 backdrop-blur-sm transition-opacity"
+        style="z-index: 100;"
         (click)="close()"
       ></div>
 
       <!-- Modal Dialog -->
-      <div class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+      <div
+        class="fixed inset-0 z-50 overflow-y-auto flex justify-center p-4"
+        style="z-index: 101;"
+        [ngClass]="alignTop ? 'items-start pt-4 sm:pt-6' : 'items-center'"
+        (click)="close()"
+      >
         <div
           class="relative w-full bg-surface rounded-2xl border border-border shadow-elevated transition-all"
           [ngClass]="[
@@ -24,7 +30,10 @@ import { CommonModule } from '@angular/common';
           (click)="$event.stopPropagation()"
         >
           <!-- Header -->
-          <div class="flex items-center justify-between p-5 border-b border-border bg-surface-muted/30 rounded-t-2xl">
+          <div
+            class="flex items-center justify-between border-b border-border bg-surface-muted/30 rounded-t-2xl"
+            [ngClass]="compact ? 'px-5 py-3.5' : 'p-5'"
+          >
             <h3 class="text-base font-bold text-text">{{ title }}</h3>
             <button
               type="button"
@@ -39,7 +48,7 @@ import { CommonModule } from '@angular/common';
           </div>
 
           <!-- Body -->
-          <div class="p-6">
+          <div [ngClass]="compact ? 'p-4 sm:p-5' : 'p-6'">
             <ng-content></ng-content>
           </div>
         </div>
@@ -51,6 +60,8 @@ export class ModalComponent {
   @Input() isOpen = false;
   @Input() title = '';
   @Input() overflowVisible = false;
+  @Input() alignTop = false;
+  @Input() compact = false;
   @Input() maxWidthClass = 'max-w-lg';
   @Output() closeModal = new EventEmitter<void>();
 

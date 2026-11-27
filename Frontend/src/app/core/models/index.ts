@@ -30,8 +30,20 @@ export interface AreaItem {
   state_name?: string;
   created_at?: string;
   isAssigned?: boolean;
+  isAssignedToOther?: boolean;
+  isAvailable?: boolean;
   assignedUserId?: number | null;
   assignedUserName?: string | null;
+}
+
+export interface PaginatedAreasResponse {
+  data: AreaItem[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export interface AreaHierarchyResponse {

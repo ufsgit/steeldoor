@@ -7,9 +7,9 @@ import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { DataService } from '../../../core/data.service';
 import { ToastService } from '../../../shared/toast/toast.service';
-import { District, AreaItem } from '../../../core/models';
+import { District, AreaItem, PaginatedAreasResponse } from '../../../core/models';
 import { ModalComponent } from '../../../shared/components/modal.component';
-import { InfiniteDropdownComponent, InfiniteDropdownOption } from '../../../shared/components/infinite-dropdown.component';
+import { DistrictMultiSelectComponent } from '../../../shared/components/district-multi-select.component';
 import { AreaMultiSelectComponent } from '../../../shared/components/area-multi-select.component';
 
 export interface SystemUser {
@@ -37,7 +37,7 @@ export interface SystemUser {
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalComponent, InfiniteDropdownComponent, AreaMultiSelectComponent],
+  imports: [CommonModule, FormsModule, ModalComponent, DistrictMultiSelectComponent, AreaMultiSelectComponent],
   template: `
     <div class="m-3 sm:m-4 bg-white rounded-2xl border border-gray-200 shadow-xs p-4 sm:p-5 space-y-4 animate-fadeIn">
       <!-- Header -->
@@ -172,10 +172,12 @@ export interface SystemUser {
 
                 <td class="py-3.5 px-4 whitespace-nowrap">
                   @if (user.districtName) {
-                    <div class="flex flex-col gap-0.5">
-                      <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-red-50 text-[#c5161b] border border-red-200 w-fit">
-                        {{ user.districtName }}
-                      </span>
+                    <div class="flex flex-wrap gap-1 max-w-[230px]">
+                      @for (dName of getDistrictNames(user.districtName); track dName) {
+                        <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-red-50 text-[#c5161b] border border-red-200 w-fit">
+                          {{ dName }}
+                        </span>
+                      }
                     </div>
                   } @else {
                     <span class="text-gray-400 text-[11px]">HQ / Statewide</span>
@@ -273,16 +275,18 @@ export interface SystemUser {
           </button>
         </div>
       </div>
+    </div>
 
-      <!-- CREATE / EDIT MODAL -->
+    <!-- CREATE / EDIT MODAL -->
       <app-modal
         [isOpen]="modalOpen"
         [title]="modalTitle"
         [overflowVisible]="true"
+        [compact]="true"
         [maxWidthClass]="'max-w-4xl'"
         (closeModal)="closeUserModal()"
       >
-        <div class="space-y-4">
+        <div class="space-y-3">
           <!-- Row 1 (3 Columns): Name, Username, Password -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div class="space-y-1.5">
@@ -359,10 +363,10 @@ export interface SystemUser {
           <!-- Row 3: District & Area (Only for branch_head) -->
           @if (formRole === 'branch_head') {
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 relative z-20 items-start">
-              <!-- District Hub (1 column) -->
+              <!-- Assigned Districts (1 column - checkbox multi-select) -->
               <div class="space-y-1.5">
                 <label class="block text-xs font-bold text-gray-700 flex items-center justify-between">
-                  <span>Assigned District Hub <span class="text-red-500">*</span></span>
+                  <span>Assigned District(s) <span class="text-red-500">*</span></span>
                   @if (isLoadingDistricts()) {
                     <span class="text-[11px] text-[#ea1f25] font-normal flex items-center gap-1">
                       <span class="inline-block w-3 h-3 border-2 border-[#ea1f25] border-t-transparent rounded-full animate-spin"></span>
@@ -370,52 +374,43 @@ export interface SystemUser {
                     </span>
                   }
                 </label>
-                <app-infinite-dropdown
-                  [loadImmediately]="true"
-                  [fetchFn]="fetchDistrictsFn"
-                  [initialSelectedItem]="selectedDistrictOption"
-                  [(ngModel)]="formDistrictIdRegular"
-                  (selectionChange)="onDistrictChange($event)"
-                  placeholder="Select District..."
+                <app-district-multi-select
+                  [districts]="districts()"
+                  [isLoading]="isLoadingDistricts()"
+                  [(ngModel)]="formDistrictIdsRegular"
+                  (selectedIdsChange)="onDistrictIdsChange($event)"
+                  placeholder="Select District(s)..."
                   searchPlaceholder="Search district..."
-                  [clearable]="false"
+                  [clearable]="true"
                   emptyMessage="No districts found"
-                ></app-infinite-dropdown>
+                ></app-district-multi-select>
               </div>
 
-              <!-- Assigned Areas (Spans 2 columns) -->
+              <!-- Assigned Areas (Spans 2 columns - shows only areas from checked districts with pagination) -->
               <div class="sm:col-span-2 space-y-1.5">
-                @if (formDistrictId()) {
-                  <label class="block text-xs font-bold text-gray-700 flex items-center justify-between">
-                    <span>Assigned Area(s) <span class="text-red-500">*</span></span>
-                    @if (isLoadingAreas()) {
-                      <span class="text-[11px] text-[#ea1f25] font-normal flex items-center gap-1">
-                        <span class="inline-block w-3 h-3 border-2 border-[#ea1f25] border-t-transparent rounded-full animate-spin"></span>
-                        Loading areas...
-                      </span>
-                    }
-                  </label>
-                  <app-area-multi-select
-                    [areas]="availableAreas()"
-                    [currentUserId]="editingUserId()"
-                    [isLoading]="isLoadingAreas()"
-                    [(ngModel)]="formAreaIdsRegular"
-                    (selectionChange)="onAreasChange($event)"
-                    (selectedIdsChange)="onAreaIdsChange($event)"
-                    placeholder="Select Area(s)..."
-                    searchPlaceholder="Search area or pincode..."
-                    [clearable]="true"
-                    emptyMessage="No areas found for this district"
-                  ></app-area-multi-select>
-                } @else {
-                  <label class="block text-xs font-bold text-gray-700">Assigned Area(s) <span class="text-red-500">*</span></label>
-                  <div class="w-full flex items-center justify-between text-xs px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed select-none">
-                    <span>Select District first to view & choose areas...</span>
-                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                }
+                <label class="block text-xs font-bold text-gray-700 flex items-center justify-between">
+                  <span>Assigned Area(s) <span class="text-red-500">*</span></span>
+                  @if (isLoadingAreas()) {
+                    <span class="text-[11px] text-[#ea1f25] font-normal flex items-center gap-1">
+                      <span class="inline-block w-3 h-3 border-2 border-[#ea1f25] border-t-transparent rounded-full animate-spin"></span>
+                      Loading assigned areas...
+                    </span>
+                  }
+                </label>
+                <app-area-multi-select
+                  [fetchFn]="fetchAreasFn"
+                  [initialSelectedAreas]="initialSelectedAreaItems()"
+                  [currentUserId]="editingUserId()"
+                  [isLoading]="isLoadingAreas()"
+                  [pageSize]="20"
+                  [(ngModel)]="formAreaIdsRegular"
+                  (selectionChange)="onAreasChange($event)"
+                  (selectedIdsChange)="onAreaIdsChange($event)"
+                  [placeholder]="formDistrictIds().length === 0 ? 'Select District(s) first...' : 'Select Area(s)...'"
+                  searchPlaceholder="Search area, pincode, or district..."
+                  [clearable]="true"
+                  [emptyMessage]="formDistrictIds().length === 0 ? 'Please check at least one district on the left to view areas' : 'No areas found matching your search'"
+                ></app-area-multi-select>
               </div>
             </div>
           }
@@ -453,11 +448,10 @@ export interface SystemUser {
 
       <!-- Delete Confirmation Modal -->
       @if (deleteModalOpen && userToDelete) {
-        <div class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+        <div class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4" style="z-index: 101;" (click)="cancelDelete()">
           <!-- Backdrop -->
           <div
             class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-fadeIn"
-            (click)="cancelDelete()"
           ></div>
 
           <!-- Dialog Box -->
@@ -520,7 +514,6 @@ export interface SystemUser {
           </div>
         </div>
       }
-    </div>
   `
 })
 export class AdminUsersComponent implements OnInit {
@@ -577,19 +570,16 @@ export class AdminUsersComponent implements OnInit {
   formPassword = '';
   formRole = 'coordinator';
   formDistrictId = signal<number | string | null>(null);
-  formDistrictIdRegular: any = null;
-  selectedDistrictOption: InfiniteDropdownOption | null = null;
-  selectedDistrictName: string | null = null;
+  formDistrictIds = signal<number[]>([]);
+  formDistrictIdsRegular: number[] = [];
   isLoadingDistricts = signal<boolean>(false);
-  districtOptions: InfiniteDropdownOption[] = [];
-  fetchDistrictsFn?: (search: string, page: number, pageSize: number) => Observable<InfiniteDropdownOption[]>;
 
   availableAreas = signal<AreaItem[]>([]);
+  initialSelectedAreaItems = signal<AreaItem[]>([]);
   formAreaIds = signal<number[]>([]);
   formAreaIdsRegular: any[] = [];
   selectedAreasList: AreaItem[] = [];
-  selectedAreaOptions: InfiniteDropdownOption[] = [];
-  fetchAreasFn?: (search: string, page: number, pageSize: number) => Observable<InfiniteDropdownOption[]>;
+  fetchAreasFn?: (search: string, page: number, pageSize: number) => Observable<PaginatedAreasResponse>;
   formPhone = '';
   formEmail = '';
   formAddress = '';
@@ -758,43 +748,18 @@ export class AdminUsersComponent implements OnInit {
     });
   }
 
-  loadDistricts(preselectDistrictId?: any, preselectDistrictName?: string): void {
+  getDistrictNames(districtName?: string | null): string[] {
+    if (!districtName) return [];
+    return districtName.split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  loadDistricts(): void {
     this.isLoadingDistricts.set(true);
-    this.districtOptions = [];
 
     this.dataService.getDropdownDistricts().subscribe({
       next: (districts: District[]) => {
         this.districts.set(districts || []);
-        const options: InfiniteDropdownOption[] = (districts || []).map(d => ({
-          label: d.name,
-          value: Number(d.id),
-          subtext: d.code ? `Code: ${d.code}` : undefined,
-          raw: d
-        }));
-        this.districtOptions = options;
-
-        this.fetchDistrictsFn = (search: string) => {
-          const q = (search || '').trim().toLowerCase();
-          if (!q) return of(options);
-          return of(options.filter(o =>
-            o.label.toLowerCase().includes(q) ||
-            (o.subtext && o.subtext.toLowerCase().includes(q))
-          ));
-        };
-
         this.isLoadingDistricts.set(false);
-
-        if (preselectDistrictId !== undefined && preselectDistrictId !== null && preselectDistrictId !== '') {
-          const pVal = Number(preselectDistrictId);
-          this.formDistrictId.set(pVal);
-          this.formDistrictIdRegular = pVal;
-          const matched = options.find(o => Number(o.value) === pVal);
-          this.selectedDistrictOption = matched || {
-            label: preselectDistrictName || `District #${pVal}`,
-            value: pVal
-          };
-          this.selectedDistrictName = this.selectedDistrictOption.label;
-        }
         this.cdr.markForCheck();
       },
       error: () => {
@@ -805,21 +770,10 @@ export class AdminUsersComponent implements OnInit {
     });
   }
 
-  setupDistrictDropdown(preselectDistrictId?: any, preselectDistrictName?: string): void {
-    this.loadDistricts(preselectDistrictId, preselectDistrictName);
-  }
-
-  loadAvailableBranchDistricts(userId?: string | number | null): void {
-    this.loadDistricts();
-  }
-
   clearDistrictAndAreas(): void {
     this.formDistrictId.set(null);
-    this.formDistrictIdRegular = null;
-    this.selectedDistrictOption = null;
-    this.selectedDistrictName = null;
-    this.fetchDistrictsFn = undefined;
-    this.districtOptions = [];
+    this.formDistrictIds.set([]);
+    this.formDistrictIdsRegular = [];
     this.isLoadingDistricts.set(false);
     this.clearAreas();
   }
@@ -827,8 +781,8 @@ export class AdminUsersComponent implements OnInit {
   clearAreas(): void {
     this.formAreaIds.set([]);
     this.formAreaIdsRegular = [];
-    this.selectedAreaOptions = [];
     this.selectedAreasList = [];
+    this.initialSelectedAreaItems.set([]);
     this.availableAreas.set([]);
     this.fetchAreasFn = undefined;
     this.isLoadingAreas.set(false);
@@ -838,63 +792,102 @@ export class AdminUsersComponent implements OnInit {
     if (this.formRole === 'branch_head') {
       this.clearDistrictAndAreas();
       this.loadDistricts();
+      this.setupAreasFetchFn(this.editingUserId(), []);
     } else {
       this.clearDistrictAndAreas();
     }
     this.cdr.markForCheck();
   }
 
-  onDistrictChange(districtOptionOrId: any): void {
-    let val: number | null = null;
-    let opt: InfiniteDropdownOption | null = null;
-    if (districtOptionOrId && typeof districtOptionOrId === 'object') {
-      val = districtOptionOrId.value !== null && districtOptionOrId.value !== undefined ? Number(districtOptionOrId.value) : null;
-      opt = districtOptionOrId;
-    } else {
-      val = (districtOptionOrId !== null && districtOptionOrId !== undefined && districtOptionOrId !== '') ? Number(districtOptionOrId) : null;
+  onDistrictIdsChange(ids: number[]): void {
+    const cleanDistIds = Array.from(new Set((ids || []).map(Number).filter(id => !isNaN(id) && id > 0)));
+    this.formDistrictIds.set(cleanDistIds);
+    this.formDistrictIdsRegular = [...cleanDistIds];
+    this.formDistrictId.set(cleanDistIds.length > 0 ? cleanDistIds[0] : null);
+
+    // Prune any previously selected areas whose district was unchecked
+    const distSet = new Set(cleanDistIds);
+    const knownMap = new Map<number, AreaItem>();
+    for (const item of [...this.initialSelectedAreaItems(), ...this.selectedAreasList, ...this.availableAreas()]) {
+      knownMap.set(Number(item.id), item);
     }
 
-    // Prevent duplicate API calls if the same district is re-selected
-    if (val === this.formDistrictId() && val !== null) {
-      return;
+    const filteredIds = cleanDistIds.length === 0
+      ? []
+      : this.formAreaIds().filter(areaId => {
+          const item = knownMap.get(Number(areaId));
+          if (!item) return true;
+          const dId = Number(item.district_id ?? item.districtId ?? 0);
+          return dId === 0 || distSet.has(dId);
+        });
+
+    if (filteredIds.length !== this.formAreaIds().length) {
+      this.formAreaIds.set(filteredIds);
+      this.formAreaIdsRegular = [...filteredIds];
+      this.selectedAreasList = filteredIds
+        .map(id => knownMap.get(id))
+        .filter((a): a is AreaItem => Boolean(a));
     }
 
-    this.selectedDistrictOption = opt;
-    this.selectedDistrictName = opt?.label || null;
-    this.formDistrictId.set(val);
-    this.formDistrictIdRegular = val;
-
-    // Clear previously selected areas when district changes
-    this.clearAreas();
-
-    if (val) {
-      this.loadAreasForDistrict(val);
-    }
+    this.setupAreasFetchFn(this.editingUserId(), cleanDistIds);
     this.cdr.markForCheck();
   }
 
-  loadAreasForDistrict(districtId: number | string, preselectAreaIds?: number[]): void {
-    const dId = Number(districtId);
+  setupAreasFetchFn(userId?: number | string | null, districtIds: number[] = this.formDistrictIds()): void {
+    const cleanDistIds = (districtIds || []).map(Number).filter(d => !isNaN(d) && d > 0);
+    if (cleanDistIds.length === 0) {
+      this.fetchAreasFn = undefined;
+      return;
+    }
+    const editUserId = userId !== undefined && userId !== null && userId !== '' ? Number(userId) : null;
+    this.fetchAreasFn = (search: string, page: number, pageSize: number) =>
+      this.dataService.getPaginatedAreasWithAssignmentStatus({
+        districtIds: cleanDistIds,
+        search,
+        userId: editUserId,
+        page,
+        limit: pageSize
+      });
+  }
+
+  loadUserInitialAssignedAreas(userId: number | string, initialDistrictIds: number[] = []): void {
     this.isLoadingAreas.set(true);
-    this.availableAreas.set([]);
+    this.dataService.getUserAssignedAreas(userId).subscribe({
+      next: (assignedAreas) => {
+        const mappedItems: AreaItem[] = (assignedAreas || [])
+          .filter(a => Number(a.area_id) > 0)
+          .map(a => ({
+            id: Number(a.area_id),
+            district_id: Number(a.district_id || 0),
+            districtId: Number(a.district_id || 0),
+            district_name: a.district_name || '',
+            name: a.area_name || `Area #${a.area_id}`,
+            isAssigned: true,
+            assignedUserId: Number(userId),
+            isAssignedToOther: false
+          }));
 
-    this.dataService.getAreasWithAssignmentStatus(dId, undefined, this.editingUserId()).subscribe({
-      next: (areas: AreaItem[]) => {
-        this.availableAreas.set(areas || []);
+        const mergedDistrictIds = Array.from(new Set([
+          ...initialDistrictIds.map(Number).filter(d => !isNaN(d) && d > 0),
+          ...mappedItems.map(a => Number(a.district_id)).filter(d => !isNaN(d) && d > 0)
+        ]));
+        this.formDistrictIds.set(mergedDistrictIds);
+        this.formDistrictIdsRegular = [...mergedDistrictIds];
+        this.formDistrictId.set(mergedDistrictIds.length > 0 ? mergedDistrictIds[0] : null);
+
+        const preAreaIds = mappedItems.map(a => a.id);
+        this.initialSelectedAreaItems.set(mappedItems);
+        this.formAreaIds.set(preAreaIds);
+        this.formAreaIdsRegular = [...preAreaIds];
+        this.selectedAreasList = mappedItems;
+
+        this.setupAreasFetchFn(userId, mergedDistrictIds);
         this.isLoadingAreas.set(false);
-
-        if (preselectAreaIds && preselectAreaIds.length > 0) {
-          this.formAreaIds.set(preselectAreaIds);
-          this.formAreaIdsRegular = [...preselectAreaIds];
-          this.selectedAreasList = (areas || []).filter(a => preselectAreaIds.includes(Number(a.id)));
-          this.selectedAreaOptions = this.selectedAreasList.map(a => ({ label: a.name, value: a.id }));
-        }
         this.cdr.markForCheck();
       },
       error: () => {
+        this.setupAreasFetchFn(userId, initialDistrictIds);
         this.isLoadingAreas.set(false);
-        this.availableAreas.set([]);
-        this.toast.error('Failed to load areas for selected district.');
         this.cdr.markForCheck();
       }
     });
@@ -905,7 +898,6 @@ export class AdminUsersComponent implements OnInit {
     const ids = (areas || []).map(a => Number(a.id)).filter(id => !isNaN(id));
     this.formAreaIds.set(ids);
     this.formAreaIdsRegular = ids;
-    this.selectedAreaOptions = (areas || []).map(a => ({ label: a.name, value: a.id }));
     this.cdr.markForCheck();
   }
 
@@ -913,8 +905,13 @@ export class AdminUsersComponent implements OnInit {
     const cleanIds = (ids || []).map(id => Number(id)).filter(id => !isNaN(id));
     this.formAreaIds.set(cleanIds);
     this.formAreaIdsRegular = cleanIds;
-    this.selectedAreasList = this.availableAreas().filter(a => cleanIds.includes(Number(a.id)));
-    this.selectedAreaOptions = this.selectedAreasList.map(a => ({ label: a.name, value: a.id }));
+    const knownMap = new Map<number, AreaItem>();
+    for (const item of [...this.initialSelectedAreaItems(), ...this.selectedAreasList, ...this.availableAreas()]) {
+      knownMap.set(Number(item.id), item);
+    }
+    this.selectedAreasList = cleanIds
+      .map(id => knownMap.get(id))
+      .filter((a): a is AreaItem => Boolean(a));
     this.cdr.markForCheck();
   }
 
@@ -952,21 +949,12 @@ export class AdminUsersComponent implements OnInit {
     this.clearDistrictAndAreas();
 
     if (this.formRole === 'branch_head') {
-      const dId = user.districtId ? Number(user.districtId) : null;
-      this.loadDistricts(dId, user.districtName || (user as any).district_name);
-
-      if (dId) {
-        // Fetch assigned areas on-demand for this user
-        this.dataService.getUserAssignedAreas(user.id).subscribe({
-          next: (assignedAreas) => {
-            const preAreaIds = (assignedAreas || []).map(a => Number(a.area_id)).filter(n => !isNaN(n) && n > 0);
-            this.loadAreasForDistrict(dId, preAreaIds);
-          },
-          error: () => {
-            this.loadAreasForDistrict(dId, []);
-          }
-        });
-      }
+      const initialDistIds = user.districtId ? [Number(user.districtId)] : [];
+      this.formDistrictIds.set(initialDistIds);
+      this.formDistrictIdsRegular = [...initialDistIds];
+      this.formDistrictId.set(initialDistIds[0] ?? null);
+      this.loadDistricts();
+      this.loadUserInitialAssignedAreas(user.id, initialDistIds);
     }
 
     this.formPhone = user.phone || '';
@@ -1010,11 +998,13 @@ export class AdminUsersComponent implements OnInit {
       }
     }
 
-    const distId = this.formDistrictId();
+    const checkedDistrictIds = this.formDistrictIds();
+    const firstAreaDistrictId = Number(this.selectedAreasList?.[0]?.district_id ?? this.selectedAreasList?.[0]?.districtId ?? 0) || null;
+    const primaryDistId = checkedDistrictIds.length > 0 ? checkedDistrictIds[0] : (firstAreaDistrictId || this.formDistrictId());
 
     if (this.formRole === 'branch_head') {
-      if (!distId) {
-        this.toast.error('Please select an assigned district hub for Branch Head.');
+      if (checkedDistrictIds.length === 0) {
+        this.toast.error('Please select at least one assigned district for Branch Head.');
         return;
       }
       if (!this.formAreaIds() || this.formAreaIds().length === 0) {
@@ -1023,10 +1013,12 @@ export class AdminUsersComponent implements OnInit {
       }
 
       // Ensure none of the selected areas are already assigned to another user
-      const assignedToOther = this.availableAreas().find(a =>
+      const assignedToOther = this.selectedAreasList.find(a =>
         this.formAreaIds().includes(Number(a.id)) &&
-        a.isAssigned &&
-        (!currentEditingId || Number(a.assignedUserId) !== Number(currentEditingId))
+        (a.isAssignedToOther || (
+          a.isAssigned &&
+          (!currentEditingId || Number(a.assignedUserId) !== Number(currentEditingId))
+        ))
       );
       if (assignedToOther) {
         this.toast.error(`Area "${assignedToOther.name}" is already assigned to another user.`);
@@ -1035,13 +1027,14 @@ export class AdminUsersComponent implements OnInit {
     }
 
     const areaIds = this.formRole === 'branch_head' ? this.formAreaIds() : [];
-    const areaNames = this.formRole === 'branch_head' ? this.selectedAreaOptions.map(o => o.label) : [];
+    const areaNames = this.formRole === 'branch_head' ? this.selectedAreasList.map(a => a.name) : [];
 
     const payload: any = {
       name: this.formName.trim(),
       username: this.formUsername.trim(),
       role: this.formRole,
-      districtId: this.formRole === 'branch_head' ? distId : null,
+      districtId: this.formRole === 'branch_head' ? primaryDistId : null,
+      districtIds: this.formRole === 'branch_head' ? checkedDistrictIds : [],
       areaIds: areaIds,
       areaId: areaIds.length > 0 ? areaIds[0] : null,
       areaNames: areaNames,

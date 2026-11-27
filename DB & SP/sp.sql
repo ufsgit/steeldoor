@@ -863,6 +863,99 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_district_areas_assignment_status`(
+    IN p_district_ids VARCHAR(500), -- Comma-separated selected district IDs (e.g. '1,2,5'); NULL/'' = none selected (0 rows); 'ALL' = all districts
+    IN p_search       VARCHAR(100), -- Matches area name, pincode, or district name
+    IN p_user_id      INT,          -- NULL when creating user; user ID when editing
+    IN p_page         INT,          -- Page number (default 1)
+    IN p_limit        INT           -- Rows per page (default 20)
+)
+BEGIN
+    DECLARE v_district_ids VARCHAR(500) DEFAULT NULL;
+    DECLARE v_show_all     TINYINT(1)   DEFAULT 0;
+    DECLARE v_search       VARCHAR(105) DEFAULT NULL;
+    DECLARE v_page         INT          DEFAULT 1;
+    DECLARE v_limit        INT          DEFAULT 20;
+    DECLARE v_offset       INT          DEFAULT 0;
+
+    IF p_district_ids IS NOT NULL AND TRIM(p_district_ids) != '' THEN
+        IF UPPER(TRIM(p_district_ids)) = 'ALL' THEN
+            SET v_show_all = 1;
+        ELSE
+            SET v_district_ids = TRIM(BOTH ',' FROM REPLACE(TRIM(p_district_ids), ' ', ''));
+            IF v_district_ids = '' OR v_district_ids = '0' THEN
+                SET v_district_ids = NULL;
+            END IF;
+        END IF;
+    END IF;
+
+    IF p_search IS NOT NULL AND TRIM(p_search) != '' THEN
+        SET v_search = TRIM(p_search);
+    END IF;
+
+    IF p_page IS NOT NULL AND p_page > 0 THEN
+        SET v_page = p_page;
+    END IF;
+
+    IF p_limit IS NOT NULL AND p_limit > 0 THEN
+        SET v_limit = p_limit;
+    END IF;
+
+    SET v_offset = (v_page - 1) * v_limit;
+
+    -- Result Set 1: Paginated Areas filtered strictly to selected District(s)
+    SELECT 
+        a.id,
+        a.district_id,
+        d.name AS district_name,
+        a.name,
+        a.pincode,
+        u.id   AS assigned_user_id,
+        u.name AS assigned_user_name,
+        -- 1 = Assigned to another active user (Locked / Red)
+        -- 0 = Free OR assigned to the user being edited (Selectable / Green)
+        (u.id IS NOT NULL AND (p_user_id IS NULL OR aa.user_id != p_user_id)) AS is_assigned_to_other
+    FROM areas a
+    INNER JOIN districts d ON a.district_id = d.id
+    LEFT JOIN area_assigned aa ON a.id = aa.area_id
+    LEFT JOIN users u ON aa.user_id = u.id AND u.is_deleted = 0
+    WHERE a.is_deleted = 0
+      AND (
+          v_show_all = 1
+          OR (v_district_ids IS NOT NULL AND FIND_IN_SET(CAST(a.district_id AS CHAR), v_district_ids) > 0)
+      )
+      AND (
+          v_search IS NULL
+          OR a.name    LIKE CONCAT('%', v_search, '%')
+          OR a.pincode LIKE CONCAT('%', v_search, '%')
+          OR d.name    LIKE CONCAT('%', v_search, '%')
+      )
+    ORDER BY d.name ASC, a.name ASC
+    LIMIT v_limit OFFSET v_offset;
+
+    -- Result Set 2: Pagination Metadata
+    SELECT 
+        COUNT(*) AS total,
+        v_page   AS page,
+        v_limit  AS `limit`,
+        GREATEST(1, CEIL(COUNT(*) / v_limit)) AS total_pages
+    FROM areas a
+    INNER JOIN districts d ON a.district_id = d.id
+    WHERE a.is_deleted = 0
+      AND (
+          v_show_all = 1
+          OR (v_district_ids IS NOT NULL AND FIND_IN_SET(CAST(a.district_id AS CHAR), v_district_ids) > 0)
+      )
+      AND (
+          v_search IS NULL
+          OR a.name    LIKE CONCAT('%', v_search, '%')
+          OR a.pincode LIKE CONCAT('%', v_search, '%')
+          OR d.name    LIKE CONCAT('%', v_search, '%')
+      );
+END$$
+DELIMITER ;
+
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_history_by_bookingid`(
     IN p_booking_id INT,
     IN p_page INT,
@@ -1401,40 +1494,6 @@ BEGIN
             END IF;
         END IF;
     END IF;
-END$$
-DELIMITER ;
-
-DELIMITER $$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_district_areas_assignment_status`(
-    IN p_district_id INT,
-    IN p_search VARCHAR(100),
-    IN p_user_id INT -- NULL when creating, User ID when editing
-)
-BEGIN
-    SELECT 
-        a.id,
-        a.district_id,
-        d.name AS district_name,
-        a.name,
-        a.pincode,
-        aa.user_id AS assigned_user_id,
-        u.name AS assigned_user_name,
-        -- 1 = Assigned to another user (RED / Disabled)
-        -- 0 = Free OR already belongs to this user (GREEN / Selectable)
-        (aa.user_id IS NOT NULL AND (p_user_id IS NULL OR aa.user_id != p_user_id)) AS is_assigned_to_other
-    FROM areas a
-    INNER JOIN districts d ON a.district_id = d.id
-    LEFT JOIN area_assigned aa ON a.id = aa.area_id
-    LEFT JOIN users u ON aa.user_id = u.id AND u.is_deleted = 0
-    WHERE a.district_id = p_district_id
-      AND a.is_deleted = 0
-      AND (
-          p_search IS NULL 
-          OR TRIM(p_search) = '' 
-          OR a.name LIKE CONCAT('%', TRIM(p_search), '%') 
-          OR a.pincode LIKE CONCAT('%', TRIM(p_search), '%')
-      )
-    ORDER BY a.name ASC;
 END$$
 DELIMITER ;
 
